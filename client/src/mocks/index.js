@@ -1,6 +1,6 @@
 // API simulée : intercepte fetch() pour les routes décrites dans routes.js.
 // Les routes absentes (ex. /api/health) partent vers le vrai serveur.
-import { reinitialiser } from './base.js'
+import { connecter, reinitialiser } from './base.js'
 import { RESEAU_COUPE } from './http.js'
 import { routes } from './routes.js'
 
@@ -56,6 +56,6 @@ export function installerMocks({ delai = 600 } = {}) {
     })
   }
 
-  window.nakayoMocks = { reinitialiser }
+  window.nakayoMocks = { reinitialiser, connecter }
   console.info('[mocks] API simulée active (client/src/mocks/README.md). Remise à zéro : nakayoMocks.reinitialiser()')
 }

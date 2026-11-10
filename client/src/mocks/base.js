@@ -1,6 +1,8 @@
 // « Base de données » de l'API simulée, gardée dans le localStorage du navigateur
-// pour survivre aux rechargements. Réinitialiser : localStorage.removeItem('nakayo:mocks').
-const CLE = 'nakayo:mocks'
+// pour survivre aux rechargements. Réinitialiser : nakayoMocks.reinitialiser() dans la console.
+import { comptesDemo } from './comptesDemo.js'
+
+const CLE = 'nakayo:mocks:v2'
 
 function maintenant(decalageJours = 0) {
   return new Date(Date.now() + decalageJours * 86400000).toISOString()
@@ -51,6 +53,7 @@ function donneesInitiales() {
         motifRefus: 'La fiche Google Play indiquée ne correspond pas au nom de développeur saisi.',
         creeLe: maintenant(-5),
       },
+      ...comptesDemo(),
     ],
   }
 }
@@ -88,4 +91,14 @@ export function nouvelId() {
 
 export function horodatage() {
   return maintenant()
+}
+
+// Ouvre une session simulée (en attendant l'écran de connexion de US-09).
+export function connecter(email) {
+  const b = base()
+  const utilisateur = b.utilisateurs.find((u) => u.email === email)
+  if (!utilisateur) return `Aucun compte simulé pour ${email}`
+  b.sessionId = utilisateur.id
+  sauver()
+  return `Session ouverte pour ${email} (${utilisateur.role})`
 }
