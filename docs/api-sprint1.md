@@ -370,7 +370,7 @@ Réponse `200` :
         "etat": "termine",
         "liste": [
           { "code": "fiche_play_accessible", "libelle": "Fiche développeur Google Play accessible", "resultat": "ok", "detail": null },
-          { "code": "email_jetable", "libelle": "Adresse email jetable", "resultat": "alerte", "detail": "Domaine connu comme jetable" }
+          { "code": "email_jetable", "libelle": "Adresse email non jetable", "resultat": "alerte", "detail": "Domaine connu comme jetable" }
         ]
       }
     }
@@ -397,6 +397,7 @@ Pour un testeur, `developpeur` vaut `null` et `testeur` contient :
 - `controles.etat` : `en_cours` (contrôles pas encore finis, `liste` peut être incomplète) ou `termine`.
 - `resultat` : `ok`, `alerte` (à regarder), `echec` (bloquant pour l'admin), `indisponible` (le contrôle n'a pas pu tourner).
 - `libelle` et `detail` sont en français et affichés tels quels : ajouter un contrôle ne demande pas de changer le front.
+- `libelle` décrit **la vérification réussie**, car le front l'affiche derrière le résultat : « Conforme : Numéro Mobile Money unique », « Échec : Numéro Mobile Money unique ». Éviter les libellés formulés comme le risque (« Numéro déjà utilisé »), qui donnent « Conforme : Numéro déjà utilisé ». Le `detail` explique le problème quand le résultat n'est pas `ok`.
 
 ### 5.2 `GET /api/admin/comptes/:id`
 
@@ -436,18 +437,18 @@ Corps : `{ "motif": "La fiche Google Play indiquée n'existe pas." }`. Le motif 
 
 ## 6. Contrôles automatiques (US-07)
 
-Liste indicative ; les codes sont libres, le front affiche `libelle` et `detail`.
+Liste indicative ; les codes sont libres, le front affiche `libelle` et `detail` (règle de formulation au §5.1).
 
-| Rôle | `code` | Contrôle |
+| Rôle | `code` | `libelle` proposé |
 |---|---|---|
-| développeur | `email_jetable` | domaine d'email jetable |
-| développeur | `fiche_play_accessible` | la fiche Google Play répond et existe |
-| développeur | `fiche_play_doublon` | la même fiche est déjà liée à un autre compte |
-| testeur | `momo_doublon` | numéro MoMo déjà utilisé par un autre compte |
-| testeur | `momo_titulaire` | le nom du titulaire MoMo correspond au nom saisi (si l'agrégateur le permet) |
-| testeur | `gmail_doublon` | Gmail déjà utilisé |
-| testeur | `appareil_doublon` | même `appareil.identifiant` sur un autre compte |
-| testeur | `photos_presentes` | pièce et selfie reçus et lisibles |
+| développeur | `email_jetable` | Adresse email non jetable |
+| développeur | `fiche_play_accessible` | Fiche développeur Google Play accessible |
+| développeur | `fiche_play_doublon` | Fiche liée à aucun autre compte |
+| testeur | `momo_doublon` | Numéro Mobile Money unique |
+| testeur | `momo_titulaire` | Titulaire Mobile Money identique au nom saisi (si l'agrégateur le permet) |
+| testeur | `gmail_doublon` | Gmail unique |
+| testeur | `appareil_doublon` | Appareil utilisé par aucun autre compte (`appareil.identifiant`) |
+| testeur | `photos_presentes` | Pièce d'identité et selfie reçus |
 
 ## 7. Récapitulatif des routes
 
