@@ -35,6 +35,8 @@ jobs:
       - run: npm ci
       - name: Lint du front
         run: npm run lint
+      - name: Tests du front
+        run: npm test
       - name: Build du front
         run: npm run build
       - name: Migrations PostgreSQL

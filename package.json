@@ -9,8 +9,10 @@
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @nakayo/server\" \"npm run dev -w @nakayo/client\"",
     "dev:client": "npm run dev -w @nakayo/client",
     "dev:server": "npm run dev -w @nakayo/server",
+    "dev:mocks": "npm run dev:mocks -w @nakayo/client",
     "build": "npm run build -w @nakayo/client",
     "lint": "npm run lint -w @nakayo/client",
+    "test": "npm run test -w @nakayo/client",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate -w @nakayo/server"
