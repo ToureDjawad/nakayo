@@ -3,7 +3,8 @@ import { useRef, useState } from 'react'
 // État d'un formulaire : valeurs, erreurs (codes du contrat d'API) et champs déjà quittés.
 // Les erreurs s'affichent quand on quitte un champ, puis se mettent à jour à la frappe.
 // Un champ vide quitté sans avoir soumis n'affiche pas « requis » (navigation au clavier).
-export function useFormulaire(initiales, validateurs) {
+// `prefixe` évite les identifiants en double quand le même formulaire existe plusieurs fois.
+export function useFormulaire(initiales, validateurs, { prefixe = '' } = {}) {
   const [valeurs, setValeurs] = useState(initiales)
   const [erreurs, setErreurs] = useState({})
   const [touches, setTouches] = useState({})
@@ -48,12 +49,13 @@ export function useFormulaire(initiales, validateurs) {
   function focaliserPremiereErreur(liste) {
     const premier = ordre.find((nom) => liste[nom])
     if (!premier) return true
-    document.getElementById(`champ-${premier}`)?.focus()
+    document.getElementById(`${prefixe}champ-${premier}`)?.focus()
     return false
   }
 
   function lier(nom) {
     return {
+      id: `${prefixe}champ-${nom}`,
       nom,
       valeur: valeurs[nom],
       erreur: erreurs[nom] ?? null,
