@@ -1,0 +1,41 @@
+name: Workflow
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+jobs:
+  verifier-branche-et-titre:
+    name: Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier le nom de la branche
+        env:
+          BRANCHE: ${{ github.head_ref }}
+        run: |
+          motif_story='^(feature|fix|chore|docs)/US-[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$'
+          motif_libre='^(chore|docs)/[a-z0-9]+(-[a-z0-9]+)*$'
+          if [[ "$BRANCHE" =~ $motif_story || "$BRANCHE" =~ $motif_libre ]]; then
+            echo "Nom de branche valide : $BRANCHE"
+          else
+            echo "::error::Nom de branche invalide : '$BRANCHE'. Format attendu : feature/US-12-description (voir CONTRIBUTING.md)."
+            exit 1
+          fi
+
+      - name: Vérifier le titre de la PR
+        env:
+          BRANCHE: ${{ github.head_ref }}
+          TITRE: ${{ github.event.pull_request.title }}
+        run: |
+          story=$(echo "$BRANCHE" | grep -oE 'US-[0-9]{2}' || true)
+          if [[ -z "$story" ]]; then
+            echo "Branche sans story, pas de vérification du titre."
+            exit 0
+          fi
+          if [[ "$TITRE" == "$story"* ]]; then
+            echo "Titre valide : $TITRE"
+          else
+            echo "::error::Le titre de la PR doit commencer par $story (exemple : '$story · Titre de la story')."
+            exit 1
+          fi
