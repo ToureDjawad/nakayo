@@ -40,23 +40,59 @@ Pousser régulièrement la branche :
 git push -u origin feature/US-12-paiement-standard
 ```
 
-## 3. Ouvrir la pull request
+## 3. Écrire les tests (obligatoire)
+
+Une fonctionnalité n'est terminée que si elle est couverte par les trois niveaux de tests, et qu'ils passent tous.
+
+| Niveau | Ce qu'il vérifie | Outil | Où |
+|---|---|---|---|
+| Unitaire | une fonction, un composant ou une route isolés, sans base ni réseau (dépendances simulées) | Vitest, Testing Library | `client/src/**/*.test.jsx`, `server/tests/unit/` |
+| Intégration | l'API avec une vraie base PostgreSQL de test : requêtes SQL, contraintes, migrations | Vitest + Supertest | `server/tests/integration/` |
+| E2E | le parcours complet de l'utilisateur dans un vrai navigateur, front + API + base | Playwright | `e2e/` |
+
+Ce qu'on attend pour chaque story :
+
+- **Unitaire** : chaque règle métier, cas d'erreur et état d'interface (vide, chargement, erreur) a son test.
+- **Intégration** : chaque route de l'API ajoutée ou modifiée est testée avec la vraie base, y compris les refus (droits, données invalides, doublons).
+- **E2E** : au moins le parcours principal de la story, tel qu'écrit dans ses critères d'acceptation.
+
+Lancer les tests en local avant d'ouvrir la PR :
+
+```bash
+npm run test:unit          # rapide, sans base
+npm run test:integration   # base nakayo_test (DATABASE_URL_TEST), vidée à chaque lancement
+npm run test:e2e           # démarre l'API et le front puis ouvre Chromium
+npm test                   # les trois à la suite
+```
+
+Première fois pour l'E2E : `npx playwright install chromium`. Pour l'intégration, créer la base de test une fois : `createdb -U nakayo nakayo_test` (ou via Docker : `docker compose exec db createdb -U nakayo nakayo_test`).
+
+Un test qui échoue ne se désactive pas et ne se supprime pas pour faire passer la CI : on corrige le code ou le test.
+
+## 4. Ouvrir la pull request
 
 - Base : `main`
 - Titre : `US-12 · Paiement de l'offre Standard`
 - Remplir le modèle de PR (story, ce qui change, comment tester)
 - Demander la relecture de l'autre membre de l'équipe
 
-Le contrôle automatique « Workflow » vérifie le nom de la branche et le titre de la PR. Il doit être vert avant la fusion.
+Les contrôles automatiques doivent tous être verts avant la fusion :
 
-## 4. Relire et fusionner
+- « Workflow » : nom de la branche et titre de la PR
+- « Lint et build »
+- « Tests unitaires »
+- « Tests d'intégration »
+- « Tests E2E »
+
+## 5. Relire et fusionner
 
 - Au moins une approbation de l'autre membre de l'équipe
-- Les contrôles automatiques sont verts
+- Les cinq contrôles automatiques sont verts
+- Le relecteur vérifie que les tests couvrent bien les critères d'acceptation
 - La branche est à jour avec `main`
 - Fusion en **Squash and merge**, puis suppression de la branche
 
-## 5. Après la fusion
+## 6. Après la fusion
 
 ```bash
 git checkout main
@@ -70,5 +106,5 @@ Mettre à jour la carte Trello de la story (colonne « Terminé »).
 
 - Push direct interdit, même pour les administrateurs
 - Pull request obligatoire, avec une approbation
-- Contrôle « Workflow » obligatoire
+- Contrôles obligatoires : « Workflow », « Lint et build », « Tests unitaires », « Tests d'intégration », « Tests E2E »
 - Pas de push forcé, pas de suppression de la branche

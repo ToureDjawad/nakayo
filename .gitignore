@@ -11,3 +11,8 @@ build/
 *.iml
 .gradle/
 local.properties
+
+# Rapports de tests
+playwright-report/
+test-results/
+coverage/

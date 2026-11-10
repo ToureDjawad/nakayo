@@ -13,12 +13,17 @@
     "lint": "npm run lint -w @nakayo/client",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
-    "db:migrate": "npm run migrate -w @nakayo/server"
+    "db:migrate": "npm run migrate -w @nakayo/server",
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "npm run test:unit -w @nakayo/client && npm run test:unit -w @nakayo/server",
+    "test:integration": "npm run test:integration -w @nakayo/server",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "concurrently": "^10.0.7"
   }
 }
