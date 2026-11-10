@@ -31,10 +31,20 @@ export function capturerLienVerification(page) {
 
 export async function verifierAccessibilite(page) {
   const resultat = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
-  expect(resultat.violations.map((v) => `${v.id} : ${v.help}`)).toEqual([])
+  const violations = resultat.violations.map(
+    (v) => `${v.id} : ${v.help} (${v.nodes.map((n) => n.target.join(' ') + ' ' + (n.any[0]?.message ?? '')).join(' | ')})`,
+  )
+  expect(violations).toEqual([])
 }
 
 export async function verifierSansDefilementHorizontal(page) {
   const deborde = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(deborde).toBe(false)
+}
+
+// Ouvre une session dans l'API simulée (l'écran de connexion arrive avec US-09).
+export async function connecterAdmin(page, email = 'admin@nakayo.test') {
+  await page.goto('/')
+  await page.waitForFunction(() => window.nakayoMocks)
+  await page.evaluate((adresse) => window.nakayoMocks.connecter(adresse), email)
 }
