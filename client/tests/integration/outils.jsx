@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { vi } from 'vitest'
-import { routes } from '../routes.jsx'
+import { routes } from '../../src/routes.jsx'
 
 // Rend l'application à une adresse donnée, avec le vrai routeur.
 export function rendreA(adresse, etat) {

@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { corpsEnvoye, rendreA, simulerFetch } from '../../test/outils.jsx'
+import { corpsEnvoye, rendreA, simulerFetch } from './outils.jsx'
 
 async function remplir(user, valeurs = {}) {
   const v = {

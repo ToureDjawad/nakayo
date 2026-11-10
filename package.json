@@ -13,6 +13,7 @@
     "build": "npm run build -w @nakayo/client",
     "lint": "npm run lint -w @nakayo/client",
     "test": "npm run test -w @nakayo/client",
+    "test:e2e": "npm run test:e2e -w @nakayo/client",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate -w @nakayo/server"

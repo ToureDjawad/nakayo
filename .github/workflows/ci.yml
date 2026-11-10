@@ -35,8 +35,20 @@ jobs:
       - run: npm ci
       - name: Lint du front
         run: npm run lint
-      - name: Tests du front
+      - name: Tests unitaires et d'intégration du front
         run: npm test
+      - name: Navigateur des tests de bout en bout
+        run: npx playwright install --with-deps chromium
+        working-directory: client
+      - name: Tests de bout en bout du front
+        run: npm run test:e2e
+      - name: Rapport des tests de bout en bout
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright
+          path: client/playwright-report
+          retention-days: 7
       - name: Build du front
         run: npm run build
       - name: Migrations PostgreSQL

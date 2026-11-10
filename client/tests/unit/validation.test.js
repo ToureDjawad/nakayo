@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { PAYS, nomPays } from './pays.js'
-import { normaliserLienFiche, validerEmail, validerLienFiche, validerMotDePasse, validerNom } from './validation.js'
+import { PAYS, nomPays } from '../../src/lib/pays.js'
+import { normaliserLienFiche, validerEmail, validerLienFiche, validerMotDePasse, validerNom } from '../../src/lib/validation.js'
 
 describe('validation', () => {
   it('vérifie les emails', () => {
@@ -52,5 +52,14 @@ describe('pays', () => {
   it('trie la liste dans l’ordre alphabétique français', () => {
     const noms = PAYS.map((p) => p.nom)
     expect([...noms].sort((a, b) => a.localeCompare(b, 'fr'))).toEqual(noms)
+  })
+})
+
+describe('emailEnAttente', () => {
+  it('garde l’adresse le temps de l’onglet', async () => {
+    const { lireEmailEnAttente, memoriserEmailEnAttente } = await import('../../src/pages/inscription/emailEnAttente.js')
+    expect(lireEmailEnAttente()).toBeNull()
+    memoriserEmailEnAttente('awa@studio.bj')
+    expect(lireEmailEnAttente()).toBe('awa@studio.bj')
   })
 })

@@ -45,6 +45,16 @@ npm run dev:mocks                 # front seul, API simulée (voir client/src/mo
 
 Le contrat d'API attendu est dans `docs/api-sprint1.md`.
 
+## Tests du front
+
+| Dossier | Type | Outil |
+|---|---|---|
+| `client/tests/unit/` | fonctions et hooks isolés (validation, client d'API, messages) | Vitest |
+| `client/tests/integration/` | pages rendues avec le vrai routeur, `fetch` simulé | Vitest + Testing Library |
+| `client/tests/e2e/` | parcours complets dans Chromium, ordinateur et mobile, contrôle d'accessibilité axe | Playwright |
+
+Avant le premier `npm run test:e2e`, installer le navigateur : `npx playwright install chromium` (depuis `client/`).
+
 ## Commandes
 
 | Commande | Rôle |
@@ -54,7 +64,8 @@ Le contrat d'API attendu est dans `docs/api-sprint1.md`.
 | `npm run dev:mocks` | front seul avec l'API simulée |
 | `npm run build` | build de production du front |
 | `npm run lint` | vérification du code du front |
-| `npm test` | tests du front (Vitest) |
+| `npm test` | tests unitaires et d'intégration du front (Vitest) |
+| `npm run test:e2e` | tests de bout en bout (Playwright, sur ordinateur et mobile, avec l'API simulée) |
 | `npm run db:up` / `npm run db:down` | démarrer / arrêter PostgreSQL |
 | `npm run db:migrate` | appliquer les nouvelles migrations de `server/migrations/` |
 

@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Tests de bout en bout
+test-results
+playwright-report
+blob-report
