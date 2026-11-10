@@ -37,14 +37,24 @@ npm run dev                       # lance l'API (port 3000) et le front (port 51
 
 Ouvre http://localhost:5173 : la page indique si l'API et PostgreSQL répondent.
 
+Tant que l'API du Sprint 1 n'existe pas, le front peut tourner seul contre une API simulée :
+
+```bash
+npm run dev:mocks                 # front seul, API simulée (voir client/src/mocks/README.md)
+```
+
+Le contrat d'API attendu est dans `docs/api-sprint1.md`.
+
 ## Commandes
 
 | Commande | Rôle |
 |---|---|
 | `npm run dev` | API + front en mode développement |
 | `npm run dev:client` / `npm run dev:server` | un seul des deux |
+| `npm run dev:mocks` | front seul avec l'API simulée |
 | `npm run build` | build de production du front |
 | `npm run lint` | vérification du code du front |
+| `npm test` | tests du front (Vitest) |
 | `npm run db:up` / `npm run db:down` | démarrer / arrêter PostgreSQL |
 | `npm run db:migrate` | appliquer les nouvelles migrations de `server/migrations/` |
 
