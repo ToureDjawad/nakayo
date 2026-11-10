@@ -1,8 +1,8 @@
-# Contrat d'API · Sprint 1 (comptes et validation)
+# Schéma et contrat d'API · Sprint 1 (comptes et validation)
 
-Ce document décrit les routes dont le front web et l'app Android testeur ont besoin pour le Sprint 1 :
+Ce document décrit le schéma de la base (§7) et les routes de l'API (§1 à §6) du Sprint 1. Abdel est responsable du backend, Djawad en second : le document est validé à deux avant d'écrire les migrations et les routes. Le découpage du travail backend est au §9.
 
-| Story | Écrans (Djawad) | Routes |
+| Story | Écrans | Routes |
 |---|---|---|
 | US-05 | Inscription développeur, « vérifie ton email », « compte en attente » | [§2](#2-inscription-développeur-us-05) |
 | US-06 | Inscription testeur Android (SMS, profil, MoMo, photos, consentement) | [§4](#4-testeur-android-us-06-us-09-android) |
@@ -136,7 +136,7 @@ Renvoyé par toutes les routes d'authentification. Les champs dépendent du rôl
 - `motifRefus` : texte saisi par l'admin quand `statut = refuse`, sinon `null`.
 - Pour un testeur, voir l'objet `profilTesteur` au §4.4.
 
-Côté base, cela demande au minimum : `email_verifie_le`, `lien_fiche_developpeur`, `motif_refus`, `valide_par`, `decide_le` sur `utilisateurs`, `mot_de_passe_hash` rendu nullable (les testeurs n'ont pas de mot de passe), `email` rendu nullable (les testeurs s'identifient par téléphone), plus des tables pour les jetons, les codes SMS, les sessions, les profils testeurs, les contrôles et les demandes de changement MoMo. Le schéma exact reste à ton choix.
+Les tables correspondantes sont décrites au §7.
 
 ## 2. Inscription développeur (US-05)
 
@@ -297,7 +297,7 @@ En-tête `Authorization: Bearer <jetonInscription>`. Corps en `multipart/form-da
 |---|---|
 | 201 | `{ "jeton": "...", "utilisateur": { profilTesteur, "statut": "en_attente" } }` ; les contrôles US-07 sont lancés |
 | 401 `non_authentifie` | `jetonInscription` absent, faux ou expiré : l'app repart à l'étape du numéro |
-| 409 `conflit` | `champs.gmail` ou `champs.numeroMomo` = `deja_utilise` |
+| 409 `conflit` | `champs.gmail` ou `champs.numeroMomo` = `deja_utilise` (Gmail comparé sous forme normalisée, voir §7.3) |
 | 413 `fichier_trop_lourd` | `champs.pieceIdentite` ou `champs.selfie` |
 | 422 `validation` | `champs` |
 
@@ -450,7 +450,203 @@ Liste indicative ; les codes sont libres, le front affiche `libelle` et `detail`
 | testeur | `appareil_doublon` | Appareil utilisé par aucun autre compte (`appareil.identifiant`) |
 | testeur | `photos_presentes` | Pièce d'identité et selfie reçus |
 
-## 7. Récapitulatif des routes
+## 7. Schéma de la base de données
+
+### 7.1 Principes
+
+- Une migration par lot cohérent, numérotée à la suite de `001_init.sql`, qui n'est jamais modifiée (règle du README).
+- Les jetons (session, email, inscription SMS) et les codes SMS ne sont **jamais stockés en clair** : on stocke leur empreinte SHA-256 (`BYTEA`). Le jeton en clair n'existe que dans la réponse ou l'email.
+- Les mots de passe sont hachés avec argon2id (ou bcrypt, coût 12 minimum).
+- Les photos d'identité sont stockées hors de la base (disque privé en Sprint 1, stockage objet plus tard) ; la base garde le chemin, le type et la taille.
+- Dates en `TIMESTAMPTZ`. Les dates de décision et de vérification remplacent les booléens (`email_verifie_le` plutôt que `email_verifie`).
+- Les limites de requêtes (§1.3, 429) sont gardées en mémoire en Sprint 1, pas en base.
+
+### 7.2 Migration `002_comptes.sql` (US-05, US-09, US-08)
+
+```sql
+-- Les testeurs n'ont ni email ni mot de passe : ils s'identifient par téléphone.
+ALTER TABLE utilisateurs
+  ALTER COLUMN email DROP NOT NULL,
+  ALTER COLUMN mot_de_passe_hash DROP NOT NULL,
+  ADD COLUMN email_verifie_le TIMESTAMPTZ,
+  ADD COLUMN telephone_verifie_le TIMESTAMPTZ,
+  ADD COLUMN lien_fiche_developpeur TEXT,
+  ADD COLUMN motif_refus TEXT,
+  ADD COLUMN decide_par BIGINT REFERENCES utilisateurs(id),
+  ADD COLUMN decide_le TIMESTAMPTZ,
+  ADD COLUMN controles_termines_le TIMESTAMPTZ,
+  ADD CONSTRAINT identifiants_selon_role CHECK (
+    (role IN ('developpeur', 'admin') AND email IS NOT NULL AND mot_de_passe_hash IS NOT NULL)
+    OR (role = 'testeur' AND telephone IS NOT NULL)
+  ),
+  ADD CONSTRAINT motif_si_refus CHECK (statut <> 'refuse' OR motif_refus IS NOT NULL);
+
+CREATE UNIQUE INDEX utilisateurs_telephone_unique ON utilisateurs (telephone) WHERE telephone IS NOT NULL;
+CREATE INDEX utilisateurs_file_admin ON utilisateurs (statut, role, cree_le);
+CREATE UNIQUE INDEX utilisateurs_fiche_unique ON utilisateurs (lien_fiche_developpeur)
+  WHERE lien_fiche_developpeur IS NOT NULL AND statut <> 'refuse';
+
+CREATE TYPE client_session AS ENUM ('web', 'android');
+
+CREATE TABLE sessions (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  jeton_hash BYTEA NOT NULL UNIQUE,
+  client client_session NOT NULL,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expire_le TIMESTAMPTZ NOT NULL,          -- cree_le + 30 jours
+  utilisee_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revoquee_le TIMESTAMPTZ
+);
+CREATE INDEX sessions_utilisateur ON sessions (utilisateur_id) WHERE revoquee_le IS NULL;
+
+CREATE TYPE type_jeton_email AS ENUM ('verification_email', 'reinitialisation_mot_de_passe');
+
+CREATE TABLE jetons_email (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  type type_jeton_email NOT NULL,
+  jeton_hash BYTEA NOT NULL UNIQUE,
+  expire_le TIMESTAMPTZ NOT NULL,          -- 24 h (vérification) ou 1 h (réinitialisation)
+  utilise_le TIMESTAMPTZ,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TYPE decision_compte AS ENUM ('valide', 'refuse');
+
+-- Historique des décisions admin (US-08). Le statut courant reste dans utilisateurs.
+CREATE TABLE decisions_comptes (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  admin_id BIGINT NOT NULL REFERENCES utilisateurs(id),
+  decision decision_compte NOT NULL,
+  motif TEXT,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (decision = 'valide' OR motif IS NOT NULL)
+);
+```
+
+Valider ou refuser se fait dans une transaction avec `UPDATE utilisateurs SET statut = ... WHERE id = $1 AND statut = 'en_attente'` : si aucune ligne n'est modifiée, un autre admin a décidé avant, et l'API répond `409 statut_incompatible`.
+
+### 7.3 Migration `003_testeurs.sql` (US-06, US-09 Android, US-10)
+
+```sql
+CREATE TYPE operateur_momo AS ENUM ('mtn', 'moov');
+
+CREATE TABLE profils_testeurs (
+  utilisateur_id BIGINT PRIMARY KEY REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  ville TEXT NOT NULL,
+  gmail TEXT NOT NULL,
+  -- Gmail ignore les points et ce qui suit « + » : k.offi+test@gmail.com = koffi@gmail.com
+  gmail_normalise TEXT NOT NULL,
+  numero_momo TEXT NOT NULL,
+  operateur_momo operateur_momo NOT NULL,
+  langues TEXT[] NOT NULL DEFAULT '{}',
+  consentement_suivi_le TIMESTAMPTZ NOT NULL,
+  conditions_acceptees_le TIMESTAMPTZ NOT NULL
+);
+CREATE UNIQUE INDEX profils_gmail_unique ON profils_testeurs (gmail_normalise);
+CREATE UNIQUE INDEX profils_momo_unique ON profils_testeurs (numero_momo);
+
+CREATE TABLE appareils (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  identifiant TEXT NOT NULL,               -- identifiant propre à l'app, pas l'IMEI
+  fabricant TEXT,
+  modele TEXT NOT NULL,
+  version_android TEXT NOT NULL,
+  niveau_api INTEGER NOT NULL,
+  premiere_vue_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  derniere_vue_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (utilisateur_id, identifiant)
+);
+CREATE INDEX appareils_identifiant ON appareils (identifiant);
+
+CREATE TYPE type_document AS ENUM ('piece_identite', 'selfie');
+
+CREATE TABLE documents_identite (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  type type_document NOT NULL,
+  chemin TEXT NOT NULL,
+  type_mime TEXT NOT NULL CHECK (type_mime IN ('image/jpeg', 'image/png')),
+  taille_octets INTEGER NOT NULL CHECK (taille_octets <= 5242880),
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (utilisateur_id, type)
+);
+
+CREATE TABLE codes_sms (
+  id BIGSERIAL PRIMARY KEY,
+  telephone TEXT NOT NULL,
+  code_hash BYTEA NOT NULL,
+  expire_le TIMESTAMPTZ NOT NULL,          -- 10 min
+  tentatives SMALLINT NOT NULL DEFAULT 0,  -- invalidé à 5
+  utilise_le TIMESTAMPTZ,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX codes_sms_telephone ON codes_sms (telephone, cree_le DESC);
+
+-- Jeton remis après le code SMS d'un numéro inconnu (§4.2), valable 30 min.
+CREATE TABLE jetons_inscription (
+  id BIGSERIAL PRIMARY KEY,
+  telephone TEXT NOT NULL,
+  jeton_hash BYTEA NOT NULL UNIQUE,
+  appareil JSONB NOT NULL,
+  expire_le TIMESTAMPTZ NOT NULL,
+  utilise_le TIMESTAMPTZ,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TYPE statut_demande AS ENUM ('en_attente', 'acceptee', 'refusee');
+
+CREATE TABLE demandes_changement_momo (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  numero_momo TEXT NOT NULL,
+  operateur_momo operateur_momo NOT NULL,
+  motif TEXT NOT NULL,
+  statut statut_demande NOT NULL DEFAULT 'en_attente',
+  traitee_par BIGINT REFERENCES utilisateurs(id),
+  traitee_le TIMESTAMPTZ,
+  cree_le TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX demande_momo_unique_en_cours ON demandes_changement_momo (utilisateur_id)
+  WHERE statut = 'en_attente';
+```
+
+Les index uniques sur `gmail_normalise` et `numero_momo` produisent le `409 deja_utilise` de l'inscription (§4.3). Les contrôles US-07 couvrent ce que l'unicité ne voit pas : même appareil sur plusieurs comptes, numéro MoMo d'un compte refusé ou supprimé, titulaire MoMo différent du nom saisi.
+
+### 7.4 Migration `004_controles.sql` (US-07)
+
+```sql
+CREATE TYPE resultat_controle AS ENUM ('ok', 'alerte', 'echec', 'indisponible');
+
+CREATE TABLE controles_comptes (
+  id BIGSERIAL PRIMARY KEY,
+  utilisateur_id BIGINT NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  libelle TEXT NOT NULL,
+  resultat resultat_controle NOT NULL,
+  detail TEXT,
+  verifie_le TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (utilisateur_id, code)
+);
+```
+
+Les contrôles tournent après l'inscription (sans bloquer la réponse). Chaque contrôle écrit sa ligne ; quand tous sont passés, `utilisateurs.controles_termines_le` est renseigné. `controles.etat` vaut `termine` si cette date existe, sinon `en_cours`.
+
+### 7.5 Correspondance API et base
+
+| Champ API | Colonne |
+|---|---|
+| `utilisateur.emailVerifie` | `email_verifie_le IS NOT NULL` |
+| `utilisateur.motifRefus` | `utilisateurs.motif_refus` |
+| `profilTesteur.appareil` | ligne `appareils` la plus récente (`derniere_vue_le`) |
+| `profilTesteur.demandeChangementMomo` | ligne `demandes_changement_momo` en attente, ou `null` |
+| `compte.controles` | `controles_comptes` + `controles_termines_le` |
+| `compte.documents` | `documents_identite` (servis par la route §5.2, jamais en accès direct) |
+
+## 8. Récapitulatif des routes
 
 | Méthode | Route | Auth | Story |
 |---|---|---|---|
@@ -474,8 +670,26 @@ Liste indicative ; les codes sont libres, le front affiche `libelle` et `detail`
 | POST | `/api/admin/comptes/:id/validation` | cookie admin | US-08 |
 | POST | `/api/admin/comptes/:id/refus` | cookie admin | US-08 |
 
-## 8. Questions ouvertes
+## 9. Découpage du travail backend
+
+Chaque ligne est une branche et une PR à part, avec tests unitaires, d'intégration (API + PostgreSQL réel) et de bout en bout (front + API réelle) au vert avant la PR. On se répartit les lignes avant de commencer pour ne pas travailler à deux sur la même.
+
+| Ordre | Branche | Contenu | Dépend de |
+|---|---|---|---|
+| 1 | `chore/US-09-socle-api` | outillage de test du serveur (Vitest, Supertest, base de test), format d'erreur §1.3, limites de requêtes, envoi d'emails et de SMS derrière une interface (journal en développement) | |
+| 2 | `feature/US-09-api-sessions` | migration `002` (partie sessions et jetons), sessions 30 jours, cookie et Bearer, `connexion`, `deconnexion`, `moi`, mot de passe oublié | 1 |
+| 3 | `feature/US-05-api-inscription-dev` | `inscription`, `verification-email`, `renvoi` | 2 |
+| 4 | `feature/US-08-api-validation` | migration `002` (partie décisions), routes §5, envoi de la décision | 2 |
+| 5 | `feature/US-06-api-inscription-testeur` | migration `003`, codes SMS, jeton d'inscription, inscription testeur, stockage des photos | 2 |
+| 6 | `feature/US-10-api-profil-testeur` | profil, langues, appareil, demande de changement MoMo | 5 |
+| 7 | `feature/US-07-controles-automatiques` | migration `004`, contrôles du §6 | 3, 5 |
+
+Si deux branches touchent la même migration (lignes 2 et 4), la première fusionnée crée `002`, la suivante passe en `00X` suivante.
+
+## 10. Questions ouvertes
 
 1. Opérateurs : Celtiis existe aussi au Bénin ; on le garde hors liste pour le Sprint 1 ?
 2. Le premier compte admin est créé comment (script `npm run admin:creer` ou migration) ?
 3. Format de la pièce d'identité : une seule face suffit, ou recto et verso ?
+4. Hachage des mots de passe : argon2id (paquet `argon2`, compilation native) ou bcrypt (`bcryptjs`, pur JavaScript) ?
+5. Fournisseurs email et SMS pour le Bénin : lesquels, et qui ouvre les comptes ?
