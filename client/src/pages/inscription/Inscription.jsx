@@ -25,8 +25,8 @@ import { memoriserEmailEnAttente } from './emailEnAttente.js'
 function LienNouvelOnglet({ to, children }) {
   return (
     <Link to={to} target="_blank" rel="noopener" className="font-medium text-accent underline underline-offset-2">
-      {children}
-      <span className="sr-only"> (s’ouvre dans un nouvel onglet)</span>
+      {children}{' '}
+      <span className="sr-only">(s’ouvre dans un nouvel onglet)</span>
     </Link>
   )
 }
