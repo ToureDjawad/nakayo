@@ -81,11 +81,12 @@ Les contrôles automatiques doivent tous être verts avant la fusion :
 
 - « Workflow » : nom de la branche et titre de la PR
 - « Build » : lint, tests de l'API, tests du front (unitaires, intégration, E2E), build et migrations
+- « Android » : tests du noyau (dont la vraie API), tests et lint de l'app, builds, tests sur émulateur
 
 ## 5. Relire et fusionner
 
 - Au moins une approbation de l'autre membre de l'équipe
-- Les deux contrôles automatiques sont verts
+- Les trois contrôles automatiques sont verts
 - Le relecteur vérifie que les tests couvrent bien les critères d'acceptation
 - La branche est à jour avec `main`
 - Fusion en **Squash and merge**, puis suppression de la branche
@@ -104,5 +105,5 @@ Mettre à jour la carte Trello de la story (colonne « Terminé »).
 
 - Push direct interdit, même pour les administrateurs
 - Pull request obligatoire, avec une approbation
-- Contrôles obligatoires : « Workflow » et « Build »
+- Contrôles obligatoires : « Workflow », « Build » et « Android »
 - Pas de push forcé, pas de suppression de la branche

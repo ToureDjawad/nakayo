@@ -17,6 +17,7 @@ Nom de code : TestDev. Le nom « Nakayo » n'est pas encore définitif.
 nakayo/
 ├── client/               front web (React + Vite + Tailwind CSS)
 ├── server/               API (Node.js + Express)
+├── android/              app Android testeur (Kotlin + Jetpack Compose), voir android/README.md
 │   ├── migrations/       scripts SQL appliqués dans l'ordre
 │   └── src/
 ├── docker-compose.yml    PostgreSQL 16 pour le développement
