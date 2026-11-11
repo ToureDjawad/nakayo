@@ -46,6 +46,21 @@ data class ProfilTesteur(
     val creeLe: String,
 )
 
+// Formulaire d'inscription d'un testeur (§4.3). Les deux consentements doivent être donnés.
+data class FormulaireInscription(
+    val nom: String,
+    val ville: String,
+    val gmail: String,
+    val numeroMomo: String,
+    val operateurMomo: String,
+    val appareil: Appareil,
+    val consentementSuivi: Boolean,
+    val accepteConditions: Boolean,
+)
+
+// Photo prête à l'envoi (JPEG ou PNG, 5 Mo au plus côté serveur).
+class Photo(val octets: ByteArray, val typeMime: String = "image/jpeg")
+
 @Serializable
 data class EnvoiCode(val expireDans: Int, val renvoiPossibleDans: Int)
 
@@ -68,6 +83,18 @@ internal data class ReponseVerification(
 
 @Serializable
 internal data class ReponseUtilisateur(val utilisateur: ProfilTesteur)
+
+@Serializable
+internal data class ReponseSession(val jeton: String, val utilisateur: ProfilTesteur)
+
+@Serializable
+internal data class ReponseDemande(val demande: DemandeChangementMomo)
+
+@Serializable
+internal data class CorpsProfil(val langues: List<String>? = null, val appareil: Appareil? = null)
+
+@Serializable
+internal data class CorpsDemandeMomo(val numeroMomo: String, val operateurMomo: String, val motif: String)
 
 @Serializable
 internal data class CorpsEnvoi(val telephone: String)

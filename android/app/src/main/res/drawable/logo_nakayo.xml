@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Marque Nakayo : disque vert forêt, N tracé en ocre. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+    <path
+        android:fillColor="#15543F"
+        android:pathData="M0,14a14,14 0 1,0 28,0a14,14 0 1,0 -28,0" />
+    <path
+        android:pathData="M8,19V9.5l12,9V9"
+        android:strokeWidth="2.6"
+        android:strokeColor="#E3A33A"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

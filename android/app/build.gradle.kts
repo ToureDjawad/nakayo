@@ -73,10 +73,12 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
 
+    testImplementation(testFixtures(project(":noyau")))
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
 
+    androidTestImplementation(testFixtures(project(":noyau")))
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.ext.junit)

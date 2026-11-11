@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -22,14 +23,14 @@ class ApiNakayo(
     urlBase: String,
     private val stockage: StockageJeton,
     private val client: OkHttpClient = clientParDefaut(),
-) {
+) : ServiceTesteur {
     private val base: HttpUrl = urlBase.trimEnd('/').plus("/").toHttpUrl()
 
     // GET /api/health : l'API et la base répondent-elles ?
-    suspend fun sante(): Resultat<Sante> = appeler(requete("api/health").get(), Sante.serializer(), authentifie = false)
+    override suspend fun sante(): Resultat<Sante> = appeler(requete("api/health").get(), Sante.serializer(), authentifie = false)
 
     // §4.1 Envoi d'un code SMS à 6 chiffres.
-    suspend fun envoyerCode(telephone: String): Resultat<EnvoiCode> =
+    override suspend fun envoyerCode(telephone: String): Resultat<EnvoiCode> =
         appeler(
             requete("api/auth/sms/envoi").post(json(CorpsEnvoi.serializer(), CorpsEnvoi(telephone))),
             EnvoiCode.serializer(),
@@ -37,7 +38,7 @@ class ApiNakayo(
         )
 
     // §4.2 Vérification du code. Un numéro connu ouvre la session (jeton enregistré).
-    suspend fun verifierCode(telephone: String, code: String, appareil: Appareil): Resultat<ResultatVerification> {
+    override suspend fun verifierCode(telephone: String, code: String, appareil: Appareil): Resultat<ResultatVerification> {
         val corps = CorpsVerification(telephone, code, appareil)
         val reponse = appeler(
             requete("api/auth/sms/verification").post(json(CorpsVerification.serializer(), corps)),
@@ -61,17 +62,68 @@ class ApiNakayo(
         }
     }
 
+    // §4.3 Inscription avec le jeton remis après le code SMS. La session ouverte est gardée.
+    override suspend fun inscrire(
+        jetonInscription: String,
+        formulaire: FormulaireInscription,
+        pieceIdentite: Photo,
+        selfie: Photo,
+    ): Resultat<ProfilTesteur> {
+        val corps = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("nom", formulaire.nom)
+            .addFormDataPart("ville", formulaire.ville)
+            .addFormDataPart("gmail", formulaire.gmail)
+            .addFormDataPart("numeroMomo", formulaire.numeroMomo)
+            .addFormDataPart("operateurMomo", formulaire.operateurMomo)
+            .addFormDataPart("consentementSuivi", formulaire.consentementSuivi.toString())
+            .addFormDataPart("accepteConditions", formulaire.accepteConditions.toString())
+            .addFormDataPart("appareil", JSON.encodeToString(Appareil.serializer(), formulaire.appareil))
+            .addFormDataPart("pieceIdentite", nomFichier("piece-identite", pieceIdentite), photo(pieceIdentite))
+            .addFormDataPart("selfie", nomFichier("selfie", selfie), photo(selfie))
+            .build()
+        val requete = requete("api/testeurs/inscription").header("Authorization", "Bearer $jetonInscription").post(corps)
+        return when (val r = appeler(requete, ReponseSession.serializer(), authentifie = false)) {
+            is Resultat.Echec -> r
+            is Resultat.Succes -> {
+                stockage.ecrire(r.valeur.jeton)
+                Resultat.Succes(r.valeur.utilisateur)
+            }
+        }
+    }
+
     // §4.4 Profil du testeur connecté. Une session expirée efface le jeton gardé.
-    suspend fun moi(): Resultat<ProfilTesteur> =
+    override suspend fun moi(): Resultat<ProfilTesteur> =
         appeler(requete("api/testeurs/moi").get(), ReponseUtilisateur.serializer()).map { it.utilisateur }
 
+    // §4.4 Langues parlées et téléphone utilisé. Le numéro MoMo et le Gmail ne changent pas ici.
+    override suspend fun modifierProfil(langues: List<String>?, appareil: Appareil?): Resultat<ProfilTesteur> =
+        appeler(
+            requete("api/testeurs/moi").patch(json(CorpsProfil.serializer(), CorpsProfil(langues, appareil))),
+            ReponseUtilisateur.serializer(),
+        ).map { it.utilisateur }
+
+    // §4.4 Demande de changement de numéro Mobile Money, validée ensuite par l'équipe.
+    override suspend fun demanderChangementMomo(numeroMomo: String, operateurMomo: String, motif: String): Resultat<DemandeChangementMomo> =
+        appeler(
+            requete("api/testeurs/moi/demande-changement-momo")
+                .post(json(CorpsDemandeMomo.serializer(), CorpsDemandeMomo(numeroMomo, operateurMomo, motif))),
+            ReponseDemande.serializer(),
+        ).map { it.demande }
+
     // §3.2 Déconnexion : le jeton local est effacé même si le serveur ne répond pas.
-    suspend fun deconnecter() {
+    override suspend fun deconnecter() {
         appeler<Unit>(requete("api/auth/deconnexion").post(ByteArray(0).toRequestBody(null)), null)
         stockage.effacer()
     }
 
+    override suspend fun sessionOuverte(): Boolean = stockage.lire() != null
+
     private fun requete(chemin: String) = Request.Builder().url(base.resolve(chemin)!!).header("Accept", "application/json")
+
+    private fun photo(photo: Photo): RequestBody = photo.octets.toRequestBody(photo.typeMime.toMediaType())
+
+    private fun nomFichier(nom: String, photo: Photo) = if (photo.typeMime == "image/png") "$nom.png" else "$nom.jpg"
 
     private fun <T> json(serialiseur: KSerializer<T>, valeur: T): RequestBody =
         JSON.encodeToString(serialiseur, valeur).toRequestBody(TYPE_JSON)

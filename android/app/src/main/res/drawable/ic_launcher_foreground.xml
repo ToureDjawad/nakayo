@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lettre N blanche, dans la zone sûre (66 dp centrés) de l'icône adaptative de 108 dp. -->
+<!-- N ocre de la marque, sur le fond vert forêt de l'icône adaptative (72 dp visibles sur 108). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M38,34h8l16,24.5V34h8v40h-8L46,49.5V74h-8z" />
+    <group
+        android:scaleX="2.5714"
+        android:scaleY="2.5714"
+        android:translateX="18"
+        android:translateY="18">
+        <path
+            android:pathData="M8,19V9.5l12,9V9"
+            android:strokeWidth="2.6"
+            android:strokeColor="#E3A33A"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
 </vector>

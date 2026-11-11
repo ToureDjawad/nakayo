@@ -26,8 +26,9 @@ class EcranAccueilTest {
     fun afficheLErreurEtLeBoutonReessayer() {
         var essais = 0
         var etat by mutableStateOf<EtatAccueil>(EtatAccueil.Indisponible("Pas de connexion au serveur."))
-        compose.setContent { NakayoTheme { EcranAccueil(etat, surReessayer = { essais++; etat = EtatAccueil.Chargement }) } }
-
+        compose.setContent {
+            NakayoTheme { EcranAccueil(etat, surReessayer = { essais++; etat = EtatAccueil.Chargement }, surCreerCompte = {}, surConnexion = {}) }
+        }
         compose.onNodeWithText("Pas de connexion au serveur.").assertIsDisplayed()
         compose.onNodeWithText("Réessayer").performClick()
         assertEquals(1, essais)
@@ -35,9 +36,23 @@ class EcranAccueilTest {
     }
 
     @Test
-    fun afficheLeServiceDisponible() {
-        compose.setContent { NakayoTheme { EcranAccueil(EtatAccueil.Disponible, surReessayer = {}) } }
-        compose.onNodeWithText("Nakayo").assertIsDisplayed()
-        compose.onNodeWithText("Le service est disponible.").assertIsDisplayed()
+    fun serviceDisponibleCreationOuConnexion() {
+        var choix = ""
+        compose.setContent {
+            NakayoTheme {
+                EcranAccueil(
+                    EtatAccueil.Disponible,
+                    surReessayer = {},
+                    surCreerCompte = { choix += "creation;" },
+                    surConnexion = { choix += "connexion;" },
+                    information = "Vous êtes déconnecté.",
+                )
+            }
+        }
+        compose.onNodeWithText("Vous êtes déconnecté.").assertIsDisplayed()
+        compose.onNodeWithText("soyez payé en MoMo", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Créer mon compte").performClick()
+        compose.onNodeWithText("J'ai déjà un compte").performClick()
+        assertEquals("creation;connexion;", choix)
     }
 }

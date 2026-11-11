@@ -140,4 +140,46 @@ class ApiReelleTest {
         assertEquals("non_authentifie", erreur.code)
         assertNull(stockage.lire())
     }
+
+    @Test
+    fun `inscription complète avec photos, puis langues et demande de changement MoMo`() = runBlocking<Unit> {
+        val stockage = StockageJetonMemoire()
+        val api = ApiNakayo(url, stockage)
+        val telephone = nouveauNumero()
+        api.envoyerCode(telephone)
+        val verification = (api.verifierCode(telephone, dernierCode(telephone), appareil) as Resultat.Succes).valeur
+        val jetonInscription = assertIs<ResultatVerification.Inscription>(verification).jetonInscription
+
+        // Le serveur vérifie la signature JPEG, pas le contenu de l'image.
+        val jpeg = Photo(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte()) + ByteArray(200))
+        val formulaire = FormulaireInscription(
+            nom = "Afi Dossou",
+            ville = "Cotonou",
+            gmail = "afi.${Random.nextLong(1_000_000L, 9_999_999L)}@gmail.com",
+            numeroMomo = telephone,
+            operateurMomo = "mtn",
+            appareil = appareil,
+            consentementSuivi = true,
+            accepteConditions = true,
+        )
+        val profil = (api.inscrire(jetonInscription, formulaire, jpeg, jpeg) as Resultat.Succes).valeur
+        assertEquals("en_attente", profil.statut)
+        assertEquals(telephone, profil.numeroMomo)
+        assertNotNull(stockage.lire())
+
+        // Le jeton d'inscription ne sert qu'une fois.
+        val rejoue = (api.inscrire(jetonInscription, formulaire, jpeg, jpeg) as Resultat.Echec).erreur as ErreurApi.Http
+        assertEquals(401, rejoue.statut)
+        assertNotNull(stockage.lire())
+
+        val modifie = (api.modifierProfil(langues = listOf("fr", "fon")) as Resultat.Succes).valeur
+        assertEquals(listOf("fr", "fon"), modifie.langues)
+
+        val demande = (api.demanderChangementMomo(nouveauNumero(), "moov", "Je change de puce Mobile Money") as Resultat.Succes).valeur
+        assertEquals("en_attente", demande.statut)
+        assertEquals(demande.id, (api.moi() as Resultat.Succes).valeur.demandeChangementMomo?.id)
+
+        val doublon = (api.demanderChangementMomo(nouveauNumero(), "moov", "Une seconde demande") as Resultat.Echec).erreur as ErreurApi.Http
+        assertEquals("statut_incompatible", doublon.code)
+    }
 }

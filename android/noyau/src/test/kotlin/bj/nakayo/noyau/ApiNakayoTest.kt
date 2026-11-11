@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 // Le client contre un faux serveur HTTP : forme des requêtes, lecture des réponses et des erreurs.
 class ApiNakayoTest {
@@ -130,5 +131,71 @@ class ApiNakayoTest {
         serveur.shutdown()
         api.deconnecter()
         assertNull(stockage.lire())
+    }
+
+    private val formulaire = FormulaireInscription(
+        nom = "Koffi Agbo",
+        ville = "Cotonou",
+        gmail = "koffi.agbo@gmail.com",
+        numeroMomo = "+2290197000000",
+        operateurMomo = "mtn",
+        appareil = appareil,
+        consentementSuivi = true,
+        accepteConditions = true,
+    )
+
+    @Test
+    fun `inscription en multipart avec le jeton d'inscription, session gardée`() = runTest {
+        repondre(201, """{"jeton":"jeton-session","utilisateur":$profil}""")
+        val piece = Photo(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 1))
+        val selfie = Photo(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 2))
+        val resultat = api.inscrire("jeton-inscription", formulaire, piece, selfie)
+        assertEquals("Koffi Agbo", (resultat as Resultat.Succes).valeur.nom)
+        assertEquals("jeton-session", stockage.lire())
+
+        val requete = serveur.takeRequest()
+        assertEquals("/api/testeurs/inscription", requete.path)
+        assertEquals("Bearer jeton-inscription", requete.getHeader("Authorization"))
+        assertTrue(requete.getHeader("Content-Type")!!.startsWith("multipart/form-data; boundary="))
+        val corps = requete.body.readUtf8()
+        for (champ in listOf("nom", "ville", "gmail", "numeroMomo", "operateurMomo", "consentementSuivi", "accepteConditions", "appareil")) {
+            assertTrue(corps.contains("name=\"$champ\""), "champ $champ absent")
+        }
+        assertTrue(corps.contains("name=\"pieceIdentite\"; filename=\"piece-identite.jpg\""))
+        assertTrue(corps.contains("name=\"selfie\"; filename=\"selfie.jpg\""))
+        assertTrue(corps.contains("Content-Type: image/jpeg"))
+        assertTrue(corps.contains(""""identifiant":"app-8f3c2b1a9d""""))
+    }
+
+    @Test
+    fun `inscription refusée, jeton d'inscription expiré, rien n'est gardé`() = runTest {
+        repondre(401, """{"erreur":{"code":"non_authentifie","message":"Session expirée."}}""")
+        val photo = Photo(byteArrayOf(1, 2, 3))
+        val erreur = (api.inscrire("perime", formulaire, photo, photo) as Resultat.Echec).erreur as ErreurApi.Http
+        assertEquals("non_authentifie", erreur.code)
+        assertNull(stockage.lire())
+    }
+
+    @Test
+    fun `modification des langues en PATCH, sans champ vide`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(200, """{"utilisateur":$profil}""")
+        assertIs<Resultat.Succes<ProfilTesteur>>(api.modifierProfil(langues = listOf("fr", "fon")))
+        val requete = serveur.takeRequest()
+        assertEquals("PATCH", requete.method)
+        assertEquals("/api/testeurs/moi", requete.path)
+        assertEquals("Bearer jeton-secret", requete.getHeader("Authorization"))
+        assertEquals("""{"langues":["fr","fon"]}""", requete.body.readUtf8())
+    }
+
+    @Test
+    fun `demande de changement de numéro Mobile Money`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(201, """{"demande":{"id":"5","numeroMomo":"+2290196000000","operateurMomo":"moov","statut":"en_attente","creeLe":"2026-11-11T10:00:00.000Z"}}""")
+        val demande = (api.demanderChangementMomo("+2290196000000", "moov", "Nouveau numéro professionnel") as Resultat.Succes).valeur
+        assertEquals("en_attente", demande.statut)
+        val requete = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/demande-changement-momo", requete.path)
+        assertEquals("""{"numeroMomo":"+2290196000000","operateurMomo":"moov","motif":"Nouveau numéro professionnel"}""", requete.body.readUtf8())
     }
 }
