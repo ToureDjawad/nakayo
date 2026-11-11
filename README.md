@@ -32,6 +32,7 @@ npm install                       # installe le front et l'API
 cp server/.env.example server/.env
 npm run db:up                     # démarre PostgreSQL dans Docker
 npm run db:migrate                # crée les tables
+npm run admin:creer -w @nakayo/server -- --email toi@exemple.bj   # premier compte admin
 npm run dev                       # lance l'API (port 3000) et le front (port 5173)
 ```
 
@@ -47,6 +48,7 @@ Ouvre http://localhost:5173 : la page indique si l'API et PostgreSQL répondent.
 | `npm run lint` | vérification du code du front |
 | `npm run db:up` / `npm run db:down` | démarrer / arrêter PostgreSQL |
 | `npm run db:migrate` | appliquer les nouvelles migrations de `server/migrations/` |
+| `npm run admin:creer -w @nakayo/server -- --email ... [--nom ...]` | créer un compte admin (ou changer son mot de passe) ; le mot de passe est demandé au clavier |
 | `npm run db:test:up` | démarrer la base PostgreSQL jetable des tests de l'API (port 5433) |
 | `npm run test:server` | tests de l'API : unitaires, intégration et bout en bout, sur la base de test |
 
@@ -61,6 +63,8 @@ Pour modifier la base, ajoute un fichier `server/migrations/00X_description.sql`
 | `server/tests/e2e/` | vrai serveur démarré (`node src/index.js`), parcours complets en HTTP |
 
 La base de test (`DATABASE_URL_TEST`, par défaut `postgres://nakayo:nakayo@localhost:5433/nakayo_test`) est **vidée** à chaque lancement ; son nom doit contenir « test ». Les emails et SMS ne partent nulle part en développement et en test : ils sont écrits dans le journal du serveur.
+
+Les mots de passe sont hachés avec scrypt (module `crypto` de Node, sans dépendance native). Les jetons de session et des liens envoyés par email ne sont stockés que sous forme d'empreinte SHA-256.
 
 ## Équipe
 
