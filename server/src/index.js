@@ -1,7 +1,8 @@
-import { app } from './app.js'
+import { creerApp } from './app.js'
+import { lireConfig } from './config.js'
 
-const port = Number(process.env.PORT ?? 3000)
+const { port } = lireConfig()
 
-app.listen(port, () => {
+creerApp().listen(port, () => {
   console.log(`API Nakayo démarrée sur http://localhost:${port}`)
 })
