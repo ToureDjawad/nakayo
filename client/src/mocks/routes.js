@@ -25,11 +25,14 @@ function utilisateurConnecte() {
   return b.utilisateurs.find((u) => u.id === b.sessionId) ?? null
 }
 
-function creerJeton(type, utilisateurId) {
+function creerJeton(type, utilisateurId, dureeMs = 24 * 3600 * 1000) {
   const jeton = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
-  base().jetons[jeton] = { type, utilisateurId, expireLe: Date.now() + 24 * 3600 * 1000 }
+  base().jetons[jeton] = { type, utilisateurId, expireLe: Date.now() + dureeMs }
   return jeton
 }
+
+// Échecs de connexion par email : 5 en 15 minutes donnent un 429.
+const echecsConnexion = new Map()
 
 const derniersRenvois = new Map()
 
@@ -183,6 +186,77 @@ export const routes = [
         console.info(`[mocks] Nouvel email de vérification pour ${email} : ${location.origin}/verification-email?jeton=${jeton}`)
       }
       return ok({}, 202)
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/auth/connexion',
+    traiter({ corps }) {
+      const special = scenario(corps?.email)
+      if (special) return special
+      const email = (corps?.email ?? '').trim().toLowerCase()
+      const champs = {}
+      const e = validerEmail(email)
+      if (e) champs.email = e
+      if (!corps?.motDePasse) champs.motDePasse = 'requis'
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+
+      const maintenant = Date.now()
+      const echecs = (echecsConnexion.get(email) ?? []).filter((t) => maintenant - t < 15 * 60000)
+      if (echecs.length >= 5) {
+        return erreur(429, 'trop_de_requetes', { retryAfter: Math.ceil((15 * 60000 - (maintenant - echecs[0])) / 1000) })
+      }
+
+      const b = base()
+      const utilisateur = b.utilisateurs.find((u) => u.email === email && u.role !== 'testeur')
+      if (!utilisateur || utilisateur.motDePasse !== corps.motDePasse) {
+        echecsConnexion.set(email, [...echecs, maintenant])
+        return erreur(401, 'identifiants_invalides')
+      }
+      echecsConnexion.delete(email)
+      if (!utilisateur.emailVerifie) return erreur(403, 'email_non_verifie')
+      if (utilisateur.statut === 'suspendu') return erreur(403, 'compte_suspendu')
+      b.sessionId = utilisateur.id
+      sauver()
+      return ok({ utilisateur: publique(utilisateur) })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/auth/mot-de-passe/oubli',
+    traiter({ corps }) {
+      const special = scenario(corps?.email)
+      if (special) return special
+      const email = (corps?.email ?? '').trim().toLowerCase()
+      const e = validerEmail(email)
+      if (e) return erreur(422, 'validation', { champs: { email: e } })
+      const utilisateur = base().utilisateurs.find((u) => u.email === email && u.role !== 'testeur')
+      if (utilisateur) {
+        const jeton = creerJeton('reinitialisation', utilisateur.id, 3600 * 1000)
+        sauver()
+        console.info(`[mocks] Email de réinitialisation pour ${email} : ${location.origin}/reinitialiser-mot-de-passe?jeton=${jeton}`)
+      }
+      return ok({}, 202)
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/auth/mot-de-passe/reinitialisation',
+    traiter({ corps }) {
+      if (corps?.jeton === 'expire') return erreur(410, 'jeton_expire')
+      const b = base()
+      const entree = b.jetons[corps?.jeton]
+      if (!entree || entree.type !== 'reinitialisation') return erreur(400, 'jeton_invalide')
+      if (entree.expireLe < Date.now()) return erreur(410, 'jeton_expire')
+      const code = validerMotDePasse(corps?.motDePasse ?? '')
+      if (code) return erreur(422, 'validation', { champs: { motDePasse: code } })
+      const utilisateur = b.utilisateurs.find((u) => u.id === entree.utilisateurId)
+      utilisateur.motDePasse = corps.motDePasse
+      delete b.jetons[corps.jeton]
+      // Toutes les sessions sont fermées.
+      if (b.sessionId === utilisateur.id) b.sessionId = null
+      sauver()
+      return vide()
     },
   },
   {

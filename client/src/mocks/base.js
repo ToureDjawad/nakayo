@@ -2,7 +2,7 @@
 // pour survivre aux rechargements. Réinitialiser : nakayoMocks.reinitialiser() dans la console.
 import { comptesDemo } from './comptesDemo.js'
 
-const CLE = 'nakayo:mocks:v2'
+const CLE = 'nakayo:mocks:v3'
 
 function maintenant(decalageJours = 0) {
   return new Date(Date.now() + decalageJours * 86400000).toISOString()
@@ -52,6 +52,32 @@ function donneesInitiales() {
         lienFicheDeveloppeur: 'https://play.google.com/store/apps/dev?id=5550000000000000002',
         motifRefus: 'La fiche Google Play indiquée ne correspond pas au nom de développeur saisi.',
         creeLe: maintenant(-5),
+      },
+      {
+        id: '4',
+        role: 'developpeur',
+        statut: 'en_attente',
+        emailVerifie: false,
+        email: 'nonverifie@exemple.com',
+        motDePasse: 'motdepasse-nonverifie',
+        nom: 'Exemple Non Vérifié',
+        pays: 'BJ',
+        lienFicheDeveloppeur: 'https://play.google.com/store/apps/dev?id=5550000000000000004',
+        motifRefus: null,
+        creeLe: maintenant(-1),
+      },
+      {
+        id: '5',
+        role: 'developpeur',
+        statut: 'suspendu',
+        emailVerifie: true,
+        email: 'suspendu@exemple.com',
+        motDePasse: 'motdepasse-suspendu',
+        nom: 'Exemple Suspendu',
+        pays: 'BJ',
+        lienFicheDeveloppeur: 'https://play.google.com/store/apps/dev?id=5550000000000000005',
+        motifRefus: null,
+        creeLe: maintenant(-40),
       },
       ...comptesDemo(),
     ],

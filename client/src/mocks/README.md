@@ -10,7 +10,7 @@ Pour le retirer : supprimer ce dossier et le bloc marqué dans `src/main.jsx`.
 - `routes.js` contient les routes simulées ; `base.js` les données, gardées dans le `localStorage` (clé `nakayo:mocks`).
 - Chaque réponse arrive après 600 ms pour voir les états de chargement.
 - Remise à zéro des données : `nakayoMocks.reinitialiser()` dans la console du navigateur.
-- Ouvrir une session sans écran de connexion : `nakayoMocks.connecter('admin@nakayo.test')` dans la console, puis recharger.
+- Ouvrir une session sans passer par `/connexion` : `nakayoMocks.connecter('admin@nakayo.test')` dans la console, puis recharger.
 
 ## Comptes de départ
 
@@ -19,6 +19,8 @@ Pour le retirer : supprimer ce dossier et le bloc marqué dans `src/main.jsx`.
 | `admin@nakayo.test` | `admin-nakayo-2026` | admin |
 | `valide@exemple.com` | `motdepasse-valide` | développeur validé |
 | `refuse@exemple.com` | `motdepasse-refuse` | développeur refusé |
+| `nonverifie@exemple.com` | `motdepasse-nonverifie` | développeur dont l'email n'est pas confirmé |
+| `suspendu@exemple.com` | `motdepasse-suspendu` | développeur suspendu |
 
 ## Scénarios
 
@@ -36,7 +38,7 @@ Pour le retirer : supprimer ce dossier et le bloc marqué dans `src/main.jsx`.
 
 ### Back-office (US-08)
 
-Se connecter en admin (`nakayoMocks.connecter('admin@nakayo.test')`), puis ouvrir `/admin/comptes`.
+Se connecter en admin sur `/connexion` (`admin@nakayo.test`), on arrive sur `/admin/comptes`.
 
 | Compte | Cas montré |
 |---|---|
@@ -48,3 +50,14 @@ Se connecter en admin (`nakayoMocks.connecter('admin@nakayo.test')`), puis ouvri
 | Sèna Ahouansou, Abdou Salami | échecs (numéro MoMo en double, selfie illisible) |
 | Carine Tossou | valider ou refuser renvoie « déjà traité par un autre administrateur » (409) |
 | Se connecter en développeur (`valide@exemple.com`) | page refusée (403) |
+
+### Connexion et mot de passe (US-09)
+
+| Action | Résultat |
+|---|---|
+| Mauvais mot de passe | « Adresse email ou mot de passe incorrect », champ mot de passe vidé |
+| 5 échecs en 15 minutes pour la même adresse | 429, délai affiché |
+| `nonverifie@exemple.com` | email non confirmé, avec renvoi du lien |
+| `suspendu@exemple.com` | compte suspendu |
+| Mot de passe oublié | le lien de réinitialisation est écrit dans la console du navigateur |
+| `/reinitialiser-mot-de-passe?jeton=expire` | lien expiré |
