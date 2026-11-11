@@ -118,6 +118,7 @@ export function routesInscription(deps) {
     }
 
     limites.inscriptionIp.compter(req.ip)
+    deps.apresInscription?.(resultat.utilisateur.id)
     await envoyerSansBloquer(resultat.message)
     res.status(201).json({ utilisateur: versUtilisateurApi(resultat.utilisateur) })
   })

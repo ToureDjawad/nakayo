@@ -7,8 +7,13 @@ import { creerMessagerieJournal } from '../src/services/messagerie.js'
 
 const silencieux = { info() {}, log() {}, warn() {}, error() {} }
 
+// Applications de test créées dans ce fichier : leurs contrôles automatiques tournent en
+// arrière-plan et doivent finir avant de vider la base (sinon interblocage avec TRUNCATE).
+const applications = new Set()
+
 // Vide toutes les tables (sauf l'historique des migrations) entre deux tests.
 export async function viderBase() {
+  await Promise.all([...applications].map((app) => app.locals.deps.controles.attendre()))
   const { rows } = await pool.query(
     "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'schema_migrations'",
   )
@@ -31,9 +36,12 @@ export function creerAppTest({ maintenant, journal = silencieux, config } = {}) 
     config: { dossierDocuments: mkdtempSync(path.join(tmpdir(), 'nakayo-documents-')), ...config },
     maintenant: () => (horloge.date ? new Date(horloge.date) : new Date()),
   })
+  applications.add(app)
   return {
     app,
     dossierDocuments: app.locals.deps.config.dossierDocuments,
+    // Attend la fin des contrôles automatiques lancés en arrière-plan.
+    attendreControles: () => app.locals.deps.controles.attendre(),
     emails,
     sms,
     // Avance l'horloge de l'application (ex. pour tester l'expiration d'un lien).

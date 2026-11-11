@@ -1,3 +1,4 @@
+import { once } from 'node:events'
 import { Router } from 'express'
 import multer from 'multer'
 import { ErreurHttp, nonAuthentifie } from '../lib/erreurs.js'
@@ -67,14 +68,21 @@ export function routesTesteurs(deps) {
   routeur.post('/inscription', async (req, res) => {
     const autorisation = req.headers.authorization ?? ''
     const jetonInscription = autorisation.startsWith('Bearer ') ? autorisation.slice(7).trim() : ''
-    if (!jetonInscription) throw nonAuthentifie()
     const instant = maintenant()
-    const { rows: jetons } = await pool.query(
-      `SELECT id, telephone, appareil FROM jetons_inscription
-        WHERE jeton_hash = $1 AND utilise_le IS NULL AND expire_le > $2`,
-      [hacherJeton(jetonInscription), instant],
-    )
-    if (!jetons.length) throw nonAuthentifie()
+    const { rows: jetons } = jetonInscription
+      ? await pool.query(
+          `SELECT id, telephone, appareil FROM jetons_inscription
+            WHERE jeton_hash = $1 AND utilise_le IS NULL AND expire_le > $2`,
+          [hacherJeton(jetonInscription), instant],
+        )
+      : { rows: [] }
+    if (!jetons.length) {
+      // Lire la fin de l'envoi avant de répondre : sinon l'app reçoit une connexion coupée
+      // au lieu du 401 qui lui dit de repartir à l'étape du numéro.
+      req.resume()
+      if (!req.readableEnded) await once(req, 'end')
+      throw nonAuthentifie()
+    }
 
     if (!req.is('multipart/form-data')) {
       throw new ErreurHttp(422, 'validation', { message: 'Formulaire multipart attendu.', champs: { formulaire: 'format_invalide' } })
