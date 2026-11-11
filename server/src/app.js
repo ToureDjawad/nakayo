@@ -3,6 +3,9 @@ import express from 'express'
 import { lireConfig } from './config.js'
 import { pool as poolParDefaut } from './db/pool.js'
 import { gestionnaireErreurs, introuvable } from './lib/erreurs.js'
+import { creerLimitesApi } from './lib/limitesApi.js'
+import { chargerSession } from './middlewares/authentification.js'
+import { routesAuth } from './routes/auth.js'
 import { health } from './routes/health.js'
 import { creerMessagerieJournal } from './services/messagerie.js'
 
@@ -18,6 +21,7 @@ export function creerApp(dependances = {}) {
     maintenant: dependances.maintenant ?? (() => new Date()),
     journal: dependances.journal ?? console,
   }
+  deps.limites = dependances.limites ?? creerLimitesApi(deps.maintenant)
 
   const app = express()
   app.disable('x-powered-by')
@@ -28,6 +32,8 @@ export function creerApp(dependances = {}) {
   app.use(express.json({ limit: '100kb' }))
 
   app.use('/api/health', health(deps))
+  app.use('/api', chargerSession(deps))
+  app.use('/api/auth', routesAuth(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))
