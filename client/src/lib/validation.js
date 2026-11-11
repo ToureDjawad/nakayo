@@ -78,3 +78,9 @@ export function validerPeriode(du, au) {
   if (du && au && du > au) return { au: 'avant_debut' }
   return {}
 }
+
+// Confirmation du nouveau mot de passe (réinitialisation).
+export function validerConfirmation(valeur, valeurs) {
+  if (!valeur) return 'requis'
+  return valeur === valeurs.motDePasse ? null : 'different'
+}
