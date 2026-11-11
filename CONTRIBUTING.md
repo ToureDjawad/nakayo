@@ -46,9 +46,9 @@ Une fonctionnalité n'est terminée que si elle est couverte par les trois nivea
 
 | Niveau | Ce qu'il vérifie | Outil | Où |
 |---|---|---|---|
-| Unitaire | une fonction, un composant ou une route isolés, sans base ni réseau (dépendances simulées) | Vitest, Testing Library | `client/src/**/*.test.jsx`, `server/tests/unit/` |
-| Intégration | l'API avec une vraie base PostgreSQL de test : requêtes SQL, contraintes, migrations | Vitest + Supertest | `server/tests/integration/` |
-| E2E | le parcours complet de l'utilisateur dans un vrai navigateur, front + API + base | Playwright | `e2e/` |
+| Unitaire | une fonction, un composant ou un module isolés, sans base ni réseau | Vitest, Testing Library | `client/tests/unit/`, `server/tests/unit/` |
+| Intégration | front : écrans complets avec l'API simulée ; API : routes avec une vraie base PostgreSQL de test | Vitest, Testing Library, Supertest | `client/tests/integration/`, `server/tests/integration/` |
+| E2E | front : parcours dans un vrai navigateur ; API : vrai serveur démarré avec `node src/index.js` | Playwright, Vitest | `client/tests/e2e/`, `server/tests/e2e/` |
 
 Ce qu'on attend pour chaque story :
 
@@ -59,13 +59,14 @@ Ce qu'on attend pour chaque story :
 Lancer les tests en local avant d'ouvrir la PR :
 
 ```bash
-npm run test:unit          # rapide, sans base
-npm run test:integration   # base nakayo_test (DATABASE_URL_TEST), vidée à chaque lancement
-npm run test:e2e           # démarre l'API et le front puis ouvre Chromium
-npm test                   # les trois à la suite
+npm run db:test:up     # une fois : base PostgreSQL de test (port 5433), vidée à chaque lancement
+npm run test:server    # API : unitaires, intégration et bout en bout
+npm run test:client    # front : unitaires et intégration
+npm run test:e2e       # front : parcours Playwright (API simulée)
+npm test               # front puis API
 ```
 
-Première fois pour l'E2E : `npx playwright install chromium`. Pour l'intégration, créer la base de test une fois : `createdb -U nakayo nakayo_test` (ou via Docker : `docker compose exec db createdb -U nakayo nakayo_test`).
+Première fois pour l'E2E du front : `npx playwright install chromium` dans `client/`. Les parcours du front sur la vraie API, hors CI, sont décrits dans `client/tests/reel/README.md`.
 
 Un test qui échoue ne se désactive pas et ne se supprime pas pour faire passer la CI : on corrige le code ou le test.
 
@@ -79,15 +80,12 @@ Un test qui échoue ne se désactive pas et ne se supprime pas pour faire passer
 Les contrôles automatiques doivent tous être verts avant la fusion :
 
 - « Workflow » : nom de la branche et titre de la PR
-- « Lint et build »
-- « Tests unitaires »
-- « Tests d'intégration »
-- « Tests E2E »
+- « Build » : lint, tests de l'API, tests du front (unitaires, intégration, E2E), build et migrations
 
 ## 5. Relire et fusionner
 
 - Au moins une approbation de l'autre membre de l'équipe
-- Les cinq contrôles automatiques sont verts
+- Les deux contrôles automatiques sont verts
 - Le relecteur vérifie que les tests couvrent bien les critères d'acceptation
 - La branche est à jour avec `main`
 - Fusion en **Squash and merge**, puis suppression de la branche
@@ -106,5 +104,5 @@ Mettre à jour la carte Trello de la story (colonne « Terminé »).
 
 - Push direct interdit, même pour les administrateurs
 - Pull request obligatoire, avec une approbation
-- Contrôles obligatoires : « Workflow », « Lint et build », « Tests unitaires », « Tests d'intégration », « Tests E2E »
+- Contrôles obligatoires : « Workflow » et « Build »
 - Pas de push forcé, pas de suppression de la branche

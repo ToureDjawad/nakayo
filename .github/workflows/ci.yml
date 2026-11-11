@@ -6,66 +6,9 @@ on:
   push:
     branches: [main]
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
-    name: Lint et build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
-
-  unit:
-    name: Tests unitaires
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run test:unit
-
-  integration:
-    name: Tests d'intégration
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: nakayo
-          POSTGRES_PASSWORD: nakayo
-          POSTGRES_DB: nakayo_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U nakayo"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      DATABASE_URL_TEST: postgres://nakayo:nakayo@localhost:5432/nakayo_test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run test:integration
-
-  e2e:
-    name: Tests E2E
+    name: Build
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -83,6 +26,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://nakayo:nakayo@localhost:5432/nakayo
+      DATABASE_URL_TEST: postgres://nakayo:nakayo@localhost:5432/nakayo_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -90,13 +34,27 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run db:migrate
-      - run: npm run test:e2e
-      - name: Rapport Playwright en cas d'échec
+      - name: Lint du front et de l'API
+        run: npm run lint
+      - name: Base de test de l'API
+        run: PGPASSWORD=nakayo psql -h localhost -U nakayo -d nakayo -c 'CREATE DATABASE nakayo_test'
+      - name: Tests de l'API (unitaires, intégration, bout en bout)
+        run: npm run test:server
+      - name: Tests unitaires et d'intégration du front
+        run: npm run test -w @nakayo/client
+      - name: Navigateur des tests de bout en bout
+        run: npx playwright install --with-deps chromium
+        working-directory: client
+      - name: Tests de bout en bout du front
+        run: npm run test:e2e
+      - name: Rapport des tests de bout en bout
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: rapport-playwright
-          path: playwright-report/
+          path: client/playwright-report
           retention-days: 7
+      - name: Build du front
+        run: npm run build
+      - name: Migrations PostgreSQL
+        run: npm run db:migrate

@@ -12,7 +12,9 @@ build/
 .gradle/
 local.properties
 
-# Rapports de tests
-playwright-report/
+# Résultats de tests
 test-results/
-coverage/
+playwright-report/
+
+# Photos d'identité stockées en local (jamais dans le dépôt)
+server/stockage/

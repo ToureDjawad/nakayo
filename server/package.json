@@ -6,17 +6,22 @@
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env src/index.js",
     "start": "node --env-file-if-exists=.env src/index.js",
-    "migrate": "node --env-file-if-exists=.env src/db/cli-migrate.js",
-    "test": "vitest run --project unit",
-    "test:unit": "vitest run --project unit",
-    "test:integration": "vitest run --project integration"
+    "migrate": "node --env-file-if-exists=.env src/db/migrate.js",
+    "admin:creer": "node --env-file-if-exists=.env src/scripts/creer-admin.js",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.3.0",
+    "multer": "^2.5.0",
     "pg": "^8.23.1"
   },
   "devDependencies": {
+    "oxlint": "^1.93.0",
     "supertest": "^7.3.2",
     "vitest": "^5.1.0"
   }
