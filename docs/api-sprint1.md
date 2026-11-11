@@ -90,6 +90,8 @@ Codes d'erreur de champ (valeurs de `champs`) :
 | `type_fichier_invalide` | photo qui n'est ni JPEG ni PNG |
 | `fichier_trop_lourd` | photo au-delà de 5 Mo |
 | `non_modifiable` | champ verrouillé (ex. numéro MoMo dans le profil) |
+| `identique` | demande de changement MoMo avec le numéro et l'opérateur actuels |
+| `avant_debut` | filtre de période : `au` avant `du` |
 
 ### 1.4 Limites des champs
 
@@ -162,7 +164,7 @@ Réponses :
 | HTTP | Corps |
 |---|---|
 | 201 | `{ "utilisateur": { ..., "statut": "en_attente", "emailVerifie": false } }` |
-| 409 `conflit` | `champs.email = "deja_utilise"` |
+| 409 `conflit` | `champs.email` et/ou `champs.lienFicheDeveloppeur` = `"deja_utilise"` (fiche déjà liée à un compte non refusé, index `utilisateurs_fiche_unique`) |
 | 422 `validation` | `champs` selon §1.4 (`accepteConditions` : `doit_etre_accepte`) |
 | 429 | plus de 5 inscriptions par heure depuis la même IP |
 
@@ -209,7 +211,7 @@ Sans corps. Supprime la session (cookie ou jeton Bearer). Répond `204` même si
 
 ### 3.3 `GET /api/auth/moi`
 
-Renvoie l'utilisateur de la session courante : `200 { "utilisateur": { ... } }` ou `401 non_authentifie`. Le front l'appelle au chargement pour savoir qui est connecté.
+Renvoie l'utilisateur de la session courante : `200 { "utilisateur": { ... } }` ou `401 non_authentifie`. Pour un testeur (Bearer), `utilisateur` est l'objet `profilTesteur` du §4.4. Le front l'appelle au chargement pour savoir qui est connecté.
 
 ### 3.4 `POST /api/auth/mot-de-passe/oubli`
 
@@ -219,7 +221,7 @@ Corps : `{ "email": "..." }`. Envoie un lien `{CLIENT_URL}/reinitialiser-mot-de-
 |---|---|
 | 202 | `{}` toujours, que l'email existe ou non |
 | 422 | `champs.email = "format_invalide"` |
-| 429 | même limite que §2.3 |
+| 429 | même limite que §2.3, avec des compteurs séparés : un renvoi de vérification ne bloque pas un mot de passe oublié |
 
 ### 3.5 `POST /api/auth/mot-de-passe/reinitialisation`
 
@@ -684,12 +686,15 @@ Chaque ligne est une branche et une PR à part, avec tests unitaires, d'intégra
 | 6 | `feature/US-10-api-profil-testeur` | profil, langues, appareil, demande de changement MoMo | 5 |
 | 7 | `feature/US-07-controles-automatiques` | migration `004`, contrôles du §6 | 3, 5 |
 
+Ordre réellement suivi : 1, 2, 3, 5, 6, 7, 4, chaque branche partant de la précédente. US-08 est passée en dernier pour que la liste admin montre dès le départ les testeurs et les contrôles. La migration `002` est donc entière dans la branche 2 (y compris `decisions_comptes`).
+
 Si deux branches touchent la même migration (lignes 2 et 4), la première fusionnée crée `002`, la suivante passe en `00X` suivante.
 
 ## 10. Questions ouvertes
 
 1. Opérateurs : Celtiis existe aussi au Bénin ; on le garde hors liste pour le Sprint 1 ?
-2. Le premier compte admin est créé comment (script `npm run admin:creer` ou migration) ?
+2. Le premier compte admin est créé comment (script `npm run admin:creer` ou migration) ? **Proposé dans la branche 2** : script `npm run admin:creer -w @nakayo/server -- --email ...`, mot de passe demandé au clavier.
 3. Format de la pièce d'identité : une seule face suffit, ou recto et verso ?
-4. Hachage des mots de passe : argon2id (paquet `argon2`, compilation native) ou bcrypt (`bcryptjs`, pur JavaScript) ?
+4. Hachage des mots de passe : argon2id (paquet `argon2`, compilation native) ou bcrypt (`bcryptjs`, pur JavaScript) ? **Proposé dans la branche 2** : scrypt du module `crypto` de Node (N = 2^17, r = 8, p = 1, recommandation OWASP), sans dépendance ; les paramètres sont stockés avec l'empreinte pour pouvoir changer plus tard.
 5. Fournisseurs email et SMS pour le Bénin : lesquels, et qui ouvre les comptes ?
+6. Contrôle `fiche_play_accessible` : Google Play peut bloquer les appels automatiques depuis un serveur. Si c'est le cas en production, le contrôle sort en `indisponible` et l'admin vérifie à la main.
