@@ -116,7 +116,8 @@ export function comptesDemo(maintenant = Date.now()) {
       operateurMomo: i % 3 === 1 ? 'moov' : 'mtn',
       appareil: { fabricant, modele, versionAndroid, niveauApi },
       motifRefus: null,
-      creeLe: new Date(maintenant - (i * 1.5 + 0.2) * JOUR).toISOString(),
+      // Au moins un jour d’écart : aucun compte de démo n’est inscrit « aujourd’hui », quelle que soit l’heure.
+      creeLe: new Date(maintenant - (i * 1.5 + 1.2) * JOUR).toISOString(),
       controles: controlesTesteur(i),
       // Simule une décision prise entre-temps par un autre administrateur.
       simulerConflit: i === 12,
