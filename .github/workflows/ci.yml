@@ -42,8 +42,10 @@ jobs:
         run: npm run test:server
       - name: Tests unitaires et d'intégration du front
         run: npm run test -w @nakayo/client
+      # Les bibliothèques système de Chromium sont déjà sur les machines GitHub (Chrome y est installé) :
+      # si les miroirs apt ne répondent pas, on installe le navigateur seul plutôt que d'échouer.
       - name: Navigateur des tests de bout en bout
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium || npx playwright install chromium
         working-directory: client
       - name: Tests de bout en bout du front
         run: npm run test:e2e
