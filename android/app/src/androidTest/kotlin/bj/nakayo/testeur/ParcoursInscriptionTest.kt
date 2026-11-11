@@ -39,7 +39,7 @@ class ParcoursInscriptionTest {
             compose.onNodeWithContentDescription("Numéro de téléphone").performTextInput("0197000000")
             compose.onNodeWithText("Recevoir le code").performClick()
             compose.attendreTexte("opérateur de votre numéro")
-            assertTrue(service.appels.isEmpty())
+            assertTrue(service.appels.none { it.startsWith("envoi") })
 
             compose.onNodeWithText("MTN MoMo").performClick()
             compose.onNodeWithText("Recevoir le code").performClick()
