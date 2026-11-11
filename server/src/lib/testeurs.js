@@ -92,3 +92,20 @@ export function typeImage(buffer) {
   if (buffer.length >= 8 && png.every((octet, i) => buffer[i] === octet)) return 'image/png'
   return null
 }
+
+// Langues parlées (§4.4) : 1 à 10 codes connus, sans doublon. Renvoie { langues } ou { erreur }.
+export function lireLangues(valeur) {
+  if (!Array.isArray(valeur) || valeur.some((l) => typeof l !== 'string')) return { erreur: 'format_invalide' }
+  const langues = [...new Set(valeur.map((l) => l.trim().toLowerCase()))]
+  if (!langues.length) return { erreur: 'requis' }
+  if (langues.length > 10) return { erreur: 'trop_long' }
+  if (langues.some((l) => !LANGUES.includes(l))) return { erreur: 'valeur_inconnue' }
+  return { langues }
+}
+
+export function validerMotifMomo(valeur) {
+  if (!valeur) return 'requis'
+  if (valeur.length < 10) return 'trop_court'
+  if (valeur.length > 300) return 'trop_long'
+  return null
+}
