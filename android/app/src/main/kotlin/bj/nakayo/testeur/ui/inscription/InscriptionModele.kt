@@ -42,17 +42,10 @@ enum class EtapeInscription { Profil, Pieces }
 
 enum class ChampPhoto(val cle: String) { PieceIdentite("pieceIdentite"), Selfie("selfie") }
 
-// Langues du contrat (§4.4), dans l'ordre d'affichage.
+// Langues du contrat (§4.4) : les testeurs suivent les apps en français ou en anglais.
 val LANGUES = listOf(
     "fr" to "Français",
-    "fon" to "Fon",
-    "yo" to "Yoruba",
     "en" to "Anglais",
-    "guw" to "Goun",
-    "bba" to "Bariba",
-    "dee" to "Dendi",
-    "ajg" to "Adja",
-    "gej" to "Mina",
 )
 
 // Principales villes du Bénin ; « Autre ville » ouvre un champ libre.
