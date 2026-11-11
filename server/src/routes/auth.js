@@ -157,10 +157,10 @@ export function routesAuth(deps) {
         texte: [
           'Bonjour,',
           '',
-          'Tu as demandé à changer ton mot de passe Nakayo. Ce lien est valable 1 heure :',
+          'Vous avez demandé à changer votre mot de passe Nakayo. Ce lien est valable 1 heure :',
           lien,
           '',
-          "Si tu n'es pas à l'origine de cette demande, ignore cet email : ton mot de passe ne change pas.",
+          "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe ne change pas.",
         ].join('\n'),
         lien,
       })
