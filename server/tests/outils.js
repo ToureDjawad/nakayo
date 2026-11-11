@@ -1,3 +1,6 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { creerApp } from '../src/app.js'
 import { pool } from '../src/db/pool.js'
 import { creerMessagerieJournal } from '../src/services/messagerie.js'
@@ -24,11 +27,13 @@ export function creerAppTest({ maintenant, journal = silencieux, config } = {}) 
     emails,
     sms,
     journal,
-    config,
+    // Photos des testeurs dans un dossier temporaire propre à chaque application de test.
+    config: { dossierDocuments: mkdtempSync(path.join(tmpdir(), 'nakayo-documents-')), ...config },
     maintenant: () => (horloge.date ? new Date(horloge.date) : new Date()),
   })
   return {
     app,
+    dossierDocuments: app.locals.deps.config.dossierDocuments,
     emails,
     sms,
     // Avance l'horloge de l'application (ex. pour tester l'expiration d'un lien).
