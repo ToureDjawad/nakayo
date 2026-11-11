@@ -10,6 +10,7 @@ import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
 import { routesTesteurs } from './routes/testeurs.js'
 import { health } from './routes/health.js'
+import { creerLanceurControles } from './services/controles.js'
 import { creerMessagerieJournal } from './services/messagerie.js'
 
 // Construit l'application. Les dépendances (base, envoi d'emails et de SMS, horloge)
@@ -25,6 +26,8 @@ export function creerApp(dependances = {}) {
     journal: dependances.journal ?? console,
   }
   deps.limites = dependances.limites ?? creerLimitesApi(deps.maintenant)
+  deps.controles = creerLanceurControles({ ...deps, fetch: dependances.fetch })
+  deps.apresInscription = (utilisateurId) => deps.controles.lancer(utilisateurId)
 
   const app = express()
   app.disable('x-powered-by')
