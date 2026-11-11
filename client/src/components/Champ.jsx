@@ -38,7 +38,7 @@ function Compteur({ id, longueur, max }) {
   )
 }
 
-export function Champ({ nom, libelle, aide, valeur, erreur, onChange, onBlur, max, type = 'text', facultatif, ...props }) {
+export function Champ({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, max, type = 'text', facultatif, ...props }) {
   const base = useId()
   const idAide = `${base}-aide`
   const idErreur = `${base}-erreur`
@@ -49,7 +49,7 @@ export function Champ({ nom, libelle, aide, valeur, erreur, onChange, onBlur, ma
 
   return (
     <div>
-      <Libelle htmlFor={`champ-${nom}`} facultatif={facultatif}>
+      <Libelle htmlFor={id ?? `champ-${nom}`} facultatif={facultatif}>
         {libelle}
       </Libelle>
       {aide && (
@@ -58,7 +58,7 @@ export function Champ({ nom, libelle, aide, valeur, erreur, onChange, onBlur, ma
         </p>
       )}
       <input
-        id={`champ-${nom}`}
+        id={id ?? `champ-${nom}`}
         name={nom}
         type={type}
         value={valeur}
@@ -75,7 +75,7 @@ export function Champ({ nom, libelle, aide, valeur, erreur, onChange, onBlur, ma
   )
 }
 
-export function ChampMotDePasse({ nom, libelle, aide, valeur, erreur, onChange, onBlur, ...props }) {
+export function ChampMotDePasse({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, ...props }) {
   const [visible, setVisible] = useState(false)
   const base = useId()
   const idAide = `${base}-aide`
@@ -84,7 +84,7 @@ export function ChampMotDePasse({ nom, libelle, aide, valeur, erreur, onChange, 
 
   return (
     <div>
-      <Libelle htmlFor={`champ-${nom}`}>{libelle}</Libelle>
+      <Libelle htmlFor={id ?? `champ-${nom}`}>{libelle}</Libelle>
       {aide && (
         <p id={idAide} className="mt-0.5 text-sm text-discret">
           {aide}
@@ -92,7 +92,7 @@ export function ChampMotDePasse({ nom, libelle, aide, valeur, erreur, onChange, 
       )}
       <div className="relative mt-1.5">
         <input
-          id={`champ-${nom}`}
+          id={id ?? `champ-${nom}`}
           name={nom}
           type={visible ? 'text' : 'password'}
           value={valeur}
@@ -107,7 +107,7 @@ export function ChampMotDePasse({ nom, libelle, aide, valeur, erreur, onChange, 
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-pressed={visible}
-          aria-controls={`champ-${nom}`}
+          aria-controls={id ?? `champ-${nom}`}
           className="absolute inset-y-1 right-1 rounded px-3 text-sm font-medium text-accent hover:bg-accent-clair"
         >
           {visible ? 'Masquer' : 'Afficher'}
@@ -118,7 +118,7 @@ export function ChampMotDePasse({ nom, libelle, aide, valeur, erreur, onChange, 
   )
 }
 
-export function ChampSelection({ nom, libelle, aide, valeur, erreur, onChange, onBlur, options, invite, ...props }) {
+export function ChampSelection({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, options, invite, ...props }) {
   const base = useId()
   const idAide = `${base}-aide`
   const idErreur = `${base}-erreur`
@@ -126,14 +126,14 @@ export function ChampSelection({ nom, libelle, aide, valeur, erreur, onChange, o
 
   return (
     <div>
-      <Libelle htmlFor={`champ-${nom}`}>{libelle}</Libelle>
+      <Libelle htmlFor={id ?? `champ-${nom}`}>{libelle}</Libelle>
       {aide && (
         <p id={idAide} className="mt-0.5 text-sm text-discret">
           {aide}
         </p>
       )}
       <select
-        id={`champ-${nom}`}
+        id={id ?? `champ-${nom}`}
         name={nom}
         value={valeur}
         onChange={(e) => onChange(e.target.value)}
@@ -155,14 +155,14 @@ export function ChampSelection({ nom, libelle, aide, valeur, erreur, onChange, o
   )
 }
 
-export function CaseACocher({ nom, valeur, erreur, onChange, children }) {
+export function CaseACocher({ id, nom, valeur, erreur, onChange, children }) {
   const base = useId()
   const idErreur = `${base}-erreur`
   return (
     <div>
       <div className="flex items-start gap-3">
         <input
-          id={`champ-${nom}`}
+          id={id ?? `champ-${nom}`}
           name={nom}
           type="checkbox"
           checked={valeur}
@@ -171,10 +171,46 @@ export function CaseACocher({ nom, valeur, erreur, onChange, children }) {
           aria-describedby={erreur ? idErreur : undefined}
           className="mt-0.5 size-5 shrink-0 accent-accent"
         />
-        <label htmlFor={`champ-${nom}`} className="text-texte">
+        <label htmlFor={id ?? `champ-${nom}`} className="text-texte">
           {children}
         </label>
       </div>
+      <Message id={idErreur} nom={nom} erreur={erreur} />
+    </div>
+  )
+}
+
+export function ChampTexte({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, max, lignes = 4, ref, ...props }) {
+  const base = useId()
+  const idAide = `${base}-aide`
+  const idErreur = `${base}-erreur`
+  const idCompteur = `${base}-compteur`
+  const decrit = [aide && idAide, erreur && idErreur, max && valeur.length >= max * 0.8 && idCompteur]
+    .filter(Boolean)
+    .join(' ')
+
+  return (
+    <div>
+      <Libelle htmlFor={id ?? `champ-${nom}`}>{libelle}</Libelle>
+      {aide && (
+        <p id={idAide} className="mt-0.5 text-sm text-discret">
+          {aide}
+        </p>
+      )}
+      <textarea
+        ref={ref}
+        id={id ?? `champ-${nom}`}
+        name={nom}
+        rows={lignes}
+        value={valeur}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        aria-invalid={erreur ? true : undefined}
+        aria-describedby={decrit || undefined}
+        className={`mt-1.5 block w-full rounded-md border bg-white px-3 py-2 text-base text-encre focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent ${bordure(erreur)}`}
+        {...props}
+      />
+      <Compteur id={idCompteur} longueur={valeur.length} max={max} />
       <Message id={idErreur} nom={nom} erreur={erreur} />
     </div>
   )

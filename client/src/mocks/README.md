@@ -10,6 +10,7 @@ Pour le retirer : supprimer ce dossier et le bloc marqué dans `src/main.jsx`.
 - `routes.js` contient les routes simulées ; `base.js` les données, gardées dans le `localStorage` (clé `nakayo:mocks`).
 - Chaque réponse arrive après 600 ms pour voir les états de chargement.
 - Remise à zéro des données : `nakayoMocks.reinitialiser()` dans la console du navigateur.
+- Ouvrir une session sans écran de connexion : `nakayoMocks.connecter('admin@nakayo.test')` dans la console, puis recharger.
 
 ## Comptes de départ
 
@@ -32,3 +33,18 @@ Pour le retirer : supprimer ce dossier et le bloc marqué dans `src/main.jsx`.
 | `/verification-email?jeton=nimportequoi` | lien invalide |
 | `/verification-email?jeton=reseau` | coupure réseau, bouton « Réessayer » |
 | Renvoi de l'email deux fois en moins d'une minute | 429 |
+
+### Back-office (US-08)
+
+Se connecter en admin (`nakayoMocks.connecter('admin@nakayo.test')`), puis ouvrir `/admin/comptes`.
+
+| Compte | Cas montré |
+|---|---|
+| 23 comptes en attente (10 développeurs, 13 testeurs) | pagination par 20, filtres par rôle et par date |
+| Apps du Sahel | contrôles encore en cours |
+| Abidjan Labs | contrôle en échec (fiche Google Play introuvable) |
+| Atelier Pixel | alerte (email jetable) |
+| Nairobi Devs | contrôle non vérifié (Google Play indisponible) |
+| Sèna Ahouansou, Abdou Salami | échecs (numéro MoMo en double, selfie illisible) |
+| Carine Tossou | valider ou refuser renvoie « déjà traité par un autre administrateur » (409) |
+| Se connecter en développeur (`valide@exemple.com`) | page refusée (403) |

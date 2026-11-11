@@ -36,6 +36,16 @@ const PAR_CHAMP = {
     requis: 'Vous devez accepter les conditions d’utilisation pour créer un compte.',
     doit_etre_accepte: 'Vous devez accepter les conditions d’utilisation pour créer un compte.',
   },
+  motif: {
+    requis: 'Indiquez le motif du refus. Il sera envoyé à la personne.',
+    trop_court: `Le motif doit contenir au moins ${LIMITES.motifRefusMin} caractères.`,
+    trop_long: `Le motif ne doit pas dépasser ${LIMITES.motifRefusMax} caractères.`,
+  },
+  du: { format_invalide: 'Date invalide.' },
+  au: {
+    format_invalide: 'Date invalide.',
+    avant_debut: 'La date de fin doit être après la date de début.',
+  },
 }
 
 const GENERIQUES = {

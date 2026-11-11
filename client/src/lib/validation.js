@@ -6,6 +6,8 @@ export const LIMITES = {
   nomMin: 2,
   nomMax: 80,
   lienFiche: 300,
+  motifRefusMin: 10,
+  motifRefusMax: 500,
 }
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -57,4 +59,22 @@ export function validerRequis(valeur) {
 
 export function validerCoche(valeur) {
   return valeur === true ? null : 'doit_etre_accepte'
+}
+
+export function validerMotifRefus(valeur) {
+  const v = valeur.trim()
+  if (!v) return 'requis'
+  if (v.length < LIMITES.motifRefusMin) return 'trop_court'
+  if (v.length > LIMITES.motifRefusMax) return 'trop_long'
+  return null
+}
+
+const RE_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+// Période de filtre : les deux dates sont facultatives, mais « du » ne peut pas suivre « au ».
+export function validerPeriode(du, au) {
+  if (du && !RE_DATE.test(du)) return { du: 'format_invalide' }
+  if (au && !RE_DATE.test(au)) return { au: 'format_invalide' }
+  if (du && au && du > au) return { au: 'avant_debut' }
+  return {}
 }
