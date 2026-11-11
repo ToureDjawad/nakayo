@@ -5,6 +5,7 @@ import { pool as poolParDefaut } from './db/pool.js'
 import { gestionnaireErreurs, introuvable } from './lib/erreurs.js'
 import { creerLimitesApi } from './lib/limitesApi.js'
 import { chargerSession } from './middlewares/authentification.js'
+import { routesAdmin } from './routes/admin.js'
 import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
@@ -43,6 +44,7 @@ export function creerApp(dependances = {}) {
   app.use('/api/auth', routesInscription(deps))
   app.use('/api/auth', routesSms(deps))
   app.use('/api/testeurs', routesTesteurs(deps))
+  app.use('/api/admin', routesAdmin(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))
