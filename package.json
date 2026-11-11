@@ -17,6 +17,7 @@
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate -w @nakayo/server",
+    "demo:remplir": "npm run demo:remplir -w @nakayo/server",
     "test": "npm run test -w @nakayo/client && npm run test -w @nakayo/server",
     "test:server": "npm run test -w @nakayo/server",
     "db:test:up": "docker compose up -d db-test"
