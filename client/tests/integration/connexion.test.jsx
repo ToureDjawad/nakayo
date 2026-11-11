@@ -66,7 +66,7 @@ describe('Connexion (US-09 web)', () => {
     const user = userEvent.setup()
     const { routeur } = rendreA('/connexion?suite=%2F%2Fexemple.com')
     await seConnecter(user)
-    expect(await screen.findByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeInTheDocument()
     expect(routeur.state.location.pathname).toBe('/mon-compte')
   })
 
@@ -138,7 +138,7 @@ describe('Déconnexion', () => {
     })
     const user = userEvent.setup()
     const { routeur } = rendreA('/mon-compte')
-    await screen.findByRole('heading', { name: 'Votre compte est en attente de validation' })
+    await screen.findByRole('heading', { name: 'Votre compte est en cours de vérification' })
 
     await user.click(screen.getByRole('button', { name: 'Se déconnecter' }))
     expect(await screen.findByText('Vous êtes déconnecté.')).toBeInTheDocument()

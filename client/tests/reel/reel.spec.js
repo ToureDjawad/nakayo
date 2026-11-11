@@ -30,9 +30,9 @@ test('développeur : inscription, lien de l’email, compte en attente (API rée
 
   const lien = await dernierDuJournal(/http:\/\/127\.0\.0\.1:5180(\/verification-email\?jeton=[\w-]+)/g)
   await page.goto(lien[1])
-  await expect(page.getByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeVisible()
 })
 
 test('testeur inscrit par l’API Android, visible côté admin avec ses photos', async ({ request }) => {

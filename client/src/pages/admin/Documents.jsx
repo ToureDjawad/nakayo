@@ -54,7 +54,7 @@ export function Documents({ compte }) {
                   <img
                     src={etat.documents[cle]}
                     alt={`${libelle} de ${compte.nom}`}
-                    className="h-40 w-full rounded-md border border-trait bg-fond-doux object-contain"
+                    className="h-40 w-full rounded-champ border border-trait bg-fond-doux object-contain"
                   />
                   <span className="sr-only"> (ouvrir en grand dans un nouvel onglet)</span>
                 </a>

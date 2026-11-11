@@ -1,30 +1,45 @@
 @import "tailwindcss";
 
+/* Design system de la maquette (Figma « Nakayo · Maquette complète », page 00). */
 @theme {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-titre: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-titre: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-accent: "Instrument Serif", ui-serif, Georgia, serif;
 
-  --color-encre: #1c1917;
-  --color-texte: #44403c;
-  --color-discret: #6b645e;
-  --color-trait: #d6d3d1;
-  --color-fond-doux: #f5f5f4;
+  --color-encre: #1c1b18;
+  --color-texte: #4a453d;
+  --color-discret: #7a7366;
+  --color-trait: #e8dfd0;
+  --color-fond-doux: #f0e9dd;
+  --color-sable: #f6f0e6;
+  --color-papier: #fffdf8;
 
-  --color-accent: #0f5c4a;
-  --color-accent-fonce: #0a4637;
-  --color-accent-clair: #e6f0ed;
+  --color-accent: #15543f;
+  --color-accent-fonce: #0e3b2c;
+  --color-accent-clair: #ddede3;
+  --color-sur-fonce: #c9dbd2;
+
+  --color-argile: #c65a3a;
+  --color-argile-clair: #f7e0d6;
+  --color-ocre: #e3a33a;
+  --color-ocre-clair: #fbedcf;
+  --color-indigo: #2d4a7a;
+  --color-indigo-clair: #e1e8f3;
 
   --color-erreur: #b42318;
-  --color-erreur-clair: #fef3f2;
-  --color-alerte: #93500c;
-  --color-alerte-clair: #fffaeb;
-  --color-succes: #067647;
-  --color-succes-clair: #ecfdf3;
+  --color-erreur-clair: #fbe4e1;
+  --color-alerte: #8a5a12;
+  --color-alerte-clair: #fbedcf;
+  --color-succes: #1e7a4c;
+  --color-succes-clair: #dff1e6;
+
+  --radius-champ: 10px;
+  --radius-carte: 14px;
 }
 
 @layer base {
   html {
-    background-color: #fff;
+    background-color: var(--color-papier);
     color: var(--color-encre);
     -webkit-text-size-adjust: 100%;
   }
@@ -36,11 +51,14 @@
 
   h1, h2, h3 {
     font-family: var(--font-titre);
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    text-wrap: balance;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-ocre);
     outline-offset: 2px;
   }
 }

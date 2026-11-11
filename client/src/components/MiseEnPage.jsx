@@ -1,15 +1,16 @@
-import { Link } from 'react-router'
+import { Link, NavLink } from 'react-router'
 import { BoutonDeconnexion } from './BoutonDeconnexion.jsx'
+import { Logo, Motif } from './Logo.jsx'
 
 // Avec `utilisateur`, l'en-tête affiche le nom et le bouton de déconnexion.
-export function EnTete({ utilisateur, sousTitre }) {
+export function EnTete({ utilisateur, actions }) {
   return (
-    <header className="border-b border-trait">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
-        <Link to="/" className="font-titre text-lg font-bold text-encre">
-          Nakayo
+    <header className="border-b border-trait bg-papier">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
+        <Link to="/" aria-label="Nakayo, accueil">
+          <Logo />
         </Link>
-        {sousTitre && <span className="text-sm text-discret">{sousTitre}</span>}
+        {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
         {utilisateur && (
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden max-w-48 truncate text-sm text-texte sm:inline">{utilisateur.nom}</span>
@@ -21,26 +22,145 @@ export function EnTete({ utilisateur, sousTitre }) {
   )
 }
 
-// Colonne étroite centrée pour les écrans de compte (inscription, connexion, statuts).
-export function PageCompte({ titre, intro, utilisateur, children }) {
+// Panneau vert de droite : titre et étapes numérotées en ocre (D02 « Ce qui se passe après l'inscription »).
+export function PanneauEtapes({ titre, etapes }) {
   return (
-    <div className="min-h-screen bg-white">
-      <EnTete utilisateur={utilisateur} />
-      <main className="mx-auto max-w-md px-4 pt-8 pb-16 sm:pt-12">
-        <h1 className="text-2xl font-bold text-encre sm:text-3xl">{titre}</h1>
-        {intro && <div className="mt-2 text-texte">{intro}</div>}
-        <div className="mt-8">{children}</div>
-      </main>
+    <div className="flex h-full flex-col bg-accent-fonce px-12 pt-14 text-white">
+      <Logo clair />
+      <h2 className="mt-12 max-w-md text-4xl text-white">{titre}</h2>
+      <ol className="mt-8 max-w-md space-y-5">
+        {etapes.map((etape, i) => (
+          <li key={etape.titre} className="flex gap-3">
+            <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-md bg-ocre text-sm font-bold text-accent-fonce" aria-hidden="true">
+              {i + 1}
+            </span>
+            <div>
+              <p className="font-semibold">{etape.titre}</p>
+              {etape.detail && <p className="text-sm text-sur-fonce">{etape.detail}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <Motif className="mt-auto mb-14" />
     </div>
   )
 }
 
-export function PageAdmin({ titre, intro, utilisateur, children }) {
+// Panneau sable avec une phrase en italique (D03 « Vos campagnes vous attendent. »).
+export function PanneauCitation({ texte }) {
   return (
-    <div className="min-h-screen bg-white">
-      <EnTete utilisateur={utilisateur} sousTitre="Administration" />
-      <main className="mx-auto max-w-5xl px-4 pt-6 pb-16 sm:pt-10">
-        <h1 className="text-2xl font-bold text-encre sm:text-3xl">{titre}</h1>
+    <div className="flex h-full items-center bg-sable px-12">
+      <p className="font-accent text-5xl text-accent italic">{texte}</p>
+    </div>
+  )
+}
+
+const PANNEAU_PAR_DEFAUT = (
+  <PanneauEtapes
+    titre="12 testeurs pendant 14 jours : on s’en occupe."
+    etapes={[
+      { titre: 'Des testeurs vérifiés au Bénin', detail: 'Une personne, un compte, un vrai téléphone Android.' },
+      { titre: 'Un suivi chaque jour', detail: 'Vous voyez qui a testé, et quand.' },
+      { titre: 'Un brouillon pour Google', detail: 'Pour remplir le formulaire d’accès à la production.' },
+    ]}
+  />
+)
+
+// Écrans de compte (D02 à D04) : formulaire à gauche sur fond papier, panneau illustratif à droite
+// sur les grands écrans. `panneau={null}` affiche la colonne seule.
+export function PageCompte({ titre, intro, utilisateur, icone, panneau = PANNEAU_PAR_DEFAUT, children }) {
+  return (
+    <div className="min-h-screen bg-papier lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.64fr)]">
+      <div className="flex min-h-screen flex-col">
+        <div className="flex h-20 items-center gap-3 px-4 sm:px-10 lg:px-24">
+          <Link to="/" aria-label="Nakayo, accueil">
+            <Logo />
+          </Link>
+          {utilisateur && (
+            <div className="ml-auto flex items-center gap-3">
+              <span className="hidden max-w-48 truncate text-sm text-texte sm:inline">{utilisateur.nom}</span>
+              <BoutonDeconnexion />
+            </div>
+          )}
+        </div>
+        <main className="w-full max-w-[560px] px-4 pt-6 pb-16 sm:px-10 lg:px-24">
+          {icone && <div className="mb-6">{icone}</div>}
+          <h1 className="text-[32px] text-encre sm:text-4xl">{titre}</h1>
+          {intro && <div className="mt-3 text-texte">{intro}</div>}
+          <div className="mt-8">{children}</div>
+        </main>
+      </div>
+      {panneau && <aside className="hidden lg:block">{panneau}</aside>}
+    </div>
+  )
+}
+
+// Icône carrée de la maquette (horloge ocre de D04, etc.).
+export function BoiteIcone({ ton = 'ocre', children }) {
+  const tons = {
+    ocre: 'bg-ocre-clair text-alerte',
+    vert: 'bg-succes-clair text-succes',
+    rouge: 'bg-erreur-clair text-erreur',
+  }
+  return <span className={`grid size-14 place-items-center rounded-2xl ${tons[ton]}`}>{children}</span>
+}
+
+const LIENS_ADMIN = [{ to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' }]
+
+function IconeAdmin({ nom }) {
+  if (nom !== 'utilisateurs') return null
+  return (
+    <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  )
+}
+
+// Back-office (A02) : barre latérale sombre, pour ne jamais confondre avec l'espace développeur.
+export function PageAdmin({ titre, intro, utilisateur, entete, children }) {
+  return (
+    <div className="min-h-screen bg-papier md:grid md:grid-cols-[220px_minmax(0,1fr)]">
+      <aside className="flex flex-col gap-6 bg-encre px-3 py-5 md:min-h-screen">
+        <div className="flex items-center gap-2 px-2">
+          <Link to="/admin/comptes" aria-label="Nakayo, administration">
+            <Logo clair className="text-[19px]" />
+          </Link>
+          <span className="rounded bg-ocre px-1.5 py-0.5 text-[11px] font-semibold text-encre">admin</span>
+        </div>
+        <nav aria-label="Administration">
+          <ul className="grid gap-0.5">
+            {LIENS_ADMIN.map((lien) => (
+              <li key={lien.to}>
+                <NavLink
+                  to={lien.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 rounded-[9px] border px-2.5 py-2 text-[13.5px] ${
+                      isActive ? 'border-[#3A372F] bg-[#2C2A25] font-semibold text-white' : 'border-transparent font-medium text-[#B5AE9F] hover:text-white'
+                    }`
+                  }
+                >
+                  <IconeAdmin nom={lien.icone} />
+                  {lien.libelle}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {utilisateur && (
+          <div className="mt-auto flex flex-col gap-2 px-2 text-sm text-[#B5AE9F]">
+            <span className="truncate">{utilisateur.nom}</span>
+            <BoutonDeconnexion sombre />
+          </div>
+        )}
+      </aside>
+      <main className="min-w-0 px-4 py-6 sm:px-8 sm:py-7">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-[26px] text-encre">{titre}</h1>
+          {entete}
+        </div>
         {intro && <div className="mt-2 text-texte">{intro}</div>}
         <div className="mt-6">{children}</div>
       </main>

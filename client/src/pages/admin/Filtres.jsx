@@ -3,7 +3,7 @@ import { aujourdhuiBenin } from '../../lib/format.js'
 import { messageChamp } from '../../lib/messages.js'
 
 const classeChamp =
-  'mt-1 block h-11 w-full rounded-md border bg-white px-3 text-base text-encre focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent'
+  'mt-1 block h-11 w-full rounded-champ border bg-white px-3 text-base text-encre focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent'
 
 function Liste({ libelle, valeur, onChange, options }) {
   const id = useId()

@@ -43,7 +43,7 @@ export function FormulaireRefus({ compte, onRefuse, onDejaTraite, onAnnuler }) {
       onKeyDown={(e) => {
         if (e.key === 'Escape' && !envoi) onAnnuler()
       }}
-      className="space-y-4 rounded-md border border-trait bg-fond-doux p-4"
+      className="space-y-4 rounded-champ border border-trait bg-papier p-4"
       aria-label={`Refuser le compte de ${compte.nom}`}
     >
       <ChampTexte

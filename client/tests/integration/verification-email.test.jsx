@@ -20,7 +20,7 @@ describe('Vérification de l’email', () => {
     const espion = simulerFetch({ corps: { utilisateur: developpeur } }, { corps: { utilisateur: developpeur } })
     rendreA('/verification-email?jeton=abc123')
 
-    expect(await screen.findByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeInTheDocument()
     expect(screen.getByText('Votre adresse email est confirmée.')).toBeInTheDocument()
     expect(screen.getByText('Bénin')).toBeInTheDocument()
     expect(corpsEnvoye(espion)).toEqual({ jeton: 'abc123' })
@@ -46,7 +46,7 @@ describe('Vérification de l’email', () => {
     rendreA('/verification-email?jeton=coupure')
 
     await user.click(await screen.findByRole('button', { name: 'Réessayer' }))
-    expect(await screen.findByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeInTheDocument()
   })
 })
 

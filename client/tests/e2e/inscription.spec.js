@@ -21,7 +21,7 @@ test.describe('Inscription développeur (US-05)', () => {
 
     await page.goto(await lien)
     await expect(page.getByText('Vérification en cours…')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeVisible()
     await expect(page).toHaveURL('/compte-en-attente')
     await expect(page.getByText('Votre adresse email est confirmée.')).toBeVisible()
     await expect(page.getByText('Bénin')).toBeVisible()
@@ -29,7 +29,7 @@ test.describe('Inscription développeur (US-05)', () => {
 
     // La session survit à un rechargement.
     await page.reload()
-    await expect(page.getByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeVisible()
 
     // Un lien déjà utilisé n'est plus valable.
     await page.goto(await lien)
@@ -124,7 +124,7 @@ test.describe('Accessibilité et affichage mobile', () => {
     await verifierSansDefilementHorizontal(page)
 
     await page.goto(await lien)
-    await expect(page.getByRole('heading', { name: 'Votre compte est en attente de validation' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Votre compte est en cours de vérification' })).toBeVisible()
     await verifierAccessibilite(page)
     await verifierSansDefilementHorizontal(page)
   })

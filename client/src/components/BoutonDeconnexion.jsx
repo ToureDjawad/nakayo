@@ -4,7 +4,8 @@ import { deconnecter } from '../api/auth.js'
 import { messageErreurGlobale } from '../lib/messages.js'
 import { Indicateur } from './Bouton.jsx'
 
-export function BoutonDeconnexion() {
+// `sombre` : sur la barre latérale noire de l'administration.
+export function BoutonDeconnexion({ sombre = false }) {
   const navigate = useNavigate()
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState(null)
@@ -28,13 +29,15 @@ export function BoutonDeconnexion() {
         onClick={deconnexion}
         disabled={envoi}
         aria-busy={envoi || undefined}
-        className="inline-flex h-9 items-center gap-2 rounded-md border border-trait px-3 text-sm font-medium text-encre hover:bg-fond-doux disabled:text-discret"
+        className={`inline-flex h-9 items-center gap-2 rounded-champ border px-3 text-sm font-semibold disabled:opacity-60 ${
+          sombre ? 'border-[#3A372F] text-white hover:bg-[#2C2A25]' : 'border-trait bg-white text-encre hover:bg-fond-doux'
+        }`}
       >
         {envoi && <Indicateur className="size-3.5" />}
         Se déconnecter
       </button>
       {erreur && (
-        <p role="alert" className="absolute right-0 top-11 z-10 w-64 border-l-4 border-erreur bg-erreur-clair px-3 py-2 text-sm text-erreur shadow-sm">
+        <p role="alert" className="absolute top-11 right-0 z-10 w-64 rounded-xl bg-erreur-clair px-3 py-2 text-sm text-[#7A1A12] shadow-sm">
           Déconnexion impossible. {erreur}
         </p>
       )}
