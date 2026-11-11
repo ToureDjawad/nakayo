@@ -9,7 +9,7 @@ Nom de code : TestDev. Le nom « Nakayo » n'est pas encore définitif.
 - Base de données : PostgreSQL
 - Front web : React + Vite, Tailwind CSS
 - API : Node.js + Express
-- App Android testeur : Kotlin ou React Native (à décider)
+- App Android testeur : Kotlin + Jetpack Compose (choisi le 11 novembre 2026)
 
 ## Structure
 
@@ -17,6 +17,7 @@ Nom de code : TestDev. Le nom « Nakayo » n'est pas encore définitif.
 nakayo/
 ├── client/               front web (React + Vite + Tailwind CSS)
 ├── server/               API (Node.js + Express)
+├── android/              app Android testeur (Kotlin + Jetpack Compose), voir android/README.md
 │   ├── migrations/       scripts SQL appliqués dans l'ordre
 │   └── src/
 ├── docker-compose.yml    PostgreSQL 16 pour le développement
