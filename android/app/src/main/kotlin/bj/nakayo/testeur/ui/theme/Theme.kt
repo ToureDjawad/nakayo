@@ -5,6 +5,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -29,6 +30,8 @@ object Couleurs {
     val succesClair = Color(0xFFECFDF3)
 }
 
+// Réglage de graisse des polices variables (API stable depuis Android 8, marquée expérimentale dans Compose).
+@OptIn(ExperimentalTextApi::class)
 private fun variable(id: Int, poids: Int) =
     Font(id, FontWeight(poids), variationSettings = FontVariation.Settings(FontVariation.weight(poids)))
 
