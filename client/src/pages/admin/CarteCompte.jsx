@@ -100,7 +100,7 @@ export function CarteCompte({ compte, onTraite }) {
   }
 
   return (
-    <article aria-labelledby={idTitre} className="rounded-md border border-trait p-4 sm:p-5">
+    <article aria-labelledby={idTitre} className="rounded-carte border border-trait bg-white p-4 sm:p-5">
       <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <div>
           <h3 id={idTitre} className="text-lg font-semibold text-encre [overflow-wrap:anywhere]">

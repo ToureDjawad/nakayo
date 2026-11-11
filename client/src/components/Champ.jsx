@@ -2,8 +2,8 @@ import { useId, useState } from 'react'
 import { messageChamp } from '../lib/messages.js'
 
 const classesSaisie =
-  'block h-11 w-full rounded-md border bg-white px-3 text-base text-encre placeholder:text-discret ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent'
+  'block h-11 w-full rounded-champ border bg-white px-[13px] text-[15px] text-encre placeholder:text-discret ' +
+  'focus-visible:border-accent focus-visible:outline-1 focus-visible:outline-offset-0 focus-visible:outline-accent'
 
 function bordure(erreur) {
   return erreur ? 'border-erreur' : 'border-trait hover:border-discret'
@@ -11,7 +11,7 @@ function bordure(erreur) {
 
 function Libelle({ htmlFor, children, facultatif }) {
   return (
-    <label htmlFor={htmlFor} className="block font-medium text-encre">
+    <label htmlFor={htmlFor} className="block text-[13px] font-medium text-texte">
       {children}
       {facultatif && <span className="font-normal text-discret"> (facultatif)</span>}
     </label>
@@ -170,9 +170,9 @@ export function CaseACocher({ id, nom, messages, valeur, erreur, onChange, child
           onChange={(e) => onChange(e.target.checked)}
           aria-invalid={erreur ? true : undefined}
           aria-describedby={erreur ? idErreur : undefined}
-          className="mt-0.5 size-5 shrink-0 accent-accent"
+          className="mt-0.5 size-5 shrink-0 rounded-[5px] accent-accent"
         />
-        <label htmlFor={id ?? `champ-${nom}`} className="text-texte">
+        <label htmlFor={id ?? `champ-${nom}`} className="text-sm text-encre">
           {children}
         </label>
       </div>
@@ -208,7 +208,7 @@ export function ChampTexte({ id, nom, messages, libelle, aide, valeur, erreur, o
         onBlur={onBlur}
         aria-invalid={erreur ? true : undefined}
         aria-describedby={decrit || undefined}
-        className={`mt-1.5 block w-full rounded-md border bg-white px-3 py-2 text-base text-encre focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent ${bordure(erreur)}`}
+        className={`mt-1.5 block w-full rounded-champ border bg-white px-3 py-2 text-base text-encre focus-visible:border-accent focus-visible:outline-1 focus-visible:outline-offset-0 focus-visible:outline-accent ${bordure(erreur)}`}
         {...props}
       />
       <Compteur id={idCompteur} longueur={valeur.length} max={max} />

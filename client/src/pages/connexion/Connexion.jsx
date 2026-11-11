@@ -5,7 +5,7 @@ import { ErreurApi } from '../../api/client.js'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton } from '../../components/Bouton.jsx'
 import { Champ, ChampMotDePasse } from '../../components/Champ.jsx'
-import { PageCompte } from '../../components/MiseEnPage.jsx'
+import { PageCompte, PanneauCitation } from '../../components/MiseEnPage.jsx'
 import { messageErreurGlobale } from '../../lib/messages.js'
 import { destinationApresConnexion } from '../../lib/redirection.js'
 import { useFormulaire } from '../../lib/useFormulaire.js'
@@ -63,15 +63,16 @@ export default function Connexion() {
 
   return (
     <PageCompte
-      titre="Se connecter"
+      titre="Content de vous revoir"
       intro={
         <p>
-          Pas encore de compte développeur ?{' '}
+          Connectez-vous pour suivre vos campagnes. Pas encore de compte ?{' '}
           <Link to="/inscription" className={lien}>
             Créer un compte
           </Link>
         </p>
       }
+      panneau={<PanneauCitation texte="Vos campagnes vous attendent." />}
     >
       {state?.message && !probleme && (
         <Alerte ton="succes" className="mb-6">
@@ -126,10 +127,20 @@ export default function Connexion() {
             </Link>
           </p>
         </div>
-        <Bouton chargement={envoi} libelleChargement="Connexion…" className="w-full">
+        <Bouton chargement={envoi} libelleChargement="Connexion…" variante="sombre" className="w-full">
           Se connecter
         </Bouton>
       </form>
+
+      <div className="mt-8 flex items-center gap-3 text-sm text-discret" aria-hidden="true">
+        <span className="h-px flex-1 bg-trait" />
+        Vous êtes testeur ?
+        <span className="h-px flex-1 bg-trait" />
+      </div>
+      <p className="mt-4 text-sm text-texte">
+        <span className="sr-only">Vous êtes testeur ? </span>
+        Les testeurs se connectent depuis l’app Android Nakayo, avec leur numéro de téléphone.
+      </p>
     </PageCompte>
   )
 }

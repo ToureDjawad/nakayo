@@ -1,5 +1,7 @@
 const variantes = {
-  principal: 'bg-accent text-white hover:bg-accent-fonce disabled:bg-accent/60',
+  principal: 'bg-accent text-white hover:bg-accent-fonce disabled:opacity-45',
+  sombre: 'bg-encre text-white hover:bg-black disabled:opacity-45',
+  accent: 'bg-argile text-white hover:bg-[#a94a2e] disabled:opacity-45',
   secondaire: 'border border-trait bg-white text-encre hover:bg-fond-doux disabled:text-discret',
   danger: 'bg-erreur text-white hover:bg-[#912018] disabled:bg-erreur/60',
   discret: 'text-accent underline-offset-2 hover:underline disabled:text-discret',
@@ -11,7 +13,7 @@ export function Bouton({ chargement, libelleChargement, variante = 'principal', 
       type="submit"
       disabled={disabled || chargement}
       aria-busy={chargement || undefined}
-      className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 font-medium disabled:cursor-not-allowed ${variantes[variante]} ${className}`}
+      className={`inline-flex h-11 items-center justify-center gap-2 rounded-champ px-[18px] text-[15px] font-semibold disabled:cursor-not-allowed ${variantes[variante]} ${className}`}
       {...props}
     >
       {chargement && <Indicateur />}

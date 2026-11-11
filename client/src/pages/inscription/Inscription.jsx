@@ -5,7 +5,7 @@ import { ErreurApi } from '../../api/client.js'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton } from '../../components/Bouton.jsx'
 import { CaseACocher, Champ, ChampMotDePasse, ChampSelection } from '../../components/Champ.jsx'
-import { PageCompte } from '../../components/MiseEnPage.jsx'
+import { PageCompte, PanneauEtapes } from '../../components/MiseEnPage.jsx'
 import { messageErreurGlobale } from '../../lib/messages.js'
 import { PAYS } from '../../lib/pays.js'
 import { useFormulaire } from '../../lib/useFormulaire.js'
@@ -87,15 +87,24 @@ export default function Inscription() {
 
   return (
     <PageCompte
-      titre="Créer un compte développeur"
+      titre="Créer votre compte développeur"
       intro={
-        <p>
-          Votre compte sera vérifié par notre équipe avant de pouvoir soumettre une application.{' '}
+        <p className="font-semibold text-accent">
           Déjà inscrit ?{' '}
-          <Link to="/connexion" className="font-medium text-accent underline underline-offset-2">
+          <Link to="/connexion" className="underline underline-offset-2">
             Se connecter
           </Link>
         </p>
+      }
+      panneau={
+        <PanneauEtapes
+          titre="Ce qui se passe après l’inscription"
+          etapes={[
+            { titre: 'Vous confirmez votre email', detail: 'Un lien valable 24 h.' },
+            { titre: 'Nous validons le compte', detail: 'Vérification de la fiche Google Play, sous 24 h ouvrées.' },
+            { titre: 'Vous soumettez votre app', detail: 'Formulaire, liste de vérification, paiement.' },
+          ]}
+        />
       }
     >
       {erreurGlobale && (
@@ -104,7 +113,7 @@ export default function Inscription() {
         </Alerte>
       )}
 
-      <form onSubmit={soumettre} noValidate className="space-y-6">
+      <form onSubmit={soumettre} noValidate className="space-y-5">
         <Champ
           {...lien('nom')}
           libelle="Nom de développeur Google Play"
@@ -137,7 +146,8 @@ export default function Inscription() {
         <Champ
           {...lien('lienFicheDeveloppeur')}
           libelle="Lien de votre fiche développeur Google Play"
-          aide="Sur Google Play, ouvrez votre page développeur et copiez son adresse. Exemple : https://play.google.com/store/apps/dev?id=1234567890"
+          aide="Sur Google Play, ouvrez votre page développeur et copiez son adresse. Nous vérifions que le compte existe. Nous ne demandons jamais l’accès à la Play Console."
+          placeholder="play.google.com/store/apps/dev?id=…"
           type="url"
           inputMode="url"
           spellCheck={false}
@@ -154,6 +164,7 @@ export default function Inscription() {
         <Bouton chargement={envoi} libelleChargement="Création du compte…" className="w-full">
           Créer mon compte
         </Bouton>
+        <p className="text-sm text-discret">Votre compte est vérifié par notre équipe sous 24 h ouvrées avant votre première campagne.</p>
       </form>
     </PageCompte>
   )

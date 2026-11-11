@@ -10,7 +10,7 @@ describe('Navigation', () => {
     rendreA('/')
 
     await user.click(screen.getByRole('link', { name: 'Créer un compte développeur' }))
-    expect(screen.getByRole('heading', { name: 'Créer un compte développeur' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Créer votre compte développeur' })).toBeInTheDocument()
   })
 
   it('affiche une page introuvable pour une adresse inconnue', () => {
