@@ -1,96 +1,89 @@
 package bj.nakayo.testeur.ui.accueil
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import bj.nakayo.testeur.R
+import bj.nakayo.testeur.ui.composants.Bandeau
+import bj.nakayo.testeur.ui.composants.Bouton
+import bj.nakayo.testeur.ui.composants.Chargement
+import bj.nakayo.testeur.ui.composants.Ecran
+import bj.nakayo.testeur.ui.composants.LigneIcone
+import bj.nakayo.testeur.ui.composants.Logo
+import bj.nakayo.testeur.ui.composants.StyleBouton
+import bj.nakayo.testeur.ui.composants.TypeBandeau
 import bj.nakayo.testeur.ui.theme.Couleurs
+import bj.nakayo.testeur.ui.theme.InstrumentSerif
 import bj.nakayo.testeur.ui.theme.NakayoTheme
 
-// Premier écran de l'app. Les écrans d'inscription et de connexion (US-06, US-09) partiront d'ici.
+// Écran T01 de la maquette : promesse, puis création de compte ou connexion.
 @Composable
-fun EcranAccueil(etat: EtatAccueil, surReessayer: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("Nakayo", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-        Text(
-            "Testez des applications Android pendant 14 jours et recevez votre paiement par Mobile Money.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Couleurs.texte,
-        )
-        Spacer(Modifier.height(8.dp))
-        Statut(etat, surReessayer)
-    }
-}
-
-@Composable
-private fun Statut(etat: EtatAccueil, surReessayer: () -> Unit) {
-    val forme = RoundedCornerShape(8.dp)
-    when (etat) {
-        EtatAccueil.Chargement -> Column(horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CircularProgressIndicator(color = Couleurs.accent, strokeWidth = 3.dp)
-            Text("Connexion au service…", style = MaterialTheme.typography.bodyMedium, color = Couleurs.discret)
-        }
-        EtatAccueil.Disponible -> Text(
-            "Le service est disponible.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Couleurs.succes,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Couleurs.succesClair, forme)
-                .padding(16.dp)
-                .semantics { liveRegion = LiveRegionMode.Polite },
-        )
-        is EtatAccueil.Indisponible -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                etat.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Couleurs.erreur,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Couleurs.erreurClair, forme)
-                    .padding(16.dp)
-                    .semantics { liveRegion = LiveRegionMode.Assertive },
-            )
-            Button(onClick = surReessayer, shape = forme, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text("Réessayer", style = MaterialTheme.typography.labelLarge)
+fun EcranAccueil(
+    etat: EtatAccueil,
+    surReessayer: () -> Unit,
+    surCreerCompte: () -> Unit,
+    surConnexion: () -> Unit,
+    information: String? = null,
+) {
+    Ecran(
+        fond = Couleurs.profond,
+        pied = {
+            LigneIcone(R.drawable.ic_bouclier, "Compte vérifié avec une pièce d'identité", Couleurs.surProfond, Couleurs.surProfond, MaterialTheme.typography.bodySmall)
+            LigneIcone(R.drawable.ic_reseau, "Fonctionne aussi avec peu de réseau", Couleurs.surProfond, Couleurs.surProfond, MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(2.dp))
+            when (etat) {
+                EtatAccueil.Chargement -> Chargement("Connexion au service…", Couleurs.surProfond)
+                EtatAccueil.Disponible -> {
+                    Bouton("Créer mon compte", surCreerCompte, StyleBouton.Accent)
+                    Bouton("J'ai déjà un compte", surConnexion, StyleBouton.SurProfond)
+                }
+                is EtatAccueil.Indisponible -> {
+                    Bandeau(etat.message)
+                    Bouton("Réessayer", surReessayer, StyleBouton.SurProfond)
+                }
             }
+        },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Spacer(Modifier.height(24.dp))
+            Logo(Couleurs.blanc)
+            Text(
+                buildAnnotatedString {
+                    append("Testez des apps,\n")
+                    withStyle(SpanStyle(fontFamily = InstrumentSerif, fontStyle = FontStyle.Italic, fontWeight = FontWeight.Normal, color = Couleurs.ocre)) {
+                        append("soyez payé en MoMo.")
+                    }
+                },
+                style = MaterialTheme.typography.displaySmall,
+                color = Couleurs.blanc,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                "Quelques minutes par jour avec votre téléphone. 500 FCFA par app, versés à la fin de chaque campagne de 14 jours.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Couleurs.surProfond,
+            )
+            information?.let { Bandeau(it, TypeBandeau.Information) }
         }
     }
 }
 
-@Preview(showBackground = true, widthDp = 360)
+@Preview(widthDp = 360, heightDp = 760)
 @Composable
 private fun ApercuAccueil() {
-    NakayoTheme { EcranAccueil(EtatAccueil.Indisponible("Pas de connexion au serveur."), surReessayer = {}) }
+    NakayoTheme { EcranAccueil(EtatAccueil.Disponible, surReessayer = {}, surCreerCompte = {}, surConnexion = {}) }
 }

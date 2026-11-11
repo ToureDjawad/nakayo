@@ -1,5 +1,6 @@
 package bj.nakayo.testeur
 
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -17,8 +18,8 @@ class AccueilApiReelleTest {
     @Test
     fun lAppJointLeVraiServeur() {
         compose.waitUntil(timeoutMillis = 15_000) {
-            compose.onAllNodes(androidx.compose.ui.test.hasText("Le service est disponible.")).fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodes(hasText("J'ai déjà un compte")).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithText("Le service est disponible.").assertExists()
+        compose.onNodeWithText("J'ai déjà un compte").assertExists()
     }
 }

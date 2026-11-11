@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
 import bj.nakayo.noyau.ApiNakayo
+import bj.nakayo.noyau.ServiceTesteur
 import bj.nakayo.testeur.session.IdentiteAppareil
 import bj.nakayo.testeur.session.StockageJetonChiffre
 
@@ -15,4 +16,10 @@ class NakayoApplication : Application() {
     val stockageJeton by lazy { StockageJetonChiffre(donneesSession) }
     val identiteAppareil by lazy { IdentiteAppareil(donneesAppareil) }
     val api by lazy { ApiNakayo(BuildConfig.API_URL, stockageJeton) }
+
+    // Point d'entrée des écrans ; les tests instrumentés peuvent le remplacer avant le lancement.
+    var service: ServiceTesteur
+        get() = serviceRemplace ?: api
+        set(valeur) { serviceRemplace = valeur }
+    private var serviceRemplace: ServiceTesteur? = null
 }

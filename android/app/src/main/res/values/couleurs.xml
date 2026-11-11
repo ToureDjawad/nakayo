@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="accent">#0F5C4A</color>
+    <!-- Couleurs de la maquette (vert forêt, papier). -->
+    <color name="accent">#15543F</color>
+    <color name="papier">#FFFDF8</color>
 </resources>
