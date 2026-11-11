@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   lireAppareil,
+  lireLangues,
   normaliserGmail,
   normaliserTelephone,
   typeImage,
   validerCodeSms,
   validerGmail,
+  validerMotifMomo,
   validerOperateur,
   validerTelephone,
   validerVille,
@@ -68,5 +70,22 @@ describe('autres champs', () => {
     expect(typeImage(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]))).toBe('image/png')
     expect(typeImage(Buffer.from('GIF89a'))).toBeNull()
     expect(typeImage(Buffer.from('<svg>'))).toBeNull()
+  })
+})
+
+describe('profil testeur (US-10)', () => {
+  it('langues : 1 à 10 codes connus, sans doublon', () => {
+    expect(lireLangues(['fr', 'FON', 'fr']).langues).toEqual(['fr', 'fon'])
+    expect(lireLangues([]).erreur).toBe('requis')
+    expect(lireLangues('fr').erreur).toBe('format_invalide')
+    expect(lireLangues(['fr', 'de']).erreur).toBe('valeur_inconnue')
+    expect(lireLangues([1]).erreur).toBe('format_invalide')
+  })
+
+  it('motif de changement MoMo : 10 à 300 caractères', () => {
+    expect(validerMotifMomo('')).toBe('requis')
+    expect(validerMotifMomo('court')).toBe('trop_court')
+    expect(validerMotifMomo('x'.repeat(301))).toBe('trop_long')
+    expect(validerMotifMomo('Numéro perdu avec mon ancien téléphone.')).toBeNull()
   })
 })

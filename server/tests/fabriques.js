@@ -55,3 +55,33 @@ export const FORMULAIRE_TESTEUR = {
   consentementSuivi: 'true',
   accepteConditions: 'true',
 }
+
+// Testeur inscrit directement en base, avec une session Android ouverte.
+export async function creerTesteur({
+  telephone = '+2290197000000',
+  nom = 'Koffi Agbo',
+  gmail = 'koffi.agbo@gmail.com',
+  numeroMomo = '+2290196000000',
+  operateurMomo = 'mtn',
+  statut = 'en_attente',
+  appareil = APPAREIL,
+} = {}) {
+  const { ouvrirSession } = await import('../src/services/sessions.js')
+  const { enregistrerAppareil } = await import('../src/services/testeurs.js')
+  const { normaliserGmail } = await import('../src/lib/testeurs.js')
+  const { rows } = await pool.query(
+    `INSERT INTO utilisateurs (role, statut, nom, telephone, telephone_verifie_le)
+     VALUES ('testeur', $1, $2, $3, now()) RETURNING id`,
+    [statut, nom, telephone],
+  )
+  const id = rows[0].id
+  await pool.query(
+    `INSERT INTO profils_testeurs (utilisateur_id, ville, gmail, gmail_normalise, numero_momo, operateur_momo,
+                                   consentement_suivi_le, conditions_acceptees_le)
+     VALUES ($1, 'Cotonou', $2, $3, $4, $5, now(), now())`,
+    [id, gmail, normaliserGmail(gmail), numeroMomo, operateurMomo],
+  )
+  if (appareil) await enregistrerAppareil(pool, { utilisateurId: id, appareil, maintenant: new Date() })
+  const { jeton } = await ouvrirSession(pool, { utilisateurId: id, client: 'android', maintenant: new Date() })
+  return { id: String(id), jeton }
+}

@@ -2,20 +2,23 @@ import { Router } from 'express'
 import multer from 'multer'
 import { ErreurHttp, nonAuthentifie } from '../lib/erreurs.js'
 import { hacherJeton } from '../lib/jetons.js'
+import { exigerRole } from '../middlewares/authentification.js'
 import {
   lireAppareil,
+  lireLangues,
   normaliserGmail,
   normaliserTelephone,
   typeImage,
   validerGmail,
   validerOperateur,
   validerTelephone,
+  validerMotifMomo,
   validerVille,
 } from '../lib/testeurs.js'
-import { exigerChamps, texte, validerNom } from '../lib/validation.js'
+import { corps, exigerChamps, texte, validerNom } from '../lib/validation.js'
 import { ecrireDocument, supprimerDocuments } from '../services/documents.js'
 import { ouvrirSession } from '../services/sessions.js'
-import { enregistrerAppareil, lireProfilTesteur } from '../services/testeurs.js'
+import { enregistrerAppareil, lireProfilTesteur, versDemandeApi } from '../services/testeurs.js'
 import { transaction } from './auth.js'
 
 export const TAILLE_MAX_PHOTO = 5 * 1024 * 1024
@@ -177,6 +180,75 @@ export function routesTesteurs(deps) {
     deps.apresInscription?.(resultat.utilisateurId)
     const utilisateur = await lireProfilTesteur(pool, resultat.utilisateurId)
     res.status(201).json({ jeton: resultat.jeton, utilisateur })
+  })
+
+  const testeur = exigerRole('testeur')
+  const NON_MODIFIABLES = ['numeroMomo', 'operateurMomo', 'gmail', 'telephone']
+
+  // §4.4 Profil du testeur connecté.
+  routeur.get('/moi', testeur, async (req, res) => {
+    res.json({ utilisateur: await lireProfilTesteur(pool, req.session.utilisateur.id) })
+  })
+
+  // §4.4 Langues et appareil. Le numéro MoMo, le Gmail et le téléphone ne changent pas ici.
+  routeur.patch('/moi', testeur, async (req, res) => {
+    const donnees = corps(req)
+    const regles = Object.fromEntries(
+      NON_MODIFIABLES.filter((champ) => champ in donnees).map((champ) => [champ, 'non_modifiable']),
+    )
+    const langues = 'langues' in donnees ? lireLangues(donnees.langues) : null
+    const appareil = 'appareil' in donnees ? lireAppareil(donnees.appareil) : null
+    exigerChamps({ ...regles, langues: langues?.erreur, appareil: appareil?.erreur })
+
+    const id = req.session.utilisateur.id
+    const instant = maintenant()
+    await transaction(pool, async (client) => {
+      if (langues) await client.query('UPDATE profils_testeurs SET langues = $2 WHERE utilisateur_id = $1', [id, langues.langues])
+      if (appareil) await enregistrerAppareil(client, { utilisateurId: id, appareil: appareil.appareil, maintenant: instant })
+      await client.query('UPDATE utilisateurs SET modifie_le = $2 WHERE id = $1', [id, instant])
+    })
+    res.json({ utilisateur: await lireProfilTesteur(pool, id) })
+  })
+
+  // §4.4 Demande de changement de numéro Mobile Money, traitée plus tard par un admin.
+  routeur.post('/moi/demande-changement-momo', testeur, async (req, res) => {
+    const donnees = corps(req)
+    const numeroMomo = normaliserTelephone(donnees.numeroMomo)
+    const operateurMomo = texte(donnees.operateurMomo).toLowerCase()
+    const motif = texte(donnees.motif)
+    exigerChamps({
+      numeroMomo: validerTelephone(numeroMomo),
+      operateurMomo: validerOperateur(operateurMomo),
+      motif: validerMotifMomo(motif),
+    })
+
+    const id = req.session.utilisateur.id
+    const { rows: profil } = await pool.query(
+      'SELECT numero_momo, operateur_momo FROM profils_testeurs WHERE utilisateur_id = $1',
+      [id],
+    )
+    if (profil[0].numero_momo === numeroMomo && profil[0].operateur_momo === operateurMomo) {
+      exigerChamps({ numeroMomo: 'identique' })
+    }
+    const { rows: autres } = await pool.query(
+      'SELECT 1 FROM profils_testeurs WHERE numero_momo = $1 AND utilisateur_id <> $2',
+      [numeroMomo, id],
+    )
+    if (autres.length) throw conflit({ numeroMomo: 'deja_utilise' })
+
+    const statutIncompatible = () =>
+      new ErreurHttp(409, 'statut_incompatible', { message: 'Une demande est déjà en attente.' })
+    try {
+      const { rows } = await pool.query(
+        `INSERT INTO demandes_changement_momo (utilisateur_id, numero_momo, operateur_momo, motif, cree_le)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [id, numeroMomo, operateurMomo, motif, maintenant()],
+      )
+      res.status(201).json({ demande: versDemandeApi(rows[0]) })
+    } catch (erreur) {
+      if (erreur.code === '23505' && erreur.constraint === 'demande_momo_unique_en_cours') throw statutIncompatible()
+      throw erreur
+    }
   })
 
   return routeur
