@@ -42,8 +42,10 @@ jobs:
         run: npm run test:server
       - name: Tests unitaires et d'intégration du front
         run: npm run test -w @nakayo/client
+      # Les bibliothèques système de Chromium sont déjà sur les machines GitHub (Chrome y est installé) :
+      # si les miroirs apt ne répondent pas, on installe le navigateur seul plutôt que d'échouer.
       - name: Navigateur des tests de bout en bout
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium || npx playwright install chromium
         working-directory: client
       - name: Tests de bout en bout du front
         run: npm run test:e2e
@@ -58,3 +60,73 @@ jobs:
         run: npm run build
       - name: Migrations PostgreSQL
         run: npm run db:migrate
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: nakayo
+          POSTGRES_PASSWORD: nakayo
+          POSTGRES_DB: nakayo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nakayo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL_TEST: postgres://nakayo:nakayo@localhost:5432/nakayo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Noyau (unitaires, intégration, bout en bout sur la vraie API)
+        working-directory: android
+        run: ./gradlew :noyau:test :noyau:apiReelle
+      - name: App (tests unitaires, lint, builds debug et release)
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease
+      - name: API pour les tests sur émulateur
+        run: |
+          cd server
+          NODE_ENV=test CONTROLES_RESEAU=false DATABASE_URL="$DATABASE_URL_TEST" PORT=3000 nohup node src/index.js > ../api-android.log 2>&1 &
+          for i in $(seq 1 50); do curl -sf http://localhost:3000/api/health && exit 0; sleep 0.2; done
+          cat ../api-android.log; exit 1
+      - name: Accès KVM pour l'émulateur
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Tests instrumentés sur émulateur (Android 14)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          working-directory: android
+          script: ./gradlew :app:connectedDebugAndroidTest
+      - name: Rapports Android en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-android
+          path: |
+            android/noyau/build/reports
+            android/app/build/reports
+            api-android.log
+          retention-days: 7
