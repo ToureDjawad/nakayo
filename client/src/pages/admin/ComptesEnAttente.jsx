@@ -201,9 +201,10 @@ function ListeComptes() {
 export default function ComptesEnAttente() {
   return (
     <AccesAdmin titre={TITRE}>
-      {() => (
+      {(utilisateur) => (
         <PageAdmin
           titre={TITRE}
+          utilisateur={utilisateur}
           intro={<p>Vérifiez chaque compte avant de le valider. Un refus demande un motif, qui est envoyé à la personne.</p>}
         >
           <ListeComptes />

@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton, Indicateur } from '../../components/Bouton.jsx'
 import { PageAdmin } from '../../components/MiseEnPage.jsx'
@@ -9,6 +9,8 @@ import { useSession } from '../../lib/useSession.js'
 // ce contrôle sert seulement à afficher un message clair.
 export function AccesAdmin({ titre, children }) {
   const session = useSession()
+  const { pathname, search } = useLocation()
+  const lienConnexion = `/connexion?suite=${encodeURIComponent(pathname + search)}`
 
   if (session.etat === 'chargement') {
     return (
@@ -37,7 +39,7 @@ export function AccesAdmin({ titre, children }) {
       <PageAdmin titre={titre}>
         <p className="text-texte">
           Cette page est réservée à l’équipe Nakayo.{' '}
-          <Link to="/connexion" className="font-medium text-accent underline underline-offset-2">
+          <Link to={lienConnexion} className="font-medium text-accent underline underline-offset-2">
             Connectez-vous
           </Link>{' '}
           avec un compte administrateur.
@@ -48,7 +50,7 @@ export function AccesAdmin({ titre, children }) {
 
   if (session.utilisateur.role !== 'admin') {
     return (
-      <PageAdmin titre={titre}>
+      <PageAdmin titre={titre} utilisateur={session.utilisateur}>
         <Alerte ton="erreur" titre="Accès réservé aux administrateurs">
           Votre compte n’a pas accès au back-office.
         </Alerte>

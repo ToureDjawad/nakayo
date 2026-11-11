@@ -61,7 +61,7 @@ export default function CompteEnAttente() {
     return (
       <PageCompte titre="État de votre compte">
         <p className="text-texte">
-          <Link to="/connexion" className="font-medium text-accent underline underline-offset-2">
+          <Link to="/connexion?suite=%2Fmon-compte" className="font-medium text-accent underline underline-offset-2">
             Connectez-vous
           </Link>{' '}
           pour voir où en est la vérification de votre compte.
@@ -74,7 +74,7 @@ export default function CompteEnAttente() {
 
   if (utilisateur.statut === 'refuse') {
     return (
-      <PageCompte titre="Votre compte n’a pas été validé">
+      <PageCompte titre="Votre compte n’a pas été validé" utilisateur={utilisateur}>
         <Alerte ton="erreur" titre="Motif indiqué par notre équipe">
           <p className="whitespace-pre-line">{utilisateur.motifRefus || 'Aucun motif précisé.'}</p>
         </Alerte>
@@ -88,7 +88,7 @@ export default function CompteEnAttente() {
 
   if (utilisateur.statut === 'valide') {
     return (
-      <PageCompte titre="Votre compte est validé">
+      <PageCompte titre="Votre compte est validé" utilisateur={utilisateur}>
         <Alerte ton="succes">Vous pouvez soumettre votre première application.</Alerte>
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
@@ -97,14 +97,14 @@ export default function CompteEnAttente() {
 
   if (utilisateur.statut === 'suspendu') {
     return (
-      <PageCompte titre="Votre compte est suspendu">
+      <PageCompte titre="Votre compte est suspendu" utilisateur={utilisateur}>
         <p className="text-texte">Contactez notre équipe en répondant à l’email de suspension que vous avez reçu.</p>
       </PageCompte>
     )
   }
 
   return (
-    <PageCompte titre="Votre compte est en attente de validation">
+    <PageCompte titre="Votre compte est en attente de validation" utilisateur={utilisateur}>
       {state?.vientDeVerifier && (
         <Alerte ton="succes" className="mb-6">
           Votre adresse email est confirmée.

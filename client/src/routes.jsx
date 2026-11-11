@@ -1,5 +1,8 @@
 import { Navigate } from 'react-router'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
+import Connexion from './pages/connexion/Connexion.jsx'
+import MotDePasseOublie from './pages/connexion/MotDePasseOublie.jsx'
+import ReinitialiserMotDePasse from './pages/connexion/ReinitialiserMotDePasse.jsx'
 import Accueil from './pages/Accueil.jsx'
 import PageIntrouvable from './pages/PageIntrouvable.jsx'
 import PageEnPreparation from './pages/PageEnPreparation.jsx'
@@ -14,6 +17,10 @@ export const routes = [
   { path: '/verifiez-votre-email', element: <VerifiezVotreEmail /> },
   { path: '/verification-email', element: <VerificationEmail /> },
   { path: '/compte-en-attente', element: <CompteEnAttente /> },
+  { path: '/mon-compte', element: <CompteEnAttente /> },
+  { path: '/connexion', element: <Connexion /> },
+  { path: '/mot-de-passe-oublie', element: <MotDePasseOublie /> },
+  { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
   { path: '/admin', element: <Navigate to="/admin/comptes" replace /> },
   { path: '/admin/comptes', element: <ComptesEnAttente /> },
   { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },
