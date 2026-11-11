@@ -10,10 +10,13 @@
     "dev:client": "npm run dev -w @nakayo/client",
     "dev:server": "npm run dev -w @nakayo/server",
     "build": "npm run build -w @nakayo/client",
-    "lint": "npm run lint -w @nakayo/client",
+    "lint": "npm run lint -w @nakayo/client && npm run lint -w @nakayo/server",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
-    "db:migrate": "npm run migrate -w @nakayo/server"
+    "db:migrate": "npm run migrate -w @nakayo/server",
+    "test": "npm run test -w @nakayo/client && npm run test -w @nakayo/server",
+    "test:server": "npm run test -w @nakayo/server",
+    "db:test:up": "docker compose up -d db-test"
   },
   "engines": {
     "node": ">=20"
