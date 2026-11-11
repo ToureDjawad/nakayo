@@ -13,6 +13,7 @@ import {
   revoquerSession,
   revoquerSessionsUtilisateur,
 } from '../services/sessions.js'
+import { lireProfilTesteur } from '../services/testeurs.js'
 
 const DUREE_REINITIALISATION_MS = 60 * 60 * 1000
 
@@ -127,8 +128,11 @@ export function routesAuth(deps) {
   })
 
   // §3.3 Utilisateur de la session courante.
-  routeur.get('/moi', exigerSession, (req, res) => {
-    res.json({ utilisateur: versUtilisateurApi(req.session.utilisateur) })
+  routeur.get('/moi', exigerSession, async (req, res) => {
+    const { utilisateur } = req.session
+    // Un testeur reçoit son profil complet (§4.4), comme après la connexion par SMS.
+    const profil = utilisateur.role === 'testeur' ? await lireProfilTesteur(pool, utilisateur.id) : null
+    res.json({ utilisateur: profil ?? versUtilisateurApi(utilisateur) })
   })
 
   // §3.4 Mot de passe oublié : 202 dans tous les cas, sans dire si le compte existe.

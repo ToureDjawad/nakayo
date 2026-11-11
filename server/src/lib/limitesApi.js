@@ -13,6 +13,9 @@ export function creerLimitesApi(maintenant) {
     // §2.3 et §3.4 : un email par minute et 5 par heure pour une adresse.
     emailMinute: creerLimiteur({ max: 1, fenetreMs: MINUTE, maintenant: horloge }),
     emailHeure: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
+    // §4.1 : un SMS par minute et 5 par heure pour un numéro.
+    smsMinute: creerLimiteur({ max: 1, fenetreMs: MINUTE, maintenant: horloge }),
+    smsHeure: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
     // §2.1 : 5 inscriptions par heure depuis une IP.
     inscriptionIp: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
   }

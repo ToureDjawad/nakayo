@@ -7,6 +7,8 @@ import { creerLimitesApi } from './lib/limitesApi.js'
 import { chargerSession } from './middlewares/authentification.js'
 import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
+import { routesSms } from './routes/sms.js'
+import { routesTesteurs } from './routes/testeurs.js'
 import { health } from './routes/health.js'
 import { creerMessagerieJournal } from './services/messagerie.js'
 
@@ -36,6 +38,8 @@ export function creerApp(dependances = {}) {
   app.use('/api', chargerSession(deps))
   app.use('/api/auth', routesAuth(deps))
   app.use('/api/auth', routesInscription(deps))
+  app.use('/api/auth', routesSms(deps))
+  app.use('/api/testeurs', routesTesteurs(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))
