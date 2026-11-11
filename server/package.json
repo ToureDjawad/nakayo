@@ -8,7 +8,6 @@
     "start": "node --env-file-if-exists=.env src/index.js",
     "migrate": "node --env-file-if-exists=.env src/db/migrate.js",
     "admin:creer": "node --env-file-if-exists=.env src/scripts/creer-admin.js",
-    "demo:remplir": "node --env-file-if-exists=.env src/scripts/remplir-demo.js",
     "lint": "oxlint",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",

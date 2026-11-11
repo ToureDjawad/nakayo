@@ -49,12 +49,14 @@ Prérequis : Node.js 22 (voir `.nvmrc`) et Docker ou Podman. Un PostgreSQL 16 in
      -p 5432:5432 -v nakayo-pgdata:/var/lib/postgresql/data docker.io/library/postgres:16
    ```
 
-3. Créer les tables puis les comptes de démonstration (voir plus bas) :
+3. Créer les tables puis votre compte admin :
 
    ```bash
    npm run db:migrate
-   npm run demo:remplir
+   npm run admin:creer -w @nakayo/server -- --email vous@exemple.bj --nom "Prénom Nom"
    ```
+
+   Le mot de passe (10 caractères minimum) est demandé au clavier. Il peut aussi être lu dans la variable `NAKAYO_ADMIN_MOT_DE_PASSE` de `server/.env`, fichier qui n'est jamais commité. Relancer la commande avec le même email change le mot de passe.
 
 4. Lancer l'API (port 3000) et le front (port 5173) :
 
@@ -62,7 +64,7 @@ Prérequis : Node.js 22 (voir `.nvmrc`) et Docker ou Podman. Un PostgreSQL 16 in
    npm run dev
    ```
 
-5. Ouvrir http://localhost:5173/connexion.
+5. Ouvrir http://localhost:5173/connexion et se connecter avec le compte admin : on arrive sur `/admin/comptes`.
 
 ### Les fois suivantes
 
@@ -72,41 +74,16 @@ npm run db:migrate           # seulement si de nouvelles migrations sont arrivé
 npm run dev
 ```
 
-Pour repartir de comptes de démonstration propres, relancer `npm run demo:remplir`. Les autres comptes de la base ne sont pas touchés.
-
 Si le port 3000 ou 5173 est déjà pris, un ancien `npm run dev` tourne encore : l'arrêter (Ctrl+C dans son terminal) avant d'en lancer un autre.
 
-### Comptes de démonstration
+### Créer d'autres comptes
 
-Créés par `npm run demo:remplir`, dans la base locale uniquement : le script refuse de tourner en production. Tous les comptes ont le même mot de passe : **`nakayo-demo-2026`**.
-
-| Email | Rôle et statut | Ce qu'on peut essayer |
-|---|---|---|
-| `admin@nakayo.test` | admin | `/admin/comptes` : comptes en attente, contrôles automatiques, photos, valider ou refuser |
-| `dev.valide@nakayo.test` | développeur validé | `/mon-compte` |
-| `dev.attente@nakayo.test` | développeur en attente | page « compte en attente » ; visible dans la liste de l'admin |
-| `dev.refuse@nakayo.test` | développeur refusé | le motif du refus s'affiche après la connexion |
-| `dev.nonverifie@nakayo.test` | développeur, email non confirmé | connexion refusée, avec renvoi du lien de vérification |
-
-Trois testeurs en attente sont aussi créés, avec de fausses photos : Koffi Agbo, Aïcha Dossou et Romuald Hounkpè (téléphones `+2290197100001` à `+2290197100003`). Le troisième utilise le même appareil que le premier, ce que signale le contrôle « appareil partagé ». Les fiches Google Play des développeurs de démo sont fictives : leur contrôle apparaît « non vérifié ».
-
-Pour créer votre propre compte admin : `npm run admin:creer -w @nakayo/server -- --email vous@exemple.bj` (le mot de passe est demandé au clavier).
+- **Développeur** : s'inscrire sur http://localhost:5173/inscription. Le lien de vérification de l'email s'affiche dans le terminal de l'API. Le compte passe ensuite en attente : le valider depuis `/admin/comptes` avec le compte admin.
+- **Testeur** : l'app Android n'existe pas encore, l'inscription se fait en appelant l'API (`POST /api/auth/sms/envoi`, `/api/auth/sms/verification`, puis `/api/testeurs/inscription` avec les photos, voir `docs/api-sprint1.md` §4).
 
 ### Emails et SMS en local
 
 Aucun email ni SMS ne part en développement : ils sont écrits dans le terminal de `npm run dev` (lignes de l'API). On y trouve le lien de vérification après une inscription, le lien de réinitialisation du mot de passe et les codes SMS.
-
-L'app Android n'existe pas encore : un testeur se connecte en appelant l'API directement.
-
-```bash
-curl -X POST localhost:3000/api/auth/sms/envoi -H 'Content-Type: application/json' \
-  -d '{"telephone":"+2290197100001"}'
-# lire le code à 6 chiffres dans le terminal de l'API, le mettre à la place de 123456, puis :
-curl -X POST localhost:3000/api/auth/sms/verification -H 'Content-Type: application/json' \
-  -d '{"telephone":"+2290197100001","code":"123456","appareil":{"fabricant":"Tecno","modele":"Spark 20","versionAndroid":"14","niveauApi":34,"identifiant":"demo-appareil-1"}}'
-# la réponse contient un jeton à passer ensuite en en-tête : Authorization: Bearer <jeton>
-curl localhost:3000/api/testeurs/moi -H 'Authorization: Bearer <jeton>'
-```
 
 ### Front seul, avec l'API simulée
 
@@ -116,7 +93,7 @@ Pour travailler sur l'interface sans base ni API :
 npm run dev:mocks
 ```
 
-Ce mode a ses propres comptes, différents des comptes de démonstration : voir `client/src/mocks/README.md`.
+Ce mode a ses propres comptes fictifs, qui n'existent pas dans la base : voir `client/src/mocks/README.md`.
 
 Le contrat de l'API est dans `docs/api-sprint1.md`.
 
@@ -144,7 +121,6 @@ Avant le premier `npm run test:e2e`, installer le navigateur : `npx playwright i
 | `npm run test:e2e` | tests de bout en bout (Playwright, sur ordinateur et mobile, avec l'API simulée) |
 | `npm run db:up` / `npm run db:down` | démarrer / arrêter PostgreSQL |
 | `npm run db:migrate` | appliquer les nouvelles migrations de `server/migrations/` |
-| `npm run demo:remplir` | créer ou recréer les comptes de démonstration (refusé en production) |
 | `npm run admin:creer -w @nakayo/server -- --email ... [--nom ...]` | créer un compte admin (ou changer son mot de passe) ; le mot de passe est demandé au clavier |
 | `npm run db:test:up` | démarrer la base PostgreSQL jetable des tests de l'API (port 5433, avec Docker ; voir ci-dessous pour Podman) |
 | `npm run test:server` | tests de l'API : unitaires, intégration et bout en bout, sur la base de test |
