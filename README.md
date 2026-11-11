@@ -38,14 +38,35 @@ npm run dev                       # lance l'API (port 3000) et le front (port 51
 
 Ouvre http://localhost:5173 : la page indique si l'API et PostgreSQL répondent.
 
+Tant que l'API du Sprint 1 n'existe pas, le front peut tourner seul contre une API simulée :
+
+```bash
+npm run dev:mocks                 # front seul, API simulée (voir client/src/mocks/README.md)
+```
+
+Le contrat d'API attendu est dans `docs/api-sprint1.md`.
+
+## Tests du front
+
+| Dossier | Type | Outil |
+|---|---|---|
+| `client/tests/unit/` | fonctions et hooks isolés (validation, client d'API, messages) | Vitest |
+| `client/tests/integration/` | pages rendues avec le vrai routeur, `fetch` simulé | Vitest + Testing Library |
+| `client/tests/e2e/` | parcours complets dans Chromium, ordinateur et mobile, contrôle d'accessibilité axe | Playwright |
+
+Avant le premier `npm run test:e2e`, installer le navigateur : `npx playwright install chromium` (depuis `client/`).
+
 ## Commandes
 
 | Commande | Rôle |
 |---|---|
 | `npm run dev` | API + front en mode développement |
 | `npm run dev:client` / `npm run dev:server` | un seul des deux |
+| `npm run dev:mocks` | front seul avec l'API simulée |
 | `npm run build` | build de production du front |
 | `npm run lint` | vérification du code du front |
+| `npm test` | tests unitaires et d'intégration du front (Vitest) |
+| `npm run test:e2e` | tests de bout en bout (Playwright, sur ordinateur et mobile, avec l'API simulée) |
 | `npm run db:up` / `npm run db:down` | démarrer / arrêter PostgreSQL |
 | `npm run db:migrate` | appliquer les nouvelles migrations de `server/migrations/` |
 | `npm run admin:creer -w @nakayo/server -- --email ... [--nom ...]` | créer un compte admin (ou changer son mot de passe) ; le mot de passe est demandé au clavier |
