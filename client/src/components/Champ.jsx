@@ -18,11 +18,12 @@ function Libelle({ htmlFor, children, facultatif }) {
   )
 }
 
-function Message({ id, nom, erreur }) {
+// `messages` remplace le texte par défaut d'un code dans un contexte précis.
+function Message({ id, nom, erreur, messages }) {
   if (!erreur) return null
   return (
     <p id={id} className="mt-1.5 text-sm text-erreur">
-      {messageChamp(nom, erreur)}
+      {messages?.[erreur] ?? messageChamp(nom, erreur)}
     </p>
   )
 }
@@ -38,7 +39,7 @@ function Compteur({ id, longueur, max }) {
   )
 }
 
-export function Champ({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, max, type = 'text', facultatif, ...props }) {
+export function Champ({ id, nom, messages, libelle, aide, valeur, erreur, onChange, onBlur, max, type = 'text', facultatif, ...props }) {
   const base = useId()
   const idAide = `${base}-aide`
   const idErreur = `${base}-erreur`
@@ -70,12 +71,12 @@ export function Champ({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur
         {...props}
       />
       <Compteur id={idCompteur} longueur={valeur.length} max={max} />
-      <Message id={idErreur} nom={nom} erreur={erreur} />
+      <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
     </div>
   )
 }
 
-export function ChampMotDePasse({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, ...props }) {
+export function ChampMotDePasse({ id, nom, messages, libelle, aide, valeur, erreur, onChange, onBlur, ...props }) {
   const [visible, setVisible] = useState(false)
   const base = useId()
   const idAide = `${base}-aide`
@@ -113,12 +114,12 @@ export function ChampMotDePasse({ id, nom, libelle, aide, valeur, erreur, onChan
           {visible ? 'Masquer' : 'Afficher'}
         </button>
       </div>
-      <Message id={idErreur} nom={nom} erreur={erreur} />
+      <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
     </div>
   )
 }
 
-export function ChampSelection({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, options, invite, ...props }) {
+export function ChampSelection({ id, nom, messages, libelle, aide, valeur, erreur, onChange, onBlur, options, invite, ...props }) {
   const base = useId()
   const idAide = `${base}-aide`
   const idErreur = `${base}-erreur`
@@ -150,12 +151,12 @@ export function ChampSelection({ id, nom, libelle, aide, valeur, erreur, onChang
           </option>
         ))}
       </select>
-      <Message id={idErreur} nom={nom} erreur={erreur} />
+      <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
     </div>
   )
 }
 
-export function CaseACocher({ id, nom, valeur, erreur, onChange, children }) {
+export function CaseACocher({ id, nom, messages, valeur, erreur, onChange, children }) {
   const base = useId()
   const idErreur = `${base}-erreur`
   return (
@@ -175,12 +176,12 @@ export function CaseACocher({ id, nom, valeur, erreur, onChange, children }) {
           {children}
         </label>
       </div>
-      <Message id={idErreur} nom={nom} erreur={erreur} />
+      <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
     </div>
   )
 }
 
-export function ChampTexte({ id, nom, libelle, aide, valeur, erreur, onChange, onBlur, max, lignes = 4, ref, ...props }) {
+export function ChampTexte({ id, nom, messages, libelle, aide, valeur, erreur, onChange, onBlur, max, lignes = 4, ref, ...props }) {
   const base = useId()
   const idAide = `${base}-aide`
   const idErreur = `${base}-erreur`
@@ -211,7 +212,7 @@ export function ChampTexte({ id, nom, libelle, aide, valeur, erreur, onChange, o
         {...props}
       />
       <Compteur id={idCompteur} longueur={valeur.length} max={max} />
-      <Message id={idErreur} nom={nom} erreur={erreur} />
+      <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
     </div>
   )
 }

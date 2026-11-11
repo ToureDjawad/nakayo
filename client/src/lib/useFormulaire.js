@@ -21,6 +21,13 @@ export function useFormulaire(initiales, validateurs, { prefixe = '' } = {}) {
     }
   }
 
+  // Vide un champ sans afficher d'erreur (ex. mot de passe après un échec de connexion).
+  function vider(nom) {
+    setValeurs((v) => ({ ...v, [nom]: '' }))
+    setErreurs((e) => ({ ...e, [nom]: null }))
+    setTouches((t) => ({ ...t, [nom]: false }))
+  }
+
   function quitter(nom) {
     const erreur = validerChamp(nom, valeurs)
     if (erreur === 'requis' && !soumis.current) return
@@ -64,5 +71,5 @@ export function useFormulaire(initiales, validateurs, { prefixe = '' } = {}) {
     }
   }
 
-  return { valeurs, erreurs, modifier, validerTout, appliquerErreursServeur, lier }
+  return { valeurs, erreurs, modifier, vider, validerTout, appliquerErreursServeur, lier }
 }

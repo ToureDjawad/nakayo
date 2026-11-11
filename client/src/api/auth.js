@@ -15,3 +15,19 @@ export function renvoyerEmailVerification(email) {
 export function lireSession({ signal } = {}) {
   return requete('/auth/moi', { signal })
 }
+
+export function connecter(email, motDePasse) {
+  return requete('/auth/connexion', { methode: 'POST', corps: { email, motDePasse } })
+}
+
+export function deconnecter() {
+  return requete('/auth/deconnexion', { methode: 'POST' })
+}
+
+export function demanderReinitialisation(email) {
+  return requete('/auth/mot-de-passe/oubli', { methode: 'POST', corps: { email } })
+}
+
+export function reinitialiserMotDePasse(jeton, motDePasse) {
+  return requete('/auth/mot-de-passe/reinitialisation', { methode: 'POST', corps: { jeton, motDePasse } })
+}

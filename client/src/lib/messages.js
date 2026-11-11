@@ -36,6 +36,10 @@ const PAR_CHAMP = {
     requis: 'Vous devez accepter les conditions d’utilisation pour créer un compte.',
     doit_etre_accepte: 'Vous devez accepter les conditions d’utilisation pour créer un compte.',
   },
+  confirmation: {
+    requis: 'Saisissez à nouveau le mot de passe.',
+    different: 'Les deux mots de passe ne correspondent pas.',
+  },
   motif: {
     requis: 'Indiquez le motif du refus. Il sera envoyé à la personne.',
     trop_court: `Le motif doit contenir au moins ${LIMITES.motifRefusMin} caractères.`,

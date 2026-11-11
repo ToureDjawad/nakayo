@@ -42,9 +42,34 @@ export async function verifierSansDefilementHorizontal(page) {
   expect(deborde).toBe(false)
 }
 
-// Ouvre une session dans l'API simulée (l'écran de connexion arrive avec US-09).
+// Comptes de départ de l'API simulée (src/mocks/README.md).
+export const COMPTES = {
+  'admin@nakayo.test': 'admin-nakayo-2026',
+  'valide@exemple.com': 'motdepasse-valide',
+  'refuse@exemple.com': 'motdepasse-refuse',
+  'nonverifie@exemple.com': 'motdepasse-nonverifie',
+  'suspendu@exemple.com': 'motdepasse-suspendu',
+}
+
+// Se connecte par l'écran de connexion (US-09).
+export async function seConnecter(page, email, motDePasse = COMPTES[email]) {
+  await page.goto('/connexion')
+  await page.getByLabel('Adresse email').fill(email)
+  await page.getByLabel('Mot de passe', { exact: true }).fill(motDePasse)
+  await page.getByRole('button', { name: 'Se connecter' }).click()
+}
+
 export async function connecterAdmin(page, email = 'admin@nakayo.test') {
-  await page.goto('/')
-  await page.waitForFunction(() => window.nakayoMocks)
-  await page.evaluate((adresse) => window.nakayoMocks.connecter(adresse), email)
+  await seConnecter(page, email)
+  await page.waitForURL(email === 'admin@nakayo.test' ? '/admin/comptes' : '/mon-compte')
+}
+
+// L'API simulée écrit le lien de réinitialisation dans la console du navigateur.
+export function capturerLienReinitialisation(page) {
+  return new Promise((resoudre) => {
+    page.on('console', (message) => {
+      const trouve = message.text().match(/(\/reinitialiser-mot-de-passe\?jeton=\w+)/)
+      if (trouve) resoudre(trouve[1])
+    })
+  })
 }
