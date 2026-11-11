@@ -135,7 +135,7 @@ export function routesAuth(deps) {
   routeur.post('/mot-de-passe/oubli', async (req, res) => {
     const email = normaliserEmail(corps(req).email)
     exigerChamps({ email: validerEmail(email) && 'format_invalide' })
-    consommerEnvoiEmail(limites, email)
+    consommerEnvoiEmail(limites, 'oubli', email)
 
     const { rows } = await pool.query(
       `SELECT id FROM utilisateurs

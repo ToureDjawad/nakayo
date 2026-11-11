@@ -1,13 +1,18 @@
 import { erreurValidation } from './erreurs.js'
+import { CODES_PAYS } from './pays.js'
 
 // Règles des champs (docs/api-sprint1.md §1.4), identiques à celles du front.
 export const LIMITES = {
   email: 254,
   motDePasseMin: 10,
   motDePasseMax: 128,
+  nomMin: 2,
+  nomMax: 80,
+  lienFiche: 300,
 }
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const RE_FICHE_PLAY = /^https:\/\/play\.google\.com\/store\/apps\/(dev|developer)\?id=[^\s&#]+(&[^\s#]*)?$/
 
 export function texte(valeur) {
   return typeof valeur === 'string' ? valeur.trim() : ''
@@ -29,6 +34,33 @@ export function validerMotDePasse(valeur) {
   if (typeof valeur !== 'string' || !valeur) return 'requis'
   if (valeur.length < LIMITES.motDePasseMin) return 'trop_court'
   if (valeur.length > LIMITES.motDePasseMax) return 'trop_long'
+  return null
+}
+
+export function validerNom(valeur) {
+  if (!valeur) return 'requis'
+  if (valeur.length < LIMITES.nomMin) return 'trop_court'
+  if (valeur.length > LIMITES.nomMax) return 'trop_long'
+  return null
+}
+
+export function validerPays(valeur) {
+  if (!valeur) return 'requis'
+  return CODES_PAYS.has(valeur) ? null : 'valeur_inconnue'
+}
+
+// Accepte un lien collé sans « https:// » ou en « http:// », comme le front.
+export function normaliserLienFiche(valeur) {
+  const v = texte(valeur)
+  if (/^http:\/\//i.test(v)) return v.replace(/^http:\/\//i, 'https://')
+  if (/^play\.google\.com\//i.test(v)) return `https://${v}`
+  return v
+}
+
+export function validerLienFiche(valeur) {
+  if (!valeur) return 'requis'
+  if (valeur.length > LIMITES.lienFiche) return 'trop_long'
+  if (!RE_FICHE_PLAY.test(valeur)) return 'format_invalide'
   return null
 }
 

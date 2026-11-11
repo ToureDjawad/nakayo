@@ -18,10 +18,12 @@ export function creerLimitesApi(maintenant) {
   }
 }
 
-// Envoi d'email vers une adresse : vérifie les deux fenêtres avant de compter.
-export function consommerEnvoiEmail(limites, email) {
-  limites.emailMinute.verifier(email)
-  limites.emailHeure.verifier(email)
-  limites.emailMinute.compter(email)
-  limites.emailHeure.compter(email)
+// Envoi d'email vers une adresse : vérifie les deux fenêtres avant de compter. Chaque type
+// d'email a ses compteurs (un renvoi de vérification ne bloque pas un mot de passe oublié).
+export function consommerEnvoiEmail(limites, type, email) {
+  const cle = `${type}:${email}`
+  limites.emailMinute.verifier(cle)
+  limites.emailHeure.verifier(cle)
+  limites.emailMinute.compter(cle)
+  limites.emailHeure.compter(cle)
 }
