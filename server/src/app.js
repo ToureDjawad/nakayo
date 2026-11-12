@@ -7,6 +7,7 @@ import { creerLimitesApi } from './lib/limitesApi.js'
 import { chargerSession } from './middlewares/authentification.js'
 import { routesAdmin } from './routes/admin.js'
 import { routesApps } from './routes/apps.js'
+import { routesFactures, routesOffres, routesPaiements } from './routes/paiements.js'
 import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
@@ -39,7 +40,8 @@ export function creerApp(dependances = {}) {
   app.locals.deps = deps
 
   app.use(cors({ origin: config.clientUrl, credentials: true }))
-  app.use(express.json({ limit: '100kb' }))
+  // Le corps brut est gardé pour vérifier la signature des webhooks de paiement.
+  app.use(express.json({ limit: '100kb', verify: (req, _res, brut) => { req.corpsBrut = brut } }))
 
   app.use('/api/health', health(deps))
   app.use('/api', chargerSession(deps))
@@ -51,6 +53,9 @@ export function creerApp(dependances = {}) {
   app.use('/api/support', routesSupport(deps))
   app.use('/api/tickets', routesTickets(deps))
   app.use('/api/apps', routesApps(deps))
+  app.use('/api/offres', routesOffres(deps))
+  app.use('/api/paiements', routesPaiements(deps))
+  app.use('/api/factures', routesFactures(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))

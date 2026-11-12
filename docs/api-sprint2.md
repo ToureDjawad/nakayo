@@ -77,7 +77,102 @@ Codes d'erreur par champ (`422`, `champs`) : `requis`, `trop_court`, `trop_long`
 - Contrainte `identifiants_si_connexion` : des identifiants si et seulement si la connexion est requise.
 - Index unique `apps_package_unique` sur `lower(package)` pour les apps non refusées ; index `apps_developpeur` et `apps_file_admin` (pour la file de vérification de l'US-14).
 
-## 2. Récapitulatif des routes
+## 2. Paiement de l'offre Standard (US-12)
+
+Le développeur paie l'offre Standard pour une app en brouillon :
+- **par carte** : 29 $ US (2900 centimes) ;
+- **par Mobile Money** : 17 500 FCFA.
+
+Le paiement passe par un fournisseur, qui confirme par webhook. Après confirmation :
+- l'app passe en `en_verification` ;
+- une facture est émise ;
+- le reçu part par email.
+
+Les comptes marchands ne sont pas encore ouverts (US-03). En développement et en test, un fournisseur « simulation » remplace la carte et l'agrégateur : le développeur choisit l'issue du paiement sur une page du site. En production, le paiement reste fermé (`503 paiement_indisponible`) tant que les fournisseurs ne sont pas branchés.
+
+Configuration :
+- `PAIEMENT_MODE` : `simulation` par défaut hors production, `aucun` par défaut en production ;
+- `PAIEMENT_WEBHOOK_SECRET` : secret partagé avec les fournisseurs pour signer leurs webhooks.
+
+### 2.1 Offre et objet `paiement`
+
+- `GET /api/offres` (public, mis en cache 5 min) : `200 { "offres": [{ "code": "standard", "nom", "description", "prix": { "carte": { "montant": 2900, "devise": "USD" }, "mobile_money": { "montant": 17500, "devise": "XOF" } }, "garantie": "..." }] }`. La garantie est affichée avant le paiement.
+
+```json
+{
+  "reference": "PAY-0123456789ABCDEF",
+  "appId": "7",
+  "appNom": "Marché Facile",
+  "offre": "standard",
+  "moyen": "carte",
+  "montant": 2900,
+  "devise": "USD",
+  "montantLisible": "29,00 $ US",
+  "statut": "reussi",
+  "facture": "NKY-2026-00001",
+  "creeLe": "2026-11-12T09:00:00.000Z",
+  "confirmeLe": "2026-11-12T09:01:00.000Z",
+  "rembourseLe": null
+}
+```
+
+- `montant` est en plus petite unité : centimes pour `USD`, francs pour `XOF`.
+- `statut` vaut :
+  - `en_attente` : en cours chez le fournisseur ;
+  - `reussi` ;
+  - `echoue` ;
+  - `rembourse` (US-14) ;
+  - `doublon` : second paiement confirmé pour une app déjà payée, à rembourser à la main.
+- `facture` : numéro de la facture, émise seulement pour un paiement réussi.
+
+### 2.2 Payer une app
+
+- `POST /api/apps/:id/paiements` (développeur validé) : corps `{ "moyen": "carte" | "mobile_money", "numeroMomo": "+229 01 97 00 00 00" }`. `numeroMomo` n'est demandé que pour `mobile_money` : format international, comme le numéro WhatsApp du §11 du Sprint 1.
+  - Répond `201 { "paiement": paiement, "redirection": "/paiement/simulation/PAY-..." }`. Le site envoie le développeur vers `redirection`, la page du fournisseur ou celle de la simulation.
+  - `422` : `champs.moyen` (`requis`, `valeur_inconnue`) ou `champs.numeroMomo` (`requis`, `format_invalide`).
+  - `409 statut_incompatible` (avec `statut`) si l'app n'est plus en brouillon.
+  - `404` pour l'app d'un autre compte.
+  - `429` au-delà de 10 tentatives par heure.
+  - `503 paiement_indisponible` hors simulation.
+- `GET /api/paiements` : `200 { "paiements": [paiement] }`, du plus récent au plus ancien (US-15).
+- `GET /api/paiements/:reference` : `200 { "paiement": paiement }`. Le site l'appelle au retour du fournisseur. `404` pour le paiement d'un autre compte.
+
+### 2.3 Simulation (développement et tests)
+
+- `POST /api/paiements/:reference/simulation` : corps `{ "resultat": "reussi" | "echoue" }`. Le développeur propriétaire choisit l'issue, qui est appliquée exactement comme un webhook. Répond `200 { "paiement": paiement }`. La route répond `404` hors simulation.
+
+### 2.4 Webhook d'un fournisseur
+
+- `POST /api/paiements/webhook/:fournisseur` : sans session.
+  - Corps `{ "reference": "PAY-...", "statut": "reussi" | "echoue", "referenceFournisseur": "..." }`.
+  - En-tête `X-Nakayo-Signature: sha256=<HMAC SHA-256 hexadécimal du corps brut avec PAIEMENT_WEBHOOK_SECRET>`.
+  - Réponses :
+    - `200 { "recu": true, "statut": "..." }` ;
+    - `401 signature_invalide` ;
+    - `400 corps_invalide` ;
+    - `404` pour une référence inconnue.
+  - L'opération est idempotente : un paiement déjà traité n'est plus modifié, ce qui permet au fournisseur de renvoyer le même webhook.
+- Chaque fournisseur réel (Stripe, agrégateur Mobile Money) aura un petit adaptateur qui traduit son propre webhook vers ce format. Il reste à l'écrire quand les comptes marchands seront ouverts (US-03).
+
+### 2.5 Migration `009_paiements.sql`
+
+- Table `paiements` : `reference` unique, `app_id`, `developpeur_id`, `moyen`, `montant`, `devise`, `fournisseur`, `reference_fournisseur`, `numero_momo`, `statut`, `cree_le`, `confirme_le`, `rembourse_le`.
+- Un seul paiement `reussi` par app (index unique partiel).
+- Tables `factures` (copie du nom, de l'email et du pays du client au moment du paiement) et `compteurs_factures` (numéro continu par année : `NKY-2026-00001`).
+
+## 3. Factures (US-15)
+
+- La facture est émise dans la même transaction que la confirmation du paiement.
+- `GET /api/factures/:numero` : `200` avec le PDF (`application/pdf`, `Content-Disposition: attachment`).
+  - Accessible au développeur qui a payé, ou à un admin.
+  - `404` pour la facture d'un autre compte.
+- Le PDF (une page A4) contient :
+  - l'émetteur et le client ;
+  - la ligne de l'offre et le total payé ;
+  - la date et le moyen de paiement, et la référence ;
+  - la mention « Remboursé le ... » si le paiement a été remboursé.
+
+## 4. Récapitulatif des routes
 
 | Méthode | Route | Rôle | Section |
 |---|---|---|---|
@@ -86,3 +181,10 @@ Codes d'erreur par champ (`422`, `champs`) : `requis`, `trop_court`, `trop_long`
 | GET | `/api/apps/:id` | développeur | §1.3 |
 | PUT | `/api/apps/:id` | développeur validé | §1.4 |
 | DELETE | `/api/apps/:id` | développeur | §1.4 |
+| POST | `/api/apps/:id/paiements` | développeur validé | §2.2 |
+| GET | `/api/offres` | public | §2.1 |
+| GET | `/api/paiements` | développeur | §2.2 |
+| GET | `/api/paiements/:reference` | développeur | §2.2 |
+| POST | `/api/paiements/:reference/simulation` | développeur (simulation) | §2.3 |
+| POST | `/api/paiements/webhook/:fournisseur` | fournisseur (signé) | §2.4 |
+| GET | `/api/factures/:numero` | développeur, admin | §3 |
