@@ -104,6 +104,14 @@ const PAR_CHAMP = {
     requis: 'Indiquez le type de votre compte développeur Google Play.',
     valeur_inconnue: 'Choisissez une des réponses proposées.',
   },
+  moyen: {
+    requis: 'Choisissez un moyen de paiement.',
+    valeur_inconnue: 'Choisissez un des moyens de paiement proposés.',
+  },
+  numeroMomo: {
+    requis: 'Saisissez le numéro Mobile Money qui va payer.',
+    format_invalide: 'Saisissez le numéro au format international, avec l’indicatif. Exemple : +229 01 97 00 00 00',
+  },
   du: { format_invalide: 'Date invalide.' },
   au: {
     format_invalide: 'Date invalide.',

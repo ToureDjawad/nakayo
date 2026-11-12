@@ -166,6 +166,54 @@ function appDuDeveloppeur(id, utilisateur) {
   return apps().find((a) => a.id === id && a.developpeurId === utilisateur.id) ?? null
 }
 
+// Paiements de l'offre (docs/api-sprint2.md §2). Le mode simulation est le seul ici.
+const OFFRE = {
+  code: 'standard',
+  nom: 'Offre Standard',
+  description: '12 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
+  prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17500, devise: 'XOF' } },
+  garantie:
+    'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
+}
+
+function paiements() {
+  const b = base()
+  b.paiements ??= []
+  b.compteurFactures ??= 0
+  return b.paiements
+}
+
+function versPaiement(p) {
+  const app = apps().find((a) => a.id === p.appId)
+  const lisible =
+    p.devise === 'XOF' ? `${new Intl.NumberFormat('fr-FR').format(p.montant).replace(/\s/g, ' ')} FCFA` : `${(p.montant / 100).toFixed(2).replace('.', ',')} $ US`
+  return {
+    reference: p.reference,
+    appId: p.appId,
+    appNom: app?.nom ?? p.appNom,
+    offre: 'standard',
+    moyen: p.moyen,
+    montant: p.montant,
+    devise: p.devise,
+    montantLisible: lisible,
+    statut: p.statut,
+    facture: p.facture,
+    creeLe: p.creeLe,
+    confirmeLe: p.confirmeLe,
+    rembourseLe: null,
+  }
+}
+
+function paiementDuDeveloppeur(reference, utilisateur) {
+  return paiements().find((p) => p.reference === reference && p.developpeurId === utilisateur.id) ?? null
+}
+
+// Un PDF minimal : le vrai document est produit par le serveur (services/factures.js).
+function pdfFacture(numero) {
+  const contenu = `%PDF-1.4\n% Facture ${numero} (API simulée)\n%%EOF\n`
+  return new Blob([contenu], { type: 'application/pdf' })
+}
+
 function trouverCompte(id) {
   return base().utilisateurs.find((u) => u.id === id && u.role !== 'admin' && visiblePourAdmin(u)) ?? null
 }
@@ -571,6 +619,110 @@ export const routes = [
       base().apps = apps().filter((a) => a !== app)
       sauver()
       return vide()
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/offres',
+    traiter() {
+      return ok({ offres: [OFFRE] })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/apps/:id/paiements',
+    traiter({ params, corps = {} }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      if (utilisateur.statut !== 'valide') return erreur(403, 'compte_non_valide')
+      const { moyen } = corps
+      const numero = moyen === 'mobile_money' ? normaliserWhatsapp(corps.numeroMomo) : null
+      const champs = Object.fromEntries(
+        Object.entries({
+          moyen: !moyen ? 'requis' : OFFRE.prix[moyen] ? null : 'valeur_inconnue',
+          numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
+        }).filter(([, code]) => code),
+      )
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      if (app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
+      const reference = `PAY-${Array.from({ length: 16 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('')}`
+      const paiement = {
+        reference,
+        appId: app.id,
+        appNom: app.nom,
+        developpeurId: utilisateur.id,
+        moyen,
+        ...OFFRE.prix[moyen],
+        numeroMomo: numero,
+        statut: 'en_attente',
+        facture: null,
+        creeLe: horodatage(),
+        confirmeLe: null,
+      }
+      paiements().push(paiement)
+      sauver()
+      return ok({ paiement: versPaiement(paiement), redirection: `/paiement/simulation/${reference}` }, 201)
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/paiements',
+    traiter() {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const miens = paiements()
+        .filter((p) => p.developpeurId === utilisateur.id)
+        .sort((a, b) => b.creeLe.localeCompare(a.creeLe))
+      return ok({ paiements: miens.map(versPaiement) })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/paiements/:reference',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const paiement = paiementDuDeveloppeur(params.reference, utilisateur)
+      return paiement ? ok({ paiement: versPaiement(paiement) }) : erreur(404, 'introuvable')
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/paiements/:reference/simulation',
+    traiter({ params, corps = {} }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const paiement = paiementDuDeveloppeur(params.reference, utilisateur)
+      if (!paiement) return erreur(404, 'introuvable')
+      if (!['reussi', 'echoue'].includes(corps.resultat)) return erreur(422, 'validation', { champs: { resultat: 'valeur_inconnue' } })
+      if (paiement.statut === 'en_attente') {
+        const app = apps().find((a) => a.id === paiement.appId)
+        paiement.confirmeLe = horodatage()
+        if (corps.resultat === 'echoue') paiement.statut = 'echoue'
+        else if (!app || app.statut !== 'brouillon') paiement.statut = 'doublon'
+        else {
+          paiement.statut = 'reussi'
+          app.statut = 'en_verification'
+          base().compteurFactures = (base().compteurFactures ?? 0) + 1
+          paiement.facture = `NKY-${paiement.confirmeLe.slice(0, 4)}-${String(base().compteurFactures).padStart(5, '0')}`
+          console.info(`[mocks] Reçu de paiement envoyé (facture ${paiement.facture})`)
+        }
+        sauver()
+      }
+      return ok({ paiement: versPaiement(paiement) })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/factures/:numero',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const paiement = paiements().find((p) => p.facture === params.numero && p.developpeurId === utilisateur.id)
+      if (!paiement) return erreur(404, 'introuvable')
+      return { statut: 200, corps: null, brut: pdfFacture(params.numero), entetes: { 'Content-Type': 'application/pdf' } }
     },
   },
   {

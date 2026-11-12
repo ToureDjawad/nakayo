@@ -49,6 +49,7 @@ export function installerMocks({ delai = 600 } = {}) {
     if (reponse === RESEAU_COUPE) throw new TypeError('Failed to fetch')
 
     const entetes = { ...reponse.entetes }
+    if (reponse.brut) return new Response(reponse.brut, { status: reponse.statut, headers: entetes })
     if (reponse.corps !== null) entetes['Content-Type'] = 'application/json'
     return new Response(reponse.corps === null ? null : JSON.stringify(reponse.corps), {
       status: reponse.statut,
