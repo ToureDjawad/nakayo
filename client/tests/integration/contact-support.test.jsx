@@ -22,7 +22,9 @@ describe('Contact WhatsApp du support sur l’espace développeur (US-40)', () =
     rendreA('/mon-compte')
 
     const lien = await screen.findByRole('link', { name: /Écrire au support sur WhatsApp/ })
-    expect(lien).toHaveAttribute('href', 'https://wa.me/2290197000000')
+    const href = new URL(lien.getAttribute('href'))
+    expect(href.origin + href.pathname).toBe('https://wa.me/2290197000000')
+    expect(href.searchParams.get('text')).toBe('Bonjour, je suis Studio Awa, développeur sur Nakayo (awa@studio.bj). J’ai une question :')
     expect(lien).toHaveAttribute('target', '_blank')
     expect(lien).toHaveAttribute('rel', 'noopener noreferrer')
     expect(screen.getByText(/au \+229 01 97 00 00 00/)).toBeInTheDocument()

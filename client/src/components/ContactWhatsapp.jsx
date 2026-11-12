@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { lireContactSupport } from '../api/support.js'
 import { telephone } from '../lib/format.js'
+import { lienWhatsapp, messageSupport } from '../lib/whatsapp.js'
 
 // Lien WhatsApp du support, affiché seulement si un admin a publié un numéro (§11).
 // En cas d'erreur réseau, rien n'est affiché : le reste de la page n'en dépend pas.
-export function ContactWhatsapp({ className = '' }) {
+export function ContactWhatsapp({ utilisateur, className = '' }) {
   const [numero, setNumero] = useState(null)
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function ContactWhatsapp({ className = '' }) {
       </h2>
       <p className="mt-1 text-sm text-texte">Notre équipe vous répond sur WhatsApp au {telephone(numero)}.</p>
       <a
-        href={`https://wa.me/${numero.replace(/\D/g, '')}`}
+        href={lienWhatsapp(numero, messageSupport(utilisateur))}
         target="_blank"
         rel="noopener noreferrer"
         className="mt-3 inline-flex h-11 items-center gap-2 rounded-champ border border-trait bg-white px-4 text-[15px] font-semibold text-encre hover:bg-fond-doux"

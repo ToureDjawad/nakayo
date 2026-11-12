@@ -79,7 +79,9 @@ fun AppNakayo(navigation: Navigation) {
                 surProfil = { (etat as? EtatEspace.Pret)?.let { navigation.allerProfil(it.profil) } },
                 whatsapp = whatsapp,
                 // Sans WhatsApp ni navigateur sur le téléphone, le bouton ne fait rien plutôt que de planter.
-                surWhatsapp = { numero -> runCatching { liens.openUri(lienWhatsapp(numero)) } },
+                surWhatsapp = { numero ->
+                    runCatching { liens.openUri(lienWhatsapp(numero, messageSupport((etat as? EtatEspace.Pret)?.profil))) }
+                },
             )
         }
         is Ecran.Profil -> {

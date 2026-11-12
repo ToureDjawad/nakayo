@@ -136,7 +136,23 @@ class ProfilModeleTest {
 
     @Test
     fun `lien WhatsApp`() {
-        assertEquals("https://wa.me/2290197000000", bj.nakayo.testeur.ui.lienWhatsapp("+229 01 97 00 00 00"))
+        assertEquals(
+            "https://wa.me/2290197000000?text=Bonjour%2C%20%C3%A7a%20va%20%3F%20%26%20merci",
+            bj.nakayo.testeur.ui.lienWhatsapp("+229 01 97 00 00 00", "Bonjour, ça va ? & merci"),
+        )
+    }
+
+    @Test
+    fun `message pré-rempli pour le support`() {
+        val profil = ProfilTesteur(
+            id = "1", role = "testeur", statut = "en_attente", telephone = "+2290197000000", nom = "Afi Dossou",
+            numeroMomo = "+2290197000000", operateurMomo = "mtn", creeLe = "2026-11-10T14:07:01.512Z",
+        )
+        assertEquals(
+            "Bonjour, je suis Afi Dossou, testeur Nakayo (numéro ${bj.nakayo.testeur.ui.afficher("+2290197000000")}). J'ai une question :",
+            bj.nakayo.testeur.ui.messageSupport(profil),
+        )
+        assertEquals("Bonjour, je suis testeur Nakayo et j'ai une question.", bj.nakayo.testeur.ui.messageSupport(null))
     }
 
     @Test

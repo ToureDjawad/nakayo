@@ -136,7 +136,7 @@ export default function CompteEnAttente() {
         <p className="mt-6 text-texte">
           Si vous pensez qu’il s’agit d’une erreur, répondez à l’email de décision que vous avez reçu.
         </p>
-        <ContactWhatsapp className="mt-6" />
+        <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
     )
@@ -154,7 +154,7 @@ export default function CompteEnAttente() {
         }
       >
         <Alerte ton="succes">Vous pouvez soumettre votre première application.</Alerte>
-        <ContactWhatsapp className="mt-6" />
+        <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
     )
@@ -164,7 +164,7 @@ export default function CompteEnAttente() {
     return (
       <PageCompte titre="Votre compte est suspendu" utilisateur={utilisateur}>
         <p className="text-texte">Contactez notre équipe en répondant à l’email de suspension que vous avez reçu.</p>
-        <ContactWhatsapp className="mt-6" />
+        <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
       </PageCompte>
     )
   }
@@ -192,7 +192,7 @@ export default function CompteEnAttente() {
       <div className="mt-6">
         <Etapes />
       </div>
-      <ContactWhatsapp className="mt-6" />
+      <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
       <Recapitulatif utilisateur={utilisateur} />
     </PageCompte>
   )
