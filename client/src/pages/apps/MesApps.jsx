@@ -89,6 +89,17 @@ export function MesApps() {
                     {app.statut === 'en_verification' && (
                       <p className="mt-2 text-sm text-texte">Offre payée. L’équipe vérifie votre app sous 24 h ouvrées avant de lancer la campagne.</p>
                     )}
+                    {app.statut === 'validee' && (
+                      <p className="mt-2 text-sm text-texte">Votre app est validée : la campagne de test démarre bientôt.</p>
+                    )}
+                    {app.statut === 'refusee' && (
+                      <div className="mt-2 text-sm text-texte">
+                        <p>
+                          <span className="font-semibold text-encre">Motif :</span> <span className="[overflow-wrap:anywhere]">{app.motifRefus}</span>
+                        </p>
+                        <p className="mt-1">Votre paiement vous est remboursé. Vous pouvez soumettre l’app à nouveau une fois le problème corrigé.</p>
+                      </div>
+                    )}
                   </li>
                 )
               })}

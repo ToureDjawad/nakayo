@@ -119,8 +119,14 @@ function apps() {
 }
 
 function versApp(a) {
-  const copie = { ...a, testObligatoire: a.comptePlay === 'personnel_recent' }
+  const copie = {
+    ...a,
+    testObligatoire: a.comptePlay === 'personnel_recent',
+    motifRefus: a.motifRefus ?? null,
+    preparation: a.preparation ?? { elements: [], complete: false, completeLe: null },
+  }
   delete copie.developpeurId
+  delete copie.decideLe
   return copie
 }
 
@@ -212,6 +218,40 @@ function paiementDuDeveloppeur(reference, utilisateur) {
 function pdfFacture(numero) {
   const contenu = `%PDF-1.4\n% Facture ${numero} (API simulée)\n%%EOF\n`
   return new Blob([contenu], { type: 'application/pdf' })
+}
+
+// Vérification des apps payées par l'admin (docs/api-sprint2.md §4).
+function versAppAdmin(a) {
+  const dev = base().utilisateurs.find((u) => u.id === a.developpeurId)
+  const paiement = paiements()
+    .filter((p) => p.appId === a.id && ['reussi', 'rembourse'].includes(p.statut))
+    .at(-1)
+  const p = paiement ? versPaiement(paiement) : null
+  return {
+    ...versApp(a),
+    decideLe: a.decideLe ?? null,
+    developpeur: { id: dev.id, nom: dev.nom, email: dev.email, pays: dev.pays, lienFicheDeveloppeur: dev.lienFicheDeveloppeur },
+    paiement: p
+      ? { reference: p.reference, moyen: p.moyen, montant: p.montant, devise: p.devise, montantLisible: p.montantLisible, statut: p.statut, facture: p.facture, confirmeLe: p.confirmeLe, rembourseLe: paiement.rembourseLe ?? null }
+      : null,
+  }
+}
+
+function deciderApp(id, decision, motif = null) {
+  const refus = exigerAdmin()
+  if (refus) return refus
+  const app = apps().find((a) => a.id === id && a.statut !== 'brouillon')
+  if (!app) return erreur(404, 'introuvable')
+  if (app.statut !== 'en_verification') return erreur(409, 'statut_incompatible', { statut: app.statut })
+  const maintenant = horodatage()
+  Object.assign(app, { statut: decision, motifRefus: motif, decideLe: maintenant, modifieLe: maintenant })
+  if (decision === 'refusee') {
+    const paye = paiements().find((p) => p.appId === id && p.statut === 'reussi')
+    if (paye) Object.assign(paye, { statut: 'rembourse', rembourseLe: maintenant })
+  }
+  sauver()
+  console.info(`[mocks] Email de décision envoyé pour « ${app.nom} » (${decision})`)
+  return ok({ app: versAppAdmin(app), historique: [] })
 }
 
 function trouverCompte(id) {
@@ -705,6 +745,7 @@ export const routes = [
         else {
           paiement.statut = 'reussi'
           app.statut = 'en_verification'
+          app.modifieLe = paiement.confirmeLe
           base().compteurFactures = (base().compteurFactures ?? 0) + 1
           paiement.facture = `NKY-${paiement.confirmeLe.slice(0, 4)}-${String(base().compteurFactures).padStart(5, '0')}`
           console.info(`[mocks] Reçu de paiement envoyé (facture ${paiement.facture})`)
@@ -723,6 +764,38 @@ export const routes = [
       const paiement = paiements().find((p) => p.facture === params.numero && p.developpeurId === utilisateur.id)
       if (!paiement) return erreur(404, 'introuvable')
       return { statut: 200, corps: null, brut: pdfFacture(params.numero), entetes: { 'Content-Type': 'application/pdf' } }
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/admin/apps',
+    traiter({ query }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const statut = query.get('statut') || 'en_verification'
+      if (!['en_verification', 'validee', 'refusee'].includes(statut)) return erreur(422, 'validation', { champs: { statut: 'valeur_inconnue' } })
+      const page = Number(query.get('page') || 1)
+      const liste = apps()
+        .filter((a) => a.statut === statut)
+        .sort((a, b) => (statut === 'en_verification' ? a.modifieLe.localeCompare(b.modifieLe) : (b.decideLe ?? '').localeCompare(a.decideLe ?? '')))
+      return ok({ apps: liste.slice((page - 1) * 20, page * 20).map(versAppAdmin), total: liste.length, page, parPage: 20 })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/apps/:id/validation',
+    traiter({ params }) {
+      return deciderApp(params.id, 'validee')
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/apps/:id/refus',
+    traiter({ params, corps }) {
+      const motif = (corps?.motif ?? '').trim()
+      const code = validerMotifRefus(motif)
+      if (code) return erreur(422, 'validation', { champs: { motif: code } })
+      return deciderApp(params.id, 'refusee', motif)
     },
   },
   {

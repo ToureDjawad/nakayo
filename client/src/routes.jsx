@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router'
+import AppsAVerifier from './pages/admin/AppsAVerifier.jsx'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
 import ContactSupport from './pages/admin/ContactSupport.jsx'
 import MessagesSupport from './pages/admin/MessagesSupport.jsx'
@@ -38,6 +39,7 @@ export const routes = [
   { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
   { path: '/admin', element: <Navigate to="/admin/comptes" replace /> },
   { path: '/admin/comptes', element: <ComptesEnAttente /> },
+  { path: '/admin/apps', element: <AppsAVerifier /> },
   { path: '/admin/messages', element: <MessagesSupport /> },
   { path: '/admin/support', element: <ContactSupport /> },
   { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },
