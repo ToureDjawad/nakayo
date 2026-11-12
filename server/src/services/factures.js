@@ -49,7 +49,7 @@ export function facturePdf(f) {
   page.texteADroite(droite, 596, 'MONTANT', { taille: 8, gras: true, gris: true })
   page.trait(gauche, 588, droite)
   page.texte(gauche, 568, f.libelle.length > 70 ? `${f.libelle.slice(0, 69)}…` : f.libelle, { taille: 10 })
-  page.texte(gauche, 554, '12 testeurs vérifiés pendant 14 jours, rapports quotidiens', { taille: 9, gris: true })
+  page.texte(gauche, 554, '15 testeurs vérifiés pendant 14 jours, rapports quotidiens', { taille: 9, gris: true })
   page.texteADroite(droite, 568, montantLisible(f.montant, f.devise), { taille: 10 })
   page.trait(gauche, 538, droite)
   page.texte(330, 516, 'Total payé', { taille: 11, gras: true })

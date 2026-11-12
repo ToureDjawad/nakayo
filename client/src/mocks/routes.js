@@ -179,8 +179,8 @@ function appDuDeveloppeur(id, utilisateur) {
 const OFFRE = {
   code: 'standard',
   nom: 'Offre Standard',
-  description: '12 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
-  prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17500, devise: 'XOF' } },
+  description: '15 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
+  prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17400, devise: 'XOF' } },
   garantie:
     'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
 }

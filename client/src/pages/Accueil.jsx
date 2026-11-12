@@ -16,16 +16,55 @@ const ETAPES = [
   },
   {
     titre: '14 jours suivis chaque jour',
-    texte: '12 testeurs vérifiés au Bénin utilisent votre app tous les jours. À la fin, vous recevez un brouillon de réponses pour le formulaire de Google.',
+    texte: '15 testeurs vérifiés au Bénin utilisent votre app tous les jours. À la fin, vous recevez un brouillon de réponses pour le formulaire de Google.',
   },
 ]
 
-const INCLUS = [
-  '12 testeurs vérifiés, inscrits à votre test fermé',
-  '14 jours d’affilée, avec remplacement d’un testeur qui abandonne',
-  'Un rapport d’activité chaque jour',
-  'Un brouillon de réponses pour le formulaire d’accès à la production',
-  'Une facture téléchargeable en PDF',
+// Offres du modèle économique (§3). Seule la Standard est ouverte ; Pro et Lancement Afrique
+// arrivent ensuite (phase 4 du plan de lancement).
+const OFFRES = [
+  {
+    code: 'standard',
+    nom: 'Standard',
+    prix: '29 $',
+    fcfa: '17 400 FCFA',
+    cible: 'Pour les développeurs indépendants du monde entier.',
+    inclus: [
+      '15 testeurs : les 12 exigés et 3 de réserve',
+      '14 jours garantis, abandons remplacés',
+      'Suivi quotidien visible et rapport court chaque jour',
+      'Modèle de réponse pour le formulaire de Google',
+      'Nouvelle campagne offerte si Google refuse',
+    ],
+    disponible: true,
+  },
+  {
+    code: 'pro',
+    nom: 'Pro',
+    prix: '59 $',
+    fcfa: '35 400 FCFA',
+    cible: 'Pour les développeurs et petites équipes qui veulent un vrai retour.',
+    inclus: [
+      'Tout ce que contient l’offre Standard',
+      'Rapports de bugs détaillés, avec captures',
+      'Tests sur téléphones d’entrée de gamme',
+      'Aide personnalisée pour le formulaire de Google',
+    ],
+  },
+  {
+    code: 'afrique',
+    nom: 'Lancement Afrique',
+    prix: '99 $',
+    aPartirDe: true,
+    fcfa: '59 400 FCFA',
+    cible: 'Pour les startups et entreprises qui visent l’Afrique de l’Ouest.',
+    inclus: [
+      '20 testeurs choisis selon votre public',
+      '14 jours, ou une durée sur mesure',
+      'Test en conditions réelles : réseau lent, petits téléphones, langue, Mobile Money',
+      'Rapport de synthèse et aide personnalisée',
+    ],
+  },
 ]
 
 const QUESTIONS = [
@@ -41,7 +80,7 @@ const QUESTIONS = [
   },
   {
     question: 'Comment payer ?',
-    reponse: 'Par carte bancaire (29 $) ou par Mobile Money (17 500 FCFA). La facture est disponible dans votre espace dès que le paiement est confirmé.',
+    reponse: 'Par carte bancaire (29 $) ou par Mobile Money (17 400 FCFA). La facture est disponible dans votre espace dès que le paiement est confirmé.',
   },
   {
     question: 'Que se passe-t-il si Google refuse l’accès à la production ?',
@@ -136,37 +175,56 @@ export default function Accueil() {
         </section>
 
         <section aria-labelledby="offre" className="bg-sable">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 md:grid-cols-[1fr_1.1fr]">
-            <div>
-              <h2 id="offre" className="text-3xl text-encre sm:text-4xl">
-                Une seule offre, tout compris
-              </h2>
-              <p className="mt-4 text-lg text-texte">
-                Pas d’abonnement : vous payez une fois par app. Si Google refuse l’accès à la production à cause d’un manque d’engagement des
-                testeurs, nous relançons une nouvelle campagne sans frais.
-              </p>
-            </div>
-            <div className="rounded-carte border border-trait bg-white p-6 sm:p-8">
-              <p className="text-xs font-semibold tracking-[0.07em] text-alerte uppercase">Offre Standard</p>
-              <p className="mt-3 font-titre text-4xl font-semibold text-encre">
-                29 $ <span className="text-lg font-normal text-discret">ou 17 500 FCFA</span>
-              </p>
-              <p className="mt-1 text-sm text-discret">Par carte bancaire ou par Mobile Money.</p>
-              <ul className="mt-6 space-y-3">
-                {INCLUS.map((element) => (
-                  <li key={element} className="flex gap-3 text-texte">
-                    <Coche />
-                    {element}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/inscription"
-                className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-champ bg-accent px-5 font-semibold text-white hover:bg-accent-fonce"
-              >
-                Commencer <span aria-hidden="true">→</span>
-              </Link>
-            </div>
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+            <h2 id="offre" className="text-3xl text-encre sm:text-4xl">
+              Nos offres
+            </h2>
+            <p className="mt-4 max-w-3xl text-lg text-texte">
+              Pas d’abonnement : vous payez une fois par app, par carte bancaire ou par Mobile Money en FCFA. Si Google refuse l’accès à la
+              production, nous relançons une nouvelle campagne sans frais.
+            </p>
+            <ul className="mt-10 grid gap-6 lg:grid-cols-3">
+              {OFFRES.map((offre) => (
+                <li
+                  key={offre.code}
+                  aria-labelledby={`offre-${offre.code}`}
+                  className={`flex flex-col rounded-carte border bg-white p-6 sm:p-8 ${offre.disponible ? 'border-accent ring-1 ring-accent' : 'border-trait'}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 id={`offre-${offre.code}`} className="text-xl font-semibold text-encre">
+                      {offre.nom}
+                    </h3>
+                    {!offre.disponible && (
+                      <span className="rounded-full bg-fond-doux px-3 py-1 text-xs font-semibold whitespace-nowrap text-alerte">Bientôt disponible</span>
+                    )}
+                  </div>
+                  <p className="mt-4 font-titre text-4xl font-semibold text-encre">
+                    {offre.aPartirDe && <span className="font-sans text-base font-normal text-discret">à partir de </span>}
+                    {offre.prix}
+                  </p>
+                  <p className="mt-1 text-sm text-discret">
+                    ou {offre.fcfa} par Mobile Money
+                  </p>
+                  <p className="mt-4 text-sm text-texte">{offre.cible}</p>
+                  <ul className="mt-6 flex-1 space-y-3">
+                    {offre.inclus.map((element) => (
+                      <li key={element} className="flex gap-3 text-sm text-texte">
+                        <Coche />
+                        {element}
+                      </li>
+                    ))}
+                  </ul>
+                  {offre.disponible && (
+                    <Link
+                      to="/inscription"
+                      className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-champ bg-accent px-5 font-semibold text-white hover:bg-accent-fonce"
+                    >
+                      Commencer <span aria-hidden="true">→</span>
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 

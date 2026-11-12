@@ -8,8 +8,8 @@ const APP = { id: '7', nom: 'Marché Facile', package: 'bj.studioawa.marche', st
 const OFFRE = {
   code: 'standard',
   nom: 'Offre Standard',
-  description: '12 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
-  prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17500, devise: 'XOF' } },
+  description: '15 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
+  prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17400, devise: 'XOF' } },
   garantie: 'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
 }
 const PAIEMENT = {
@@ -40,9 +40,9 @@ const PAGE_PAIEMENT = {
 
 afterEach(() => vi.unstubAllGlobals())
 
-// Les montants sont séparés par des espaces insécables : « 29,00 $ US », « 17 500 FCFA ».
+// Les montants sont séparés par des espaces insécables : « 29,00 $ US », « 17 400 FCFA ».
 const CARTE = /29,00\s\$\sUS/
-const MOMO = /17\s500\sFCFA/
+const MOMO = /17\s400\sFCFA/
 const bouton = (montant) => new RegExp(`^Payer ${montant.source}$`)
 
 describe('Payer l’offre d’une app (US-12)', () => {
@@ -193,7 +193,7 @@ describe('Historique des paiements et factures (US-15)', () => {
     simulerApi({
       ...BASE,
       'GET /api/paiements': {
-        corps: { paiements: [REUSSI, { ...PAIEMENT, reference: 'PAY-FFFF000000000000', statut: 'echoue', moyen: 'mobile_money', montant: 17500, devise: 'XOF' }] },
+        corps: { paiements: [REUSSI, { ...PAIEMENT, reference: 'PAY-FFFF000000000000', statut: 'echoue', moyen: 'mobile_money', montant: 17400, devise: 'XOF' }] },
       },
       'GET /api/factures/:numero': { corps: {} },
     })
@@ -203,7 +203,7 @@ describe('Historique des paiements et factures (US-15)', () => {
     expect(lignes).toHaveLength(2)
     expect(within(lignes[0]).getByText('Payé')).toBeInTheDocument()
     expect(within(lignes[1]).getByText('Échoué')).toBeInTheDocument()
-    expect(within(lignes[1]).getByText('17 500 FCFA')).toBeInTheDocument()
+    expect(within(lignes[1]).getByText('17 400 FCFA')).toBeInTheDocument()
     expect(within(lignes[1]).queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByText('1 paiement réussi.')).toBeInTheDocument()
 

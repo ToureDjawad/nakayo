@@ -5,7 +5,7 @@ test.describe('Accueil', () => {
   test('présente toute la page et mène à l’inscription', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('heading', { name: 'Comment ça marche' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Une seule offre, tout compris' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Nos offres' })).toBeVisible()
     await expect(page.getByText('Environnement de développement')).toHaveCount(0)
     await page.getByText('Comment payer ?').click()
     await expect(page.getByText(/Par carte bancaire \(29 \$\)/)).toBeVisible()

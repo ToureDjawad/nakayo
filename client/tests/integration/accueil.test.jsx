@@ -9,8 +9,15 @@ describe('Accueil', () => {
     rendreA('/')
     expect(screen.getByRole('heading', { level: 1, name: /12 testeurs pendant 14 jours/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Comment ça marche' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Une seule offre, tout compris' })).toBeInTheDocument()
-    expect(screen.getAllByText(/17\s500 FCFA/).length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: 'Nos offres' })).toBeInTheDocument()
+    expect(screen.getAllByText(/17\s400 FCFA/).length).toBeGreaterThan(0)
+    const offres = within(screen.getByRole('heading', { name: 'Nos offres' }).parentElement).getAllByRole('listitem', { name: /Standard|Pro|Lancement Afrique/ })
+    expect(offres.map((o) => o.getAttribute('aria-labelledby'))).toEqual(['offre-standard', 'offre-pro', 'offre-afrique'])
+    expect(within(offres[0]).getByRole('link', { name: /Commencer/ })).toHaveAttribute('href', '/inscription')
+    for (const offre of offres.slice(1)) {
+      expect(within(offre).getByText('Bientôt disponible')).toBeInTheDocument()
+      expect(within(offre).queryByRole('link')).not.toBeInTheDocument()
+    }
     expect(screen.queryByText('Environnement de développement')).not.toBeInTheDocument()
     const legal = screen.getByRole('navigation', { name: 'Informations légales' })
     expect(within(legal).getByRole('link', { name: 'Conditions d’utilisation' })).toHaveAttribute('href', '/conditions-utilisation')

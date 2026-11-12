@@ -39,7 +39,7 @@ describe('offre publique (§2.1)', () => {
     expect(r.status).toBe(200)
     expect(r.body.offres[0]).toMatchObject({
       code: 'standard',
-      prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17500, devise: 'XOF' } },
+      prix: { carte: { montant: 2900, devise: 'USD' }, mobile_money: { montant: 17400, devise: 'XOF' } },
       garantie: expect.stringContaining('nouvelle campagne'),
     })
   })
@@ -77,7 +77,7 @@ describe('paiement d’une app (§2.2 et §2.3)', () => {
   it('par Mobile Money : en FCFA, avec le numéro qui paie', async () => {
     const r = await payer({ moyen: 'mobile_money', numeroMomo: '+229 01 97 00 00 00' })
     expect(r.status).toBe(201)
-    expect(r.body.paiement).toMatchObject({ moyen: 'mobile_money', montant: 17500, devise: 'XOF', montantLisible: '17 500 FCFA' })
+    expect(r.body.paiement).toMatchObject({ moyen: 'mobile_money', montant: 17400, devise: 'XOF', montantLisible: '17 400 FCFA' })
     const { rows } = await pool.query('SELECT numero_momo FROM paiements')
     expect(rows[0].numero_momo).toBe('+2290197000000')
   })
