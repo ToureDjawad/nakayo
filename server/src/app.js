@@ -12,6 +12,7 @@ import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
 import { routesSupport } from './routes/support.js'
+import { routesTesteurApps } from './routes/testeurApps.js'
 import { routesTesteurs } from './routes/testeurs.js'
 import { routesTickets } from './routes/tickets.js'
 import { health } from './routes/health.js'
@@ -49,6 +50,7 @@ export function creerApp(dependances = {}) {
   app.use('/api/auth', routesInscription(deps))
   app.use('/api/auth', routesSms(deps))
   app.use('/api/testeurs', routesTesteurs(deps))
+  app.use('/api/testeurs/moi', routesTesteurApps(deps))
   app.use('/api/admin', routesAdmin(deps))
   app.use('/api/support', routesSupport(deps))
   app.use('/api/tickets', routesTickets(deps))

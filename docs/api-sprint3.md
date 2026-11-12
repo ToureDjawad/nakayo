@@ -98,11 +98,89 @@ Pour l'instant, un seul groupe pour tous les testeurs (`GROUPE_GOOGLE_TESTEURS`)
 
 Les groupes par campagne, créés et remplis par l'API Admin SDK de Google Workspace, demandent un compte Workspace : ils viendront avec un adaptateur, comme les fournisseurs de paiement.
 
-## 2. Côté testeur (US-17, US-18, US-19) · à venir
+## 2. Test quotidien côté testeur (US-17, US-18, US-19)
 
-- `GET /api/testeurs/moi/apps` : les affectations actives, avec le jour, le rapport du jour, les liens d'inscription et de la fiche Play Store.
-- Confirmation d'inscription avec capture, puis d'installation depuis le Play Store (source d'installation `com.android.vending`).
-- Rapport quotidien, signal de connexion horodaté par le serveur, temps d'utilisation synchronisé.
+Routes de l'app Android (`Authorization: Bearer`), réservées aux testeurs dont le compte est validé (`403 compte_non_valide` sinon). Une affectation remplacée, ou d'une campagne qui n'est plus en cours, répond `404`.
+
+### 2.1 Apps à tester : `GET /api/testeurs/moi/apps`
+
+```json
+{ "apps": [{
+  "id": "31",
+  "campagneId": "4",
+  "app": { "id": "12", "nom": "Marché Facile", "package": "bj.studioawa.marche", "instructions": "…",
+           "fonctionnalites": ["Recherche de produits", "Panier", "Suivi de livraison"],
+           "connexionRequise": true, "identifiantsTest": "Compte : test@marche.bj…" },
+  "lienInscription": "https://play.google.com/apps/testing/bj.studioawa.marche",
+  "lienPlayStore": "https://play.google.com/store/apps/details?id=bj.studioawa.marche",
+  "jourCampagne": 3, "joursCampagne": 16, "joursExiges": 14, "joursValides": 2,
+  "inscriptionConfirmee": true, "installationConfirmee": true,
+  "rapportDuJour": false, "retourDetailleAttendu": true,
+  "usageDuJourSecondes": 95, "usageMinimumSecondes": 120
+}] }
+```
+
+- Pas d'icône côté serveur : l'app Android affiche celle de l'app installée (sinon l'initiale).
+- `retourDetailleAttendu` : vrai les jours 3, 7 et 12 de la campagne tant que le rapport du jour n'est pas envoyé.
+- Chaque route d'écriture ci-dessous renvoie `{ "app": {…} }` à jour.
+
+### 2.2 Inscription au test : `POST /api/testeurs/moi/apps/:id/inscription`
+
+- Corps : `multipart/form-data` avec un champ `capture`, une image JPEG ou PNG de 5 Mo au plus : la page « Vous êtes testeur » de Google Play.
+- Erreurs : `422` (`capture` : `requis`, `type_fichier_invalide`) et `413 fichier_trop_lourd`.
+- La capture est stockée hors du dossier public, comme les pièces d'identité. Une nouvelle capture remplace la précédente. La première date de confirmation est gardée.
+
+### 2.3 Installation : `POST /api/testeurs/moi/apps/:id/installation`
+
+- Corps : `{ "sourceInstallation": "com.android.vending" }`, la source donnée par Android (`PackageManager.getInstallSourceInfo`).
+- Une autre source, par exemple un APK, répond `422` avec `sourceInstallation: source_non_play_store`.
+- Avant l'inscription : `409 inscription_requise`.
+
+### 2.4 Rapport du jour : `POST /api/testeurs/moi/apps/:id/rapports`
+
+```json
+{ "actions": "J'ai cherché du riz et ajouté deux articles au panier.", "note": 4, "bug": true,
+  "commentaireBug": "Le panier se vide quand je quitte l'app.",
+  "fonctionnalites": ["Recherche de produits", "Panier"], "versionApp": "1.0.3",
+  "position": { "latitude": 6.36536, "longitude": 2.41833 },
+  "retourDetaille": "…" }
+```
+
+Champs :
+- `actions` : 10 à 500 caractères ;
+- `note` : un entier de 1 à 5 ;
+- `commentaireBug` : 10 à 1 000 caractères, obligatoire si `bug` est vrai ;
+- `fonctionnalites` : au moins une, prises dans la liste du développeur ;
+- `versionApp` : 1 à 50 caractères, lue automatiquement par l'app ;
+- `retourDetaille` : 100 à 2 000 caractères, obligatoire quand `retourDetailleAttendu` est vrai.
+
+Règles :
+- La position est arrondie au centième de degré (environ 1 km) avant d'être enregistrée : la ville, pas l'adresse.
+- Le jour du rapport est celui du Bénin **à la réception par le serveur** : un rapport écrit hors ligne à 23 h 50 et envoyé à 0 h 10 compte pour le lendemain.
+- Réponses :
+  - `201` ;
+  - `409 rapport_deja_envoye` (un rapport par app et par jour) ;
+  - `409 installation_requise`.
+
+### 2.5 Ouverture de l'app compagnon : `POST /api/testeurs/moi/signal`
+
+`200 { "recuLe" }`. L'heure est celle du serveur, jamais celle du téléphone. Une ligne par testeur et par jour (première et dernière ouverture, nombre).
+
+### 2.6 Temps d'utilisation : `POST /api/testeurs/moi/usages`
+
+- Corps : `{ "usages": [{ "package", "jour": "AAAA-MM-JJ", "secondes" }] }`, 1 à 100 éléments. Chaque élément est le cumul du jour mesuré par les statistiques d'usage Android.
+- Réponse : `200 { "enregistres", "ignores" }`.
+- Un élément est ignoré dans trois cas :
+  - le package n'est pas une app en cours de test du testeur ;
+  - le jour n'est ni aujourd'hui ni hier ;
+  - le jour est antérieur à l'affectation.
+- Le plus grand cumul reçu est gardé : un envoi en retard ne fait pas baisser le compteur.
+
+### 2.7 Migration `013_test_quotidien.sql`
+
+- `rapports` : unique par affectation et jour, position en `NUMERIC(5,2)`.
+- `connexions_compagnon` : clé testeur et jour.
+- `usages_quotidiens` : clé affectation et jour.
 
 ## 3. Vérification de chaque nuit (US-20) · à venir
 
