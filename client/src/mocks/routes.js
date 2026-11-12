@@ -1,7 +1,16 @@
 import { aujourdhuiBenin } from '../lib/format.js'
 import { CODES_PAYS } from '../lib/pays.js'
 import {
+  nettoyerFonctionnalites,
+  normaliserLienTest,
   normaliserWhatsapp,
+  validerComptePlay,
+  validerFonctionnalites,
+  validerIdentifiants,
+  validerLienTest,
+  validerNomApp,
+  validerPackage,
+  validerTexteApp,
   validerEmail,
   validerLienFiche,
   validerMotDePasse,
@@ -100,6 +109,61 @@ function support() {
   const b = base()
   b.support ??= { whatsapp: null, whatsappPublie: null, modifieLe: null, publieLe: null }
   return b.support
+}
+
+// Apps des développeurs (docs/api-sprint2.md §1).
+function apps() {
+  const b = base()
+  b.apps ??= []
+  return b.apps
+}
+
+function versApp(a) {
+  const copie = { ...a, testObligatoire: a.comptePlay === 'personnel_recent' }
+  delete copie.developpeurId
+  return copie
+}
+
+function exigerDeveloppeur() {
+  const utilisateur = utilisateurConnecte()
+  if (!utilisateur) return { refus: erreur(401, 'non_authentifie') }
+  if (utilisateur.role !== 'developpeur') return { refus: erreur(403, 'interdit') }
+  return { utilisateur }
+}
+
+function lireCorpsApp(corps = {}) {
+  const connexionRequise = corps.connexionRequise
+  const valeurs = {
+    nom: (corps.nom ?? '').trim().replace(/\s+/g, ' '),
+    package: (corps.package ?? '').trim(),
+    lienTestFerme: normaliserLienTest(corps.lienTestFerme ?? ''),
+    description: (corps.description ?? '').trim(),
+    instructions: (corps.instructions ?? '').trim(),
+    fonctionnalites: nettoyerFonctionnalites(Array.isArray(corps.fonctionnalites) ? corps.fonctionnalites : []),
+    connexionRequise: connexionRequise === true,
+    identifiantsTest: connexionRequise === true ? (corps.identifiantsTest ?? '').trim() : null,
+    comptePlay: corps.comptePlay,
+  }
+  const erreurs = {
+    nom: validerNomApp(valeurs.nom),
+    package: validerPackage(valeurs.package),
+    lienTestFerme: validerLienTest(valeurs.lienTestFerme, valeurs),
+    description: validerTexteApp(valeurs.description),
+    instructions: validerTexteApp(valeurs.instructions),
+    fonctionnalites: Array.isArray(corps.fonctionnalites) ? validerFonctionnalites(corps.fonctionnalites) : 'requis',
+    connexionRequise: typeof connexionRequise === 'boolean' ? null : 'requis',
+    identifiantsTest: validerIdentifiants(valeurs.identifiantsTest ?? '', { connexionRequise: connexionRequise === true ? 'oui' : 'non' }),
+    comptePlay: validerComptePlay(valeurs.comptePlay),
+  }
+  const champs = Object.fromEntries(Object.entries(erreurs).filter(([, code]) => code))
+  return { valeurs, champs }
+}
+
+const packagePris = (pkg, saufId) =>
+  apps().some((a) => a.id !== saufId && a.statut !== 'refusee' && a.package.toLowerCase() === pkg.toLowerCase())
+
+function appDuDeveloppeur(id, utilisateur) {
+  return apps().find((a) => a.id === id && a.developpeurId === utilisateur.id) ?? null
 }
 
 function trouverCompte(id) {
@@ -436,6 +500,77 @@ export const routes = [
       Object.assign(support(), { whatsappPublie: null, publieLe: horodatage() })
       sauver()
       return ok({ support: { ...support() } })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/apps',
+    traiter() {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const miennes = apps()
+        .filter((a) => a.developpeurId === utilisateur.id)
+        .sort((a, b) => b.creeLe.localeCompare(a.creeLe))
+      return ok({ apps: miennes.map(versApp) })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/apps',
+    traiter({ corps }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      if (utilisateur.statut !== 'valide') return erreur(403, 'compte_non_valide')
+      const { valeurs, champs } = lireCorpsApp(corps)
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      if (packagePris(valeurs.package)) return erreur(409, 'conflit', { champs: { package: 'deja_utilise' } })
+      const maintenant = horodatage()
+      const app = { id: nouvelId(), developpeurId: utilisateur.id, ...valeurs, statut: 'brouillon', creeLe: maintenant, modifieLe: maintenant }
+      apps().push(app)
+      sauver()
+      return ok({ app: versApp(app) }, 201)
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/apps/:id',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      return app ? ok({ app: versApp(app) }) : erreur(404, 'introuvable')
+    },
+  },
+  {
+    methode: 'PUT',
+    chemin: '/api/apps/:id',
+    traiter({ params, corps }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      if (utilisateur.statut !== 'valide') return erreur(403, 'compte_non_valide')
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      if (app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
+      const { valeurs, champs } = lireCorpsApp(corps)
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      if (packagePris(valeurs.package, app.id)) return erreur(409, 'conflit', { champs: { package: 'deja_utilise' } })
+      Object.assign(app, valeurs, { modifieLe: horodatage() })
+      sauver()
+      return ok({ app: versApp(app) })
+    },
+  },
+  {
+    methode: 'DELETE',
+    chemin: '/api/apps/:id',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      if (app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
+      base().apps = apps().filter((a) => a !== app)
+      sauver()
+      return vide()
     },
   },
   {
