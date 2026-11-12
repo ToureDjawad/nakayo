@@ -182,11 +182,44 @@ Règles :
 - `connexions_compagnon` : clé testeur et jour.
 - `usages_quotidiens` : clé affectation et jour.
 
-## 3. Vérification de chaque nuit (US-20) · à venir
+## 3. Vérification de chaque nuit (US-20)
 
-À minuit (heure du Bénin), pour chaque affectation active, le jour écoulé est validé seulement si les trois conditions sont réunies :
-- au moins une connexion à l'app compagnon ;
-- au moins 2 minutes d'usage de l'app testée ;
-- le rapport du jour envoyé.
+### 3.1 Règle
 
-Sinon le compteur `jours_valides` repart à 0 et le testeur est prévenu.
+Chaque nuit, chaque affectation active d'une campagne en cours, dont l'app est installée, est vérifiée pour le jour écoulé. Le jour est **validé** seulement si les trois conditions sont réunies ce jour-là (heure du Bénin, horloge du serveur) :
+
+1. au moins une ouverture de l'app compagnon (`connexions_compagnon`) ;
+2. au moins 2 minutes dans l'app testée (`usages_quotidiens`) ;
+3. le rapport du jour envoyé (`rapports`).
+
+Ce qui en découle :
+
+| Situation | Effet |
+|---|---|
+| Jour validé | `jours_valides` + 1 |
+| Jour non validé, compteur au-dessus de 0 | compteur remis à 0, `nombre_remises` + 1, `derniere_remise_jour` posé, SMS au testeur avec ce qui manquait et un rappel de ne pas se désinscrire |
+| Jour non validé, compteur déjà à 0 | rien (souvent le jour de l'installation) |
+| Compteur ayant atteint `jours_exiges` (14) | jours acquis : ni nouveau jour, ni remise à zéro |
+| Campagne arrivée à `fin_prevue_le` (16 jours) | la campagne passe en `terminee` avec ses affectations actives |
+
+- **Les deux compteurs ne se confondent pas.** Ce compteur sert au paiement du testeur. Celui de Google ne dépend que de l'inscription continue au test : un testeur remis à zéro garde son affectation, recommence à J1 et ne doit surtout pas se désinscrire. Le remplacement automatique viendra avec US-27.
+- **Chaque vérification laisse une trace.** Elle écrit une ligne `journees` par affectation et par jour, avec la clé `(affectation, jour)` : la vérification peut être rejouée sans compter deux fois.
+- **Un jour vérifié ne bouge plus.** Un temps d'utilisation envoyé après coup pour ce jour est ignoré.
+
+### 3.2 Planification
+
+- **Heure :** le serveur lance la vérification à **0 h 05**, heure du Bénin. Ces 5 minutes laissent arriver les derniers envois de la journée.
+- **Rattrapage :** au démarrage, le serveur rattrape les 3 derniers jours non vérifiés (`verifications_quotidiennes`).
+- **Lancement à la main :** `npm run journees:verifier -w @nakayo/server` vérifie les jours en retard, ou un jour précis avec `-- --jour AAAA-MM-JJ`.
+
+### 3.3 Côté testeur
+
+L'objet du §2.1 gagne deux champs :
+- `joursAcquis` : vrai une fois les 14 jours atteints ;
+- `derniereRemise` : `{ "jour", "manquait": ["connexion" | "usage" | "rapport"] }` ou `null`.
+
+### 3.4 Migration `014_verification_quotidienne.sql`
+
+- `journees` : connexion, usage, rapport, validé.
+- `verifications_quotidiennes` : un bilan par jour vérifié.
+- `affectations.derniere_remise_jour`.

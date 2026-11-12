@@ -3,16 +3,19 @@ import { ErreurHttp, introuvable } from '../lib/erreurs.js'
 import { JOURS_RETOUR_DETAILLE, USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, jourBenin } from '../lib/temps.js'
 import { jourCampagne } from './campagnes.js'
+import { manquesDuJour } from './verificationQuotidienne.js'
 
 // Affectations du testeur avec ce qu'il lui faut pour le jour en cours ($2 : jour du Bénin).
 const SELECT_AFFECTATION = `SELECT a.*, c.statut AS campagne_statut, c.demarree_le, c.jours_exiges,
     ap.nom, ap.package, ap.lien_test_ferme, ap.instructions, ap.fonctionnalites, ap.connexion_requise, ap.identifiants_test,
-    r.id AS rapport_id, uq.secondes AS usage_secondes
+    r.id AS rapport_id, uq.secondes AS usage_secondes,
+    a.derniere_remise_jour::text AS derniere_remise_jour_texte, jr.connexion AS remise_connexion, jr.usage_secondes AS remise_usage, jr.rapport AS remise_rapport
   FROM affectations a
   JOIN campagnes c ON c.id = a.campagne_id
   JOIN apps ap ON ap.id = a.app_id
   LEFT JOIN rapports r ON r.affectation_id = a.id AND r.jour = $2
-  LEFT JOIN usages_quotidiens uq ON uq.affectation_id = a.id AND uq.jour = $2`
+  LEFT JOIN usages_quotidiens uq ON uq.affectation_id = a.id AND uq.jour = $2
+  LEFT JOIN journees jr ON jr.affectation_id = a.id AND jr.jour = a.derniere_remise_jour`
 
 // Objet « app à tester » de l'app Android (docs/api-sprint3.md §2.1).
 export function versAffectationTesteur(l, maintenant) {
@@ -37,6 +40,15 @@ export function versAffectationTesteur(l, maintenant) {
     joursCampagne: JOURS_CAMPAGNE,
     joursExiges: l.jours_exiges,
     joursValides: l.jours_valides,
+    // Les 14 jours sont atteints : le testeur reste inscrit jusqu'à la fin de la campagne.
+    joursAcquis: l.jours_valides >= l.jours_exiges,
+    // US-20 : dernière remise à zéro du compteur et ce qui manquait ce jour-là.
+    derniereRemise: l.derniere_remise_jour_texte
+      ? {
+          jour: l.derniere_remise_jour_texte,
+          manquait: manquesDuJour({ connexion: l.remise_connexion, usage_secondes: l.remise_usage, rapport: l.remise_rapport }),
+        }
+      : null,
     inscriptionConfirmee: Boolean(l.inscription_confirmee_le),
     installationConfirmee: Boolean(l.installation_confirmee_le),
     rapportDuJour,
@@ -150,6 +162,9 @@ export async function enregistrerUsages(db, { testeurId, usages, maintenant }) {
   for (const usage of usages) {
     const affectation = parPackage.get(usage.package.toLowerCase())
     if (!affectation || !jours.includes(usage.jour) || usage.jour < jourBenin(affectation.affecte_le)) continue
+    // Un jour déjà vérifié cette nuit (US-20) ne change plus.
+    const { rows: verifie } = await db.query('SELECT 1 FROM journees WHERE affectation_id = $1 AND jour = $2', [affectation.id, usage.jour])
+    if (verifie.length) continue
     await db.query(
       `INSERT INTO usages_quotidiens (affectation_id, jour, secondes, maj_le) VALUES ($1, $2, $3, $4)
        ON CONFLICT (affectation_id, jour) DO UPDATE SET secondes = GREATEST(usages_quotidiens.secondes, $3), maj_le = $4`,

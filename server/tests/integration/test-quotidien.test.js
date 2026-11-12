@@ -78,6 +78,8 @@ describe('apps à tester (US-17)', () => {
         joursCampagne: 16,
         joursExiges: 14,
         joursValides: 0,
+        joursAcquis: false,
+        derniereRemise: null,
         inscriptionConfirmee: false,
         installationConfirmee: false,
         rapportDuJour: false,
