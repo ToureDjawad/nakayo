@@ -5,7 +5,8 @@ import { lienWhatsapp, messageSupport } from '../lib/whatsapp.js'
 
 // Lien WhatsApp du support, affiché seulement si un admin a publié un numéro (§11).
 // En cas d'erreur réseau, rien n'est affiché : le reste de la page n'en dépend pas.
-export function ContactWhatsapp({ utilisateur, className = '' }) {
+// `compact` : sans cadre ni titre, pour s'insérer dans un bloc d'aide existant.
+export function ContactWhatsapp({ utilisateur, compact = false, className = '' }) {
   const [numero, setNumero] = useState(null)
 
   useEffect(() => {
@@ -17,12 +18,9 @@ export function ContactWhatsapp({ utilisateur, className = '' }) {
   }, [])
 
   if (!numero) return null
-  return (
-    <section aria-labelledby="titre-support" className={`rounded-carte border border-trait bg-white p-4 ${className}`}>
-      <h2 id="titre-support" className="text-base font-semibold text-encre">
-        Une question ?
-      </h2>
-      <p className="mt-1 text-sm text-texte">Notre équipe vous répond sur WhatsApp au {telephone(numero)}.</p>
+  const contenu = (
+    <>
+      <p className="mt-1 text-sm text-texte">Notre équipe vous répond aussi sur WhatsApp au {telephone(numero)}.</p>
       <a
         href={lienWhatsapp(numero, messageSupport(utilisateur))}
         target="_blank"
@@ -35,6 +33,15 @@ export function ContactWhatsapp({ utilisateur, className = '' }) {
         Écrire au support sur WhatsApp
         <span className="sr-only">(nouvel onglet)</span>
       </a>
+    </>
+  )
+  if (compact) return <div className={className}>{contenu}</div>
+  return (
+    <section aria-labelledby="titre-whatsapp" className={`rounded-carte border border-trait bg-white p-4 ${className}`}>
+      <h2 id="titre-whatsapp" className="text-base font-semibold text-encre">
+        Sur WhatsApp
+      </h2>
+      {contenu}
     </section>
   )
 }

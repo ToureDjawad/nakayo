@@ -676,6 +676,10 @@ Les contrôles tournent après l'inscription (sans bloquer la réponse). Chaque 
 | PUT | `/api/admin/support` | cookie admin | US-40 |
 | POST | `/api/admin/support/publication` | cookie admin | US-40 |
 | DELETE | `/api/admin/support/publication` | cookie admin | US-40 |
+| POST | `/api/tickets` | cookie ou Bearer (développeur, testeur) | US-40 |
+| GET | `/api/tickets/moi` | cookie ou Bearer (développeur, testeur) | US-40 |
+| GET | `/api/admin/tickets` | cookie admin | US-40 |
+| POST | `/api/admin/tickets/:id/traitement` | cookie admin | US-40 |
 
 ## 9. Découpage du travail backend
 
@@ -726,3 +730,21 @@ Sans connexion. Répond `200 { "support": { "whatsapp": "+2290197000000" } }`, o
 - `DELETE /api/admin/support/publication` : retire le numéro de l'app et du site ; il reste enregistré.
 
 Migration `006_contact_support.sql` : table `contact_support` à une seule ligne (`whatsapp`, `whatsapp_publie`, `modifie_par`, `modifie_le`, `publie_par`, `publie_le`).
+
+## 12. Messages au support (US-40)
+
+Un développeur (site) ou un testeur (app) écrit à l'équipe depuis son espace. L'admin lit les messages dans le back-office et les marque comme traités ; la réponse se fait par email, SMS ou WhatsApp, en dehors de l'API.
+
+Objet `ticket` : `{ "id": "12", "sujet": "...", "message": "...", "statut": "ouvert" | "traite", "creeLe": "...", "traiteLe": null }`.
+
+### 12.1 Depuis l'espace développeur ou l'app testeur
+
+- `POST /api/tickets` : corps `{ "sujet": "...", "message": "..." }`. Sujet de 3 à 120 caractères (espaces multiples réduits), message de 10 à 2000 caractères (retours à la ligne gardés). Répond `201 { "ticket": ticket }`. `422` avec `champs.sujet` ou `champs.message` = `requis`, `trop_court` ou `trop_long`. `429` au-delà de 5 messages par heure pour un compte (un message refusé en `422` ne compte pas). Un admin reçoit `403`.
+- `GET /api/tickets/moi` : `200 { "tickets": [ticket] }`, les 20 derniers, du plus récent au plus ancien.
+
+### 12.2 Back-office (cookie admin)
+
+- `GET /api/admin/tickets?statut=ouvert&page=1&parPage=20` : `statut` vaut `ouvert` (défaut, du plus ancien au plus récent) ou `traite` (du plus récemment traité au plus ancien). Répond `200 { "tickets": [ticket + "auteur": { "id", "role", "nom", "email", "telephone" }], "total", "page", "parPage" }`.
+- `POST /api/admin/tickets/:id/traitement` : `200 { "ticket": ticket + auteur }`. `409 statut_incompatible` (avec `statut`) si le message est déjà traité, `404` s'il n'existe pas.
+
+Migration `007_tickets_support.sql` : table `tickets_support` (`utilisateur_id`, `sujet`, `message`, `statut`, `cree_le`, `traite_le`, `traite_par`).

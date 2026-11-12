@@ -4,6 +4,7 @@ import { corps, exigerChamps, texte } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
 import { lireCompte, listerComptes, VISIBLE } from '../services/comptesAdmin.js'
 import { cheminAbsolu } from '../services/documents.js'
+import { listerTicketsAdmin, STATUTS_TICKET, traiterTicket } from '../services/tickets.js'
 import {
   enregistrerWhatsapp,
   lireSupportAdmin,
@@ -186,6 +187,25 @@ export function routesAdmin(deps) {
     const motif = texte(corps(req).motif)
     exigerChamps({ motif: validerMotifRefus(motif) })
     await decider(req, res, 'refuse', motif)
+  })
+
+  // §12.2 Messages envoyés au support.
+  routeur.get('/tickets', async (req, res) => {
+    const statut = texte(req.query.statut) || 'ouvert'
+    const page = entier(req.query.page, 1)
+    const parPage = entier(req.query.parPage, 20)
+    const champs = {}
+    if (!STATUTS_TICKET.includes(statut)) champs.statut = 'valeur_inconnue'
+    if (!Number.isInteger(page) || page < 1 || page > 100000) champs.page = 'format_invalide'
+    if (!Number.isInteger(parPage) || parPage < 1 || parPage > 50) champs.parPage = 'format_invalide'
+    exigerChamps(champs)
+    res.json(await listerTicketsAdmin(pool, { statut, page, parPage }))
+  })
+
+  routeur.post('/tickets/:id/traitement', async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Message introuvable.')
+    const adminId = req.session.utilisateur.id
+    res.json({ ticket: await traiterTicket(pool, { id: req.params.id, adminId, maintenant: maintenant() }) })
   })
 
   // §11.2 Numéro WhatsApp du support : enregistré, puis publié ou retiré.

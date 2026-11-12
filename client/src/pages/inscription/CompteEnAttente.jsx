@@ -61,6 +61,25 @@ function Etapes() {
   )
 }
 
+// Aide (US-40) : formulaire vers l'équipe, et WhatsApp si un numéro est publié.
+function AideSupport({ utilisateur }) {
+  return (
+    <section aria-labelledby="titre-aide" className="mt-6 rounded-carte border border-trait bg-white p-4">
+      <h2 id="titre-aide" className="text-base font-semibold text-encre">
+        Une question ?
+      </h2>
+      <p className="mt-1 text-sm text-texte">Écrivez à l’équipe Nakayo, nous vous répondons par email.</p>
+      <Link
+        to="/mon-compte/support"
+        className="mt-3 inline-flex h-11 items-center rounded-champ border border-trait bg-white px-4 text-[15px] font-semibold text-encre hover:bg-fond-doux"
+      >
+        Écrire à l’équipe
+      </Link>
+      <ContactWhatsapp utilisateur={utilisateur} compact className="mt-4 border-t border-trait pt-4" />
+    </section>
+  )
+}
+
 function Recapitulatif({ utilisateur }) {
   const lignes = [
     ['Nom de développeur', utilisateur.nom],
@@ -136,7 +155,7 @@ export default function CompteEnAttente() {
         <p className="mt-6 text-texte">
           Si vous pensez qu’il s’agit d’une erreur, répondez à l’email de décision que vous avez reçu.
         </p>
-        <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
+        <AideSupport utilisateur={utilisateur} />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
     )
@@ -154,7 +173,7 @@ export default function CompteEnAttente() {
         }
       >
         <Alerte ton="succes">Vous pouvez soumettre votre première application.</Alerte>
-        <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
+        <AideSupport utilisateur={utilisateur} />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
     )
@@ -164,7 +183,7 @@ export default function CompteEnAttente() {
     return (
       <PageCompte titre="Votre compte est suspendu" utilisateur={utilisateur}>
         <p className="text-texte">Contactez notre équipe en répondant à l’email de suspension que vous avez reçu.</p>
-        <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
+        <AideSupport utilisateur={utilisateur} />
       </PageCompte>
     )
   }
@@ -192,7 +211,7 @@ export default function CompteEnAttente() {
       <div className="mt-6">
         <Etapes />
       </div>
-      <ContactWhatsapp utilisateur={utilisateur} className="mt-6" />
+      <AideSupport utilisateur={utilisateur} />
       <Recapitulatif utilisateur={utilisateur} />
     </PageCompte>
   )

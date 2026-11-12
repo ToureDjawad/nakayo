@@ -1,6 +1,8 @@
 import { Navigate } from 'react-router'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
 import ContactSupport from './pages/admin/ContactSupport.jsx'
+import MessagesSupport from './pages/admin/MessagesSupport.jsx'
+import EcrireAuSupport from './pages/support/EcrireAuSupport.jsx'
 import Connexion from './pages/connexion/Connexion.jsx'
 import MotDePasseOublie from './pages/connexion/MotDePasseOublie.jsx'
 import ReinitialiserMotDePasse from './pages/connexion/ReinitialiserMotDePasse.jsx'
@@ -19,11 +21,13 @@ export const routes = [
   { path: '/verification-email', element: <VerificationEmail /> },
   { path: '/compte-en-attente', element: <CompteEnAttente /> },
   { path: '/mon-compte', element: <CompteEnAttente /> },
+  { path: '/mon-compte/support', element: <EcrireAuSupport /> },
   { path: '/connexion', element: <Connexion /> },
   { path: '/mot-de-passe-oublie', element: <MotDePasseOublie /> },
   { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
   { path: '/admin', element: <Navigate to="/admin/comptes" replace /> },
   { path: '/admin/comptes', element: <ComptesEnAttente /> },
+  { path: '/admin/messages', element: <MessagesSupport /> },
   { path: '/admin/support', element: <ContactSupport /> },
   { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },
   { path: '/confidentialite', element: <PageEnPreparation titre="Politique de confidentialité" /> },
