@@ -6,6 +6,7 @@ import { BoiteIcone, PageCompte, PanneauEtapes } from '../../components/MiseEnPa
 import { messageErreurGlobale } from '../../lib/messages.js'
 import { nomPays } from '../../lib/pays.js'
 import { useSession } from '../../lib/useSession.js'
+import { MesApps } from '../apps/MesApps.jsx'
 
 const PANNEAU_VERIFICATION = (
   <PanneauEtapes
@@ -172,7 +173,18 @@ export default function CompteEnAttente() {
           </BoiteIcone>
         }
       >
-        <Alerte ton="succes">Vous pouvez soumettre votre première application.</Alerte>
+        {state?.appEnregistree && (
+          <Alerte ton="succes" className="mb-6" titre={state.modification ? 'Modifications enregistrées' : 'Brouillon enregistré'}>
+            « {state.appEnregistree} » est enregistrée. Vous pourrez encore la modifier jusqu’au paiement de l’offre.
+          </Alerte>
+        )}
+        {state?.appSupprimee && (
+          <Alerte ton="succes" className="mb-6">
+            « {state.appSupprimee} » a été supprimée.
+          </Alerte>
+        )}
+        <p className="text-texte">Soumettez votre app : nous lançons la campagne de test une fois l’offre payée et l’app vérifiée.</p>
+        <MesApps />
         <AideSupport utilisateur={utilisateur} />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>

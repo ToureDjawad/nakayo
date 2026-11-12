@@ -1,5 +1,5 @@
 import { ErreurApi, ErreurReseau } from '../api/client.js'
-import { LIMITES } from './validation.js'
+import { LIMITES, LIMITES_APP } from './validation.js'
 
 // Messages par champ et par code (docs/api-sprint1.md §1.3). Les codes absents
 // d'un champ retombent sur GENERIQUES.
@@ -58,6 +58,51 @@ const PAR_CHAMP = {
   whatsapp: {
     requis: 'Saisissez le numéro WhatsApp du support.',
     format_invalide: 'Saisissez le numéro au format international, avec l’indicatif. Exemple : +229 01 97 00 00 00',
+  },
+  nomApp: {
+    requis: 'Saisissez le nom de votre app.',
+    trop_court: `Le nom doit contenir au moins ${LIMITES_APP.nomMin} caractères.`,
+    trop_long: `Le nom ne doit pas dépasser ${LIMITES_APP.nomMax} caractères.`,
+  },
+  package: {
+    requis: 'Saisissez le nom du package de votre app.',
+    format_invalide: 'Le package doit ressembler à com.exemple.app : des mots séparés par des points, sans espace ni tiret.',
+    trop_long: `Le package ne doit pas dépasser ${LIMITES_APP.packageMax} caractères.`,
+    deja_utilise: 'Ce package est déjà inscrit sur Nakayo. Si c’est bien votre app, écrivez à l’équipe.',
+  },
+  lienTestFerme: {
+    requis: 'Collez le lien d’inscription à votre test fermé.',
+    format_invalide: 'Le lien doit commencer par https://play.google.com/apps/testing/ suivi du package.',
+    trop_long: `Le lien ne doit pas dépasser ${LIMITES_APP.lienMax} caractères.`,
+    ne_correspond_pas: 'Ce lien vise une autre app : le package à la fin du lien doit être celui saisi plus haut.',
+  },
+  description: {
+    requis: 'Décrivez votre app en quelques phrases.',
+    trop_court: `La description doit contenir au moins ${LIMITES_APP.texteMin} caractères.`,
+    trop_long: `La description ne doit pas dépasser ${LIMITES_APP.texteMax} caractères.`,
+  },
+  instructions: {
+    requis: 'Indiquez ce que les testeurs doivent faire chaque jour.',
+    trop_court: `Les instructions doivent contenir au moins ${LIMITES_APP.texteMin} caractères.`,
+    trop_long: `Les instructions ne doivent pas dépasser ${LIMITES_APP.texteMax} caractères.`,
+  },
+  fonctionnalites: {
+    requis: `Indiquez au moins ${LIMITES_APP.fonctionnalitesMin} fonctionnalités à tester.`,
+    trop_peu: `Indiquez au moins ${LIMITES_APP.fonctionnalitesMin} fonctionnalités à tester.`,
+    trop_nombreuses: `Indiquez ${LIMITES_APP.fonctionnalitesMax} fonctionnalités au plus.`,
+    element_trop_court: `Chaque fonctionnalité doit contenir au moins ${LIMITES_APP.fonctionnaliteMin} caractères.`,
+    element_trop_long: `Chaque fonctionnalité doit tenir en ${LIMITES_APP.fonctionnaliteMax} caractères.`,
+    doublon: 'Deux fonctionnalités sont identiques.',
+  },
+  connexionRequise: { requis: 'Indiquez si votre app demande une connexion.' },
+  identifiantsTest: {
+    requis: 'Donnez un compte de test : les testeurs doivent pouvoir se connecter.',
+    trop_court: `Les identifiants doivent contenir au moins ${LIMITES_APP.identifiantsMin} caractères.`,
+    trop_long: `Les identifiants ne doivent pas dépasser ${LIMITES_APP.identifiantsMax} caractères.`,
+  },
+  comptePlay: {
+    requis: 'Indiquez le type de votre compte développeur Google Play.',
+    valeur_inconnue: 'Choisissez une des réponses proposées.',
   },
   du: { format_invalide: 'Date invalide.' },
   au: {

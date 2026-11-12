@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { optionsCookie, poserCookieSession } from '../lib/cookies.js'
 import { ErreurHttp } from '../lib/erreurs.js'
 import { genererJeton, hacherJeton } from '../lib/jetons.js'
 import { consommerEnvoiEmail } from '../lib/limitesApi.js'
@@ -7,7 +8,6 @@ import { COLONNES_UTILISATEUR, versUtilisateurApi } from '../lib/utilisateurs.js
 import { corps, exigerChamps, LIMITES, normaliserEmail, validerEmail, validerMotDePasse } from '../lib/validation.js'
 import { exigerSession } from '../middlewares/authentification.js'
 import {
-  DUREE_SESSION_MS,
   NOM_COOKIE,
   ouvrirSession,
   revoquerSession,
@@ -22,14 +22,7 @@ export const identifiantsInvalides = () =>
 export const jetonInvalide = () => new ErreurHttp(400, 'jeton_invalide', { message: 'Lien inconnu ou déjà utilisé.' })
 export const jetonExpire = () => new ErreurHttp(410, 'jeton_expire', { message: 'Lien expiré.' })
 
-function optionsCookie(config) {
-  return { httpOnly: true, sameSite: 'lax', secure: config.cookieSecurise, path: '/' }
-}
-
-// Pose le cookie de session web (30 jours).
-export function poserCookieSession(res, config, jeton) {
-  res.cookie(NOM_COOKIE, jeton, { ...optionsCookie(config), maxAge: DUREE_SESSION_MS })
-}
+export { poserCookieSession }
 
 // Lit un jeton d'email encore utilisable, verrouillé jusqu'à la fin de la transaction.
 export async function consommerJetonEmail(client, { jeton, type, maintenant }) {

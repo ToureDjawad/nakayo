@@ -118,3 +118,92 @@ export function validerSujet(valeur) {
 export function validerMessage(valeur) {
   return validerLongueur(valeur, LIMITES.messageMin, LIMITES.messageMax)
 }
+
+// App soumise par un développeur (docs/api-sprint2.md §1.2). Mêmes règles que le serveur.
+export const LIMITES_APP = {
+  nomMin: 2,
+  nomMax: 50,
+  packageMax: 150,
+  lienMax: 300,
+  texteMin: 20,
+  texteMax: 2000,
+  fonctionnalitesMin: 3,
+  fonctionnalitesMax: 10,
+  fonctionnaliteMin: 3,
+  fonctionnaliteMax: 120,
+  identifiantsMin: 5,
+  identifiantsMax: 500,
+}
+export const COMPTES_PLAY = ['personnel_recent', 'personnel_ancien', 'organisation']
+
+const RE_PACKAGE = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/
+const RE_LIEN_TEST = /^https:\/\/play\.google\.com\/apps\/testing\/([A-Za-z0-9_.]+)\/?$/
+
+const uneLigne = (valeur) => (valeur ?? '').trim().replace(/\s+/g, ' ')
+
+export function validerNomApp(valeur) {
+  return validerLongueur(uneLigne(valeur), LIMITES_APP.nomMin, LIMITES_APP.nomMax)
+}
+
+export function validerPackage(valeur) {
+  const v = (valeur ?? '').trim()
+  if (!v) return 'requis'
+  if (v.length > LIMITES_APP.packageMax) return 'trop_long'
+  return RE_PACKAGE.test(v) ? null : 'format_invalide'
+}
+
+// Le lien d'inscription au test fermé : https:// ajouté s'il manque, comme pour la fiche développeur.
+export const normaliserLienTest = normaliserLienFiche
+
+export function lienTestAttendu(pkg) {
+  const v = (pkg ?? '').trim()
+  return validerPackage(v) ? null : `https://play.google.com/apps/testing/${v}`
+}
+
+// Le package du lien doit être celui de l'app (comparé seulement si le package est valide).
+export function validerLienTest(valeur, valeurs = {}) {
+  const v = normaliserLienTest(valeur ?? '')
+  if (!v) return 'requis'
+  if (v.length > LIMITES_APP.lienMax) return 'trop_long'
+  const trouve = v.match(RE_LIEN_TEST)
+  if (!trouve) return 'format_invalide'
+  const pkg = (valeurs.package ?? '').trim()
+  if (pkg && !validerPackage(pkg) && trouve[1].toLowerCase() !== pkg.toLowerCase()) return 'ne_correspond_pas'
+  return null
+}
+
+export function validerTexteApp(valeur) {
+  return validerLongueur(valeur, LIMITES_APP.texteMin, LIMITES_APP.texteMax)
+}
+
+// Liste des fonctionnalités clés : les lignes vides sont ignorées.
+export function nettoyerFonctionnalites(liste) {
+  return (liste ?? []).map(uneLigne).filter(Boolean)
+}
+
+export function validerFonctionnalites(liste) {
+  const valeurs = nettoyerFonctionnalites(liste)
+  if (!valeurs.length) return 'requis'
+  if (valeurs.length < LIMITES_APP.fonctionnalitesMin) return 'trop_peu'
+  if (valeurs.length > LIMITES_APP.fonctionnalitesMax) return 'trop_nombreuses'
+  for (const v of valeurs) {
+    const erreur = validerLongueur(v, LIMITES_APP.fonctionnaliteMin, LIMITES_APP.fonctionnaliteMax)
+    if (erreur) return `element_${erreur}`
+  }
+  return new Set(valeurs.map((v) => v.toLowerCase())).size === valeurs.length ? null : 'doublon'
+}
+
+// « oui » ou « non » dans le formulaire, booléen dans l'API.
+export function validerChoix(valeur) {
+  return valeur ? null : 'requis'
+}
+
+export function validerIdentifiants(valeur, valeurs = {}) {
+  if (valeurs.connexionRequise !== 'oui') return null
+  return validerLongueur(valeur, LIMITES_APP.identifiantsMin, LIMITES_APP.identifiantsMax)
+}
+
+export function validerComptePlay(valeur) {
+  if (!valeur) return 'requis'
+  return COMPTES_PLAY.includes(valeur) ? null : 'valeur_inconnue'
+}

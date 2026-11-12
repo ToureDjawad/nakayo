@@ -161,11 +161,26 @@ describe('session courante et déconnexion (§3.2, §3.3)', () => {
     }
   })
 
-  it('expire au bout de 30 jours', async () => {
-    test.avancer(TRENTE_JOURS - 60 * 1000)
-    expect((await request(test.app).get('/api/auth/moi').set('Cookie', cookie)).status).toBe(200)
-    test.avancer(2 * 60 * 1000)
+  it('expire après 30 jours sans utilisation', async () => {
+    test.avancer(TRENTE_JOURS + 60 * 1000)
     expect((await request(test.app).get('/api/auth/moi').set('Cookie', cookie)).status).toBe(401)
+  })
+
+  it('chaque utilisation repousse l’échéance de 30 jours et renouvelle le cookie', async () => {
+    test.avancer(TRENTE_JOURS - 60 * 1000)
+    const r = await request(test.app).get('/api/auth/moi').set('Cookie', cookie)
+    expect(r.status).toBe(200)
+    expect(r.headers['set-cookie'][0]).toMatch(/^nakayo_session=.*Max-Age=2592000/)
+    // 40 jours après la connexion, mais seulement 10 jours après la dernière utilisation.
+    test.avancer(10 * 24 * 60 * 60 * 1000)
+    expect((await request(test.app).get('/api/auth/moi').set('Cookie', cookie)).status).toBe(200)
+  })
+
+  it('ne renvoie pas de cookie quand la session n’est pas prolongée (moins d’une heure)', async () => {
+    test.avancer(10 * 60 * 1000)
+    const r = await request(test.app).get('/api/auth/moi').set('Cookie', cookie)
+    expect(r.status).toBe(200)
+    expect(r.headers['set-cookie']).toBeUndefined()
   })
 
   it('note la dernière utilisation au plus une fois par heure', async () => {
