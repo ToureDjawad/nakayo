@@ -172,8 +172,11 @@ class Navigation(
     // US-18 : chaque ouverture de l'app compagnon est signalée au serveur, qui l'horodate.
     // Un seul signal par ouverture, même si plusieurs écrans le demandent ; sans réseau, nouvel essai à la suivante.
     private fun signalerOuverture() {
-        // Première fois : on lance la mesure ; ensuite, auPremierPlan() s'en charge.
-        if (!testeurValide) lancerMesure()
+        // Première fois : on lance la mesure et les rappels du soir ; ensuite, auPremierPlan() relance la mesure.
+        if (!testeurValide) {
+            lancerMesure()
+            outils.planifierRappels()
+        }
         testeurValide = true
         if (ouvertureSignalee == ouverture) return
         val courante = ouverture

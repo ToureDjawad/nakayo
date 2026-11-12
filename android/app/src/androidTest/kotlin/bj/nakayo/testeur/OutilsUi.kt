@@ -12,5 +12,10 @@ fun ComposeTestRule.attendreTexte(texte: String, delaiMs: Long = 10_000) {
 // Remplace le service de l'app par un faux avant de lancer l'activité ; à rétablir après le test.
 fun remplacerService(service: ServiceTesteur?) {
     val application = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as NakayoApplication
+    // Notifications des rappels du soir (US-25) accordées d'avance : la fenêtre d'Android bloquerait les tests.
+    if (service != null && android.os.Build.VERSION.SDK_INT >= 33) {
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .grantRuntimePermission(application.packageName, "android.permission.POST_NOTIFICATIONS")
+    }
     if (service == null) application.service = application.api else application.service = service
 }

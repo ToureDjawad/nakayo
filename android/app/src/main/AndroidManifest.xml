@@ -9,6 +9,8 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <!-- Rappels du soir quand le rapport du jour manque (US-25), demandés sur Android 13 et plus. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Sauvegarde désactivée : le jeton de session ne doit pas quitter le téléphone. -->
     <application

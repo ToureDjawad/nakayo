@@ -1,6 +1,13 @@
 package bj.nakayo.testeur.ui
 
+import android.Manifest
 import android.app.Activity
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import bj.nakayo.testeur.campagne.NotificationsRappel
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -95,6 +102,9 @@ fun AppNakayo(navigation: Navigation) {
             val etat by m.etat.collectAsStateWithLifecycle()
             val whatsapp by m.whatsapp.collectAsStateWithLifecycle()
             val liens = LocalUriHandler.current
+            // US-25 : les rappels du soir ont besoin des notifications, demandées dès qu'une app est à tester.
+            val pret = etat as? EtatEspace.Pret
+            if (pret?.profil?.statut == "valide" && !pret.apps.isNullOrEmpty()) DemandeNotifications()
             EcranEspace(
                 etat,
                 surReessayer = m::actualiser,
@@ -130,6 +140,21 @@ fun AppNakayo(navigation: Navigation) {
         is Ecran.Portefeuille -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()
             EcranPortefeuille(etat, actuel.modele.actionsPortefeuille())
+        }
+    }
+}
+
+// Android 13 et plus : une seule demande par ouverture de l'app ; Android cesse lui-même après deux refus.
+@Composable
+private fun DemandeNotifications() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val contexte = LocalContext.current
+    var demandee by remember { mutableStateOf(false) }
+    val demande = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        if (!demandee && !NotificationsRappel.autorisees(contexte)) {
+            demandee = true
+            demande.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

@@ -22,6 +22,8 @@ class OutilsAndroid(private val contexte: Context) : OutilsApps {
 
     override fun planifierMesure() = PlanificationUsages.planifier(contexte)
 
+    override fun planifierRappels() = PlanificationRappels.planifier(contexte)
+
     override fun installation(paquet: String): InstallationApp? {
         val pm = contexte.packageManager
         val version = try {

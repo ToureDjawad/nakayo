@@ -18,6 +18,8 @@ export function lireConfig(env = process.env) {
     // Versements aux testeurs (US-22) : « simulation » hors production ; en production, les
     // versements attendent tant que l'agrégateur Mobile Money n'est pas branché.
     versementMode: env.VERSEMENT_MODE ?? (production ? 'aucun' : 'simulation'),
+    // US-25 : SMS de secours à 22 h quand un rapport manque (désactivable, chaque SMS a un coût).
+    rappelsSms: env.RAPPELS_SMS ? env.RAPPELS_SMS === 'true' : true,
     // Secret partagé avec les fournisseurs pour signer leurs webhooks (docs/api-sprint2.md §2.4).
     paiementWebhookSecret: env.PAIEMENT_WEBHOOK_SECRET ?? (production ? null : 'secret-webhook-developpement'),
     // Groupe Google des testeurs Nakayo (US-13), que le développeur ajoute à son test fermé.
