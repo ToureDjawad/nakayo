@@ -233,8 +233,9 @@ private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surOuvrir:
 fun BandeauMesure() {
     val contexte = LocalContext.current
     Bandeau(
-        "Sans cet accès, le temps passé dans l'app testée n'est pas mesuré et vos jours ne comptent pas. " +
-            "Dans la liste, choisissez Nakayo et activez l'accès.",
+        "Nakayo a besoin de l'accès aux statistiques d'usage d'Android pour mesurer le temps passé dans les apps que vous testez. " +
+            "Seul ce temps est envoyé, pour ces apps uniquement : rien sur vos autres apps. Sans cet accès, vos jours ne comptent pas. " +
+            "Touchez le bouton, choisissez Nakayo dans la liste, puis activez l'accès.",
         TypeBandeau.Attention,
         titre = "Autorisez Nakayo à mesurer le temps d'utilisation",
         icone = R.drawable.ic_horloge,
