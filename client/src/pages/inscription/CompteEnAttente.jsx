@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton, Indicateur } from '../../components/Bouton.jsx'
+import { ContactWhatsapp } from '../../components/ContactWhatsapp.jsx'
 import { BoiteIcone, PageCompte, PanneauEtapes } from '../../components/MiseEnPage.jsx'
 import { messageErreurGlobale } from '../../lib/messages.js'
 import { nomPays } from '../../lib/pays.js'
@@ -135,6 +136,7 @@ export default function CompteEnAttente() {
         <p className="mt-6 text-texte">
           Si vous pensez qu’il s’agit d’une erreur, répondez à l’email de décision que vous avez reçu.
         </p>
+        <ContactWhatsapp className="mt-6" />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
     )
@@ -152,6 +154,7 @@ export default function CompteEnAttente() {
         }
       >
         <Alerte ton="succes">Vous pouvez soumettre votre première application.</Alerte>
+        <ContactWhatsapp className="mt-6" />
         <Recapitulatif utilisateur={utilisateur} />
       </PageCompte>
     )
@@ -161,6 +164,7 @@ export default function CompteEnAttente() {
     return (
       <PageCompte titre="Votre compte est suspendu" utilisateur={utilisateur}>
         <p className="text-texte">Contactez notre équipe en répondant à l’email de suspension que vous avez reçu.</p>
+        <ContactWhatsapp className="mt-6" />
       </PageCompte>
     )
   }
@@ -188,6 +192,7 @@ export default function CompteEnAttente() {
       <div className="mt-6">
         <Etapes />
       </div>
+      <ContactWhatsapp className="mt-6" />
       <Recapitulatif utilisateur={utilisateur} />
     </PageCompte>
   )
