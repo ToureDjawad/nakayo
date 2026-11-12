@@ -1,6 +1,7 @@
 import { transaction } from '../routes/auth.js'
 import { USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, debutJourBenin, jourBenin } from '../lib/temps.js'
+import { creerVersementsCampagnes } from './versements.js'
 
 // Vérification de chaque nuit (US-20, docs/api-sprint3.md §3). Un jour est validé pour une
 // affectation si le testeur a ouvert l'app compagnon, passé au moins 2 minutes dans l'app
@@ -80,6 +81,8 @@ export async function verifierJour({ pool, sms, journal }, { jour, maintenant })
       [maintenant],
     )
     if (finies.length) {
+      // US-22 : les testeurs qui ont leurs 14 jours et sont restés inscrits seront payés.
+      await creerVersementsCampagnes(client, { campagneIds: finies.map((c) => c.id), maintenant })
       await client.query(`UPDATE affectations SET statut = 'terminee', terminee_le = $2 WHERE campagne_id = ANY($1) AND statut = 'active'`, [
         finies.map((c) => c.id),
         maintenant,

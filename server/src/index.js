@@ -1,6 +1,7 @@
 import { creerApp } from './app.js'
 import { lireConfig } from './config.js'
 import { demarrerVerificationNocturne } from './services/verificationQuotidienne.js'
+import { demarrerVersements } from './services/versements.js'
 
 const { port } = lireConfig()
 
@@ -10,3 +11,5 @@ app.listen(port, () => {
 })
 // US-20 : vérification des journées de test chaque nuit, à minuit heure du Bénin.
 demarrerVerificationNocturne(app.locals.deps)
+// US-22 : versements MoMo aux testeurs, toutes les 15 minutes.
+demarrerVersements(app.locals.deps)

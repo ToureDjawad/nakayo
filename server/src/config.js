@@ -15,6 +15,9 @@ export function lireConfig(env = process.env) {
     // Paiement (US-12) : « simulation » en développement et en test ; en production, rien
     // n'est ouvert tant que les fournisseurs (carte, agrégateur Mobile Money) ne sont pas branchés.
     paiementMode: env.PAIEMENT_MODE ?? (production ? 'aucun' : 'simulation'),
+    // Versements aux testeurs (US-22) : « simulation » hors production ; en production, les
+    // versements attendent tant que l'agrégateur Mobile Money n'est pas branché.
+    versementMode: env.VERSEMENT_MODE ?? (production ? 'aucun' : 'simulation'),
     // Secret partagé avec les fournisseurs pour signer leurs webhooks (docs/api-sprint2.md §2.4).
     paiementWebhookSecret: env.PAIEMENT_WEBHOOK_SECRET ?? (production ? null : 'secret-webhook-developpement'),
     // Groupe Google des testeurs Nakayo (US-13), que le développeur ajoute à son test fermé.
