@@ -32,6 +32,20 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     }
     var reponseMesTickets: suspend () -> Resultat<List<Ticket>> = { Resultat.Succes(emptyList()) }
 
+    // Sprint 3 : par défaut une app inscrite et installée, sans rapport du jour.
+    var reponseApps: suspend () -> Resultat<List<AffectationTesteur>> = { Resultat.Succes(listOf(affectation())) }
+    var reponseInscriptionTest: suspend (String, Photo) -> Resultat<AffectationTesteur> = { id, _ ->
+        Resultat.Succes(affectation(id, inscription = true, installation = false))
+    }
+    var reponseInstallation: suspend (String, String) -> Resultat<AffectationTesteur> = { id, _ -> Resultat.Succes(affectation(id)) }
+    var reponseRapport: suspend (String, RapportJour) -> Resultat<AffectationTesteur> = { id, _ ->
+        Resultat.Succes(affectation(id).copy(rapportDuJour = true, retourDetailleAttendu = false))
+    }
+    var reponseSignal: suspend () -> Resultat<Unit> = { Resultat.Succes(Unit) }
+    var reponseUsages: suspend (List<UsageJour>) -> Resultat<BilanUsages> = { Resultat.Succes(BilanUsages(it.size, 0)) }
+    var dernierRapport: RapportJour? = null
+    var dernieresUsages: List<UsageJour>? = null
+
     // Derniers envois, pour vérifier ce que l'écran a transmis.
     var dernierFormulaire: FormulaireInscription? = null
     var dernieresPhotos: Pair<Photo, Photo>? = null
@@ -94,7 +108,61 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
 
     override suspend fun sessionOuverte() = jeton != null
 
+    override suspend fun mesApps() = reponseApps().also { appels += "apps" }
+
+    override suspend fun confirmerInscription(affectationId: String, capture: Photo) =
+        reponseInscriptionTest(affectationId, capture).also { appels += "inscription-test:$affectationId" }
+
+    override suspend fun confirmerInstallation(affectationId: String, sourceInstallation: String) =
+        reponseInstallation(affectationId, sourceInstallation).also { appels += "installation:$affectationId:$sourceInstallation" }
+
+    override suspend fun envoyerRapport(affectationId: String, rapport: RapportJour): Resultat<AffectationTesteur> {
+        appels += "rapport:$affectationId"
+        dernierRapport = rapport
+        return reponseRapport(affectationId, rapport)
+    }
+
+    override suspend fun signaler() = reponseSignal().also { appels += "signal" }
+
+    override suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages> {
+        appels += "usages:${usages.size}"
+        dernieresUsages = usages
+        return reponseUsages(usages)
+    }
+
     companion object {
+        fun affectation(
+            id: String = "31",
+            inscription: Boolean = true,
+            installation: Boolean = true,
+            jour: Int = 3,
+            joursValides: Int = 2,
+        ) = AffectationTesteur(
+            id = id,
+            campagneId = "4",
+            app = AppTestee(
+                id = "12",
+                nom = "Marché Facile",
+                paquet = "bj.studioawa.marche",
+                instructions = "Cherchez un produit, ajoutez-le au panier puis suivez la livraison.",
+                fonctionnalites = listOf("Recherche de produits", "Panier", "Suivi de livraison"),
+                connexionRequise = true,
+                identifiantsTest = "Compte : test@marche.bj / Mot de passe : Test2026",
+            ),
+            lienInscription = "https://play.google.com/apps/testing/bj.studioawa.marche",
+            lienPlayStore = "https://play.google.com/store/apps/details?id=bj.studioawa.marche",
+            jourCampagne = jour,
+            joursCampagne = 16,
+            joursExiges = 14,
+            joursValides = joursValides,
+            inscriptionConfirmee = inscription,
+            installationConfirmee = installation,
+            rapportDuJour = false,
+            retourDetailleAttendu = jour in listOf(3, 7, 12),
+            usageDuJourSecondes = 95,
+            usageMinimumSecondes = 120,
+        )
+
         fun profil(telephone: String = "+2290197000000", statut: String = "en_attente", motifRefus: String? = null) = ProfilTesteur(
             id = "77",
             role = "testeur",

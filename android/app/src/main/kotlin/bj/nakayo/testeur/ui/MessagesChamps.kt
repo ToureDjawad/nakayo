@@ -79,4 +79,33 @@ object MessagesChamps {
         "trop_long" -> "2000 caractères au plus."
         else -> "Ce message n'est pas valide."
     }
+
+    // Rapport du jour (§2.4).
+    fun rapport(champ: String, code: String): String = when (champ) {
+        "actions" -> when (code) {
+            "requis" -> "Dites ce que vous avez fait dans l'app aujourd'hui."
+            "trop_court" -> "Décrivez en une phrase (10 caractères au moins)."
+            "trop_long" -> "500 caractères au plus."
+            else -> "Cette réponse n'est pas valide."
+        }
+        "note" -> "Choisissez une note de 1 à 5."
+        "bug" -> "Indiquez si vous avez rencontré un problème."
+        "commentaireBug" -> when (code) {
+            "requis" -> "Décrivez le problème rencontré."
+            "trop_court" -> "Décrivez le problème en une phrase (10 caractères au moins)."
+            "trop_long" -> "1000 caractères au plus."
+            else -> "Cette description n'est pas valide."
+        }
+        "fonctionnalites" -> when (code) {
+            "requis" -> "Cochez au moins une fonctionnalité utilisée."
+            else -> "Cochez des fonctionnalités de la liste."
+        }
+        "retourDetaille" -> when (code) {
+            "requis" -> "Écrivez votre avis détaillé sur l'app."
+            "trop_court" -> "Votre avis doit faire 100 caractères au moins."
+            "trop_long" -> "2000 caractères au plus."
+            else -> "Cet avis n'est pas valide."
+        }
+        else -> "Cette réponse n'est pas valide."
+    }
 }

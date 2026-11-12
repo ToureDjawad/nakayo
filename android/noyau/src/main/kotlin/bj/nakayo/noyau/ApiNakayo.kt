@@ -126,6 +126,43 @@ class ApiNakayo(
     override suspend fun mesTickets(): Resultat<List<Ticket>> =
         appeler(requete("api/tickets/moi").get(), ReponseTickets.serializer()).map { it.tickets }
 
+    // Sprint 3 §2.1 : apps à tester, de la plus ancienne affectation à la plus récente.
+    override suspend fun mesApps(): Resultat<List<AffectationTesteur>> =
+        appeler(requete("api/testeurs/moi/apps").get(), ReponseApps.serializer()).map { it.apps }
+
+    // §2.2 Capture de la page « Vous êtes testeur » de Google Play.
+    override suspend fun confirmerInscription(affectationId: String, capture: Photo): Resultat<AffectationTesteur> {
+        val corps = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("capture", nomFichier("capture", capture), photo(capture))
+            .build()
+        return appeler(requete(cheminApp(affectationId, "inscription")).post(corps), ReponseApp.serializer()).map { it.app }
+    }
+
+    // §2.3 Source d'installation donnée par Android (le Play Store : « com.android.vending »).
+    override suspend fun confirmerInstallation(affectationId: String, sourceInstallation: String): Resultat<AffectationTesteur> =
+        appeler(
+            requete(cheminApp(affectationId, "installation"))
+                .post(json(CorpsInstallation.serializer(), CorpsInstallation(sourceInstallation))),
+            ReponseApp.serializer(),
+        ).map { it.app }
+
+    // §2.4 Rapport du jour.
+    override suspend fun envoyerRapport(affectationId: String, rapport: RapportJour): Resultat<AffectationTesteur> =
+        appeler(requete(cheminApp(affectationId, "rapports")).post(json(RapportJour.serializer(), rapport)), ReponseApp.serializer())
+            .map { it.app }
+
+    // §2.5 Ouverture de l'app compagnon, horodatée par le serveur.
+    override suspend fun signaler(): Resultat<Unit> =
+        appeler(requete("api/testeurs/moi/signal").post(ByteArray(0).toRequestBody(null)), null)
+
+    // §2.6 Cumuls du temps d'utilisation des apps testées.
+    override suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages> =
+        appeler(requete("api/testeurs/moi/usages").post(json(CorpsUsages.serializer(), CorpsUsages(usages))), BilanUsages.serializer())
+
+    private fun cheminApp(affectationId: String, action: String) =
+        "api/testeurs/moi/apps/" + java.net.URLEncoder.encode(affectationId, "UTF-8") + "/" + action
+
     // §3.2 Déconnexion : le jeton local est effacé même si le serveur ne répond pas.
     override suspend fun deconnecter() {
         appeler<Unit>(requete("api/auth/deconnexion").post(ByteArray(0).toRequestBody(null)), null)

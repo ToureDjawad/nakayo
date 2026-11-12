@@ -181,5 +181,11 @@ class ApiReelleTest {
 
         val doublon = (api.demanderChangementMomo(nouveauNumero(), "moov", "Une seconde demande") as Resultat.Echec).erreur as ErreurApi.Http
         assertEquals("statut_incompatible", doublon.code)
+
+        // Sprint 3 : tant que le compte n'est pas validé, pas d'apps à tester ni de signal.
+        for (refus in listOf(api.mesApps(), api.signaler(), api.envoyerUsages(listOf(UsageJour("bj.exemple", "2026-11-12", 60))))) {
+            val erreur = (refus as Resultat.Echec).erreur as ErreurApi.Http
+            assertEquals(403 to "compte_non_valide", erreur.statut to erreur.code)
+        }
     }
 }

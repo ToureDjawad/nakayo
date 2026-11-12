@@ -63,3 +63,15 @@ fun messageSupport(profil: ProfilTesteur?): String =
     } else {
         "Bonjour, je suis ${profil.nom}, testeur Nakayo (numéro ${afficher(profil.telephone)}). J'ai une question :"
     }
+
+private val BENIN = ZoneId.of("Africa/Porto-Novo")
+
+// Jour en cours au Bénin, « AAAA-MM-JJ », comme le serveur compte les jours de test.
+fun jourBenin(instant: Instant = Instant.now()): String = instant.atZone(BENIN).toLocalDate().toString()
+
+// « 2026-11-11 » -> « 11 nov. ».
+fun jourCourt(jour: String): String = try {
+    DateTimeFormatter.ofPattern("d MMM", Locale.FRENCH).format(java.time.LocalDate.parse(jour))
+} catch (_: Exception) {
+    jour
+}
