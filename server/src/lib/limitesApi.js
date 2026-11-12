@@ -22,6 +22,8 @@ export function creerLimitesApi(maintenant) {
     tickets: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
     // Sprint 2 §1.3 : 10 apps soumises par heure pour un compte.
     apps: creerLimiteur({ max: 10, fenetreMs: HEURE, maintenant: horloge }),
+    // Sprint 2 §2.2 : 10 tentatives de paiement par heure pour un compte.
+    paiements: creerLimiteur({ max: 10, fenetreMs: HEURE, maintenant: horloge }),
   }
 }
 

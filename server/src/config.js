@@ -12,6 +12,11 @@ export function lireConfig(env = process.env) {
     // Contrôles qui appellent Internet (fiche Google Play). Coupés en test pour ne pas
     // dépendre du réseau ; le contrôle est alors marqué « indisponible ».
     controlesReseau: env.CONTROLES_RESEAU ? env.CONTROLES_RESEAU === 'true' : env.NODE_ENV !== 'test',
+    // Paiement (US-12) : « simulation » en développement et en test ; en production, rien
+    // n'est ouvert tant que les fournisseurs (carte, agrégateur Mobile Money) ne sont pas branchés.
+    paiementMode: env.PAIEMENT_MODE ?? (production ? 'aucun' : 'simulation'),
+    // Secret partagé avec les fournisseurs pour signer leurs webhooks (docs/api-sprint2.md §2.4).
+    paiementWebhookSecret: env.PAIEMENT_WEBHOOK_SECRET ?? (production ? null : 'secret-webhook-developpement'),
     dossierDocuments: env.DOSSIER_DOCUMENTS ?? fileURLToPath(new URL('../stockage/documents/', import.meta.url)),
   }
 }
