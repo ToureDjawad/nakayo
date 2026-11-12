@@ -31,7 +31,11 @@ test.describe('Campagnes de test (US-13, US-16, US-43)', () => {
     await page.getByRole('link', { name: 'Retour à mon compte' }).click()
     await page.getByRole('link', { name: 'Préparer le lancement de Marché Facile' }).click()
     await expect(page.getByText('0 sur 6 points vérifiés')).toBeVisible()
-    for (const caseACocher of await page.getByRole('checkbox').all()) await caseACocher.check()
+    await expect(page.getByRole('checkbox')).toHaveCount(6)
+    await expect(async () => {
+      for (const caseACocher of await page.getByRole('checkbox').all()) await caseACocher.check()
+      await expect(page.getByText('6 sur 6 points vérifiés')).toBeVisible({ timeout: 1000 })
+    }).toPass({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(page.getByText('Votre liste est complète.', { exact: false })).toBeVisible()
     await page.goto('/mon-compte')
