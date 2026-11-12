@@ -9,6 +9,17 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Sante(val api: String, val base: String)
 
+// Message envoyé au support (§12) ; statut « ouvert » puis « traite ».
+@Serializable
+data class Ticket(
+    val id: String,
+    val sujet: String,
+    val message: String,
+    val statut: String,
+    val creeLe: String,
+    val traiteLe: String? = null,
+)
+
 // Contact du support publié par l'admin (§11.1) ; `whatsapp` vaut null tant que rien n'est publié.
 @Serializable
 data class Support(val whatsapp: String? = null)
@@ -119,3 +130,12 @@ internal data class DetailErreur(
 
 @Serializable
 internal data class ReponseSupport(val support: Support)
+
+@Serializable
+internal data class CorpsTicket(val sujet: String, val message: String)
+
+@Serializable
+internal data class ReponseTicket(val ticket: Ticket)
+
+@Serializable
+internal data class ReponseTickets(val tickets: List<Ticket>)

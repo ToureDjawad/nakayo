@@ -10,6 +10,8 @@ interface ServiceTesteur {
     suspend fun moi(): Resultat<ProfilTesteur>
     suspend fun modifierProfil(langues: List<String>? = null, appareil: Appareil? = null): Resultat<ProfilTesteur>
     suspend fun demanderChangementMomo(numeroMomo: String, operateurMomo: String, motif: String): Resultat<DemandeChangementMomo>
+    suspend fun envoyerTicket(sujet: String, message: String): Resultat<Ticket>
+    suspend fun mesTickets(): Resultat<List<Ticket>>
     suspend fun deconnecter()
 
     // Un jeton de session est-il gardé sur le téléphone ? (sans appel réseau)

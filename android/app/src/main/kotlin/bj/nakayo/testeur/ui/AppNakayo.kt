@@ -19,12 +19,14 @@ import bj.nakayo.testeur.ui.espace.EtatEspace
 import bj.nakayo.testeur.ui.inscription.EcranInscription
 import bj.nakayo.testeur.ui.profil.EcranProfil
 import bj.nakayo.testeur.ui.profil.actions
+import bj.nakayo.testeur.ui.support.EcranSupport
+import bj.nakayo.testeur.ui.support.actions as actionsSupport
 
 // Racine de l'interface : affiche l'écran courant de la navigation.
 @Composable
 fun AppNakayo(navigation: Navigation) {
     val ecran by navigation.ecran.collectAsStateWithLifecycle()
-    BackHandler(enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil) { navigation.retour() }
+    BackHandler(enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil || ecran is Ecran.Support) { navigation.retour() }
 
     // Icônes de la barre d'état claires sur le fond vert de l'accueil, sombres ailleurs.
     val vue = LocalView.current
@@ -78,6 +80,7 @@ fun AppNakayo(navigation: Navigation) {
                 surDeconnecter = m::deconnecter,
                 surProfil = { (etat as? EtatEspace.Pret)?.let { navigation.allerProfil(it.profil) } },
                 whatsapp = whatsapp,
+                surEcrire = { navigation.allerSupport((etat as? EtatEspace.Pret)?.profil) },
                 // Sans WhatsApp ni navigateur sur le téléphone, le bouton ne fait rien plutôt que de planter.
                 surWhatsapp = { numero ->
                     runCatching { liens.openUri(lienWhatsapp(numero, messageSupport((etat as? EtatEspace.Pret)?.profil))) }
@@ -87,6 +90,10 @@ fun AppNakayo(navigation: Navigation) {
         is Ecran.Profil -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()
             EcranProfil(etat, actuel.modele.actions())
+        }
+        is Ecran.Support -> {
+            val etat by actuel.modele.etat.collectAsStateWithLifecycle()
+            EcranSupport(etat, actuel.modele.actionsSupport())
         }
     }
 }

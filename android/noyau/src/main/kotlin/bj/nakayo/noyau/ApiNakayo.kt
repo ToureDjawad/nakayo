@@ -118,6 +118,14 @@ class ApiNakayo(
             ReponseDemande.serializer(),
         ).map { it.demande }
 
+    // §12.1 Message au support, et les 20 derniers envoyés.
+    override suspend fun envoyerTicket(sujet: String, message: String): Resultat<Ticket> =
+        appeler(requete("api/tickets").post(json(CorpsTicket.serializer(), CorpsTicket(sujet, message))), ReponseTicket.serializer())
+            .map { it.ticket }
+
+    override suspend fun mesTickets(): Resultat<List<Ticket>> =
+        appeler(requete("api/tickets/moi").get(), ReponseTickets.serializer()).map { it.tickets }
+
     // §3.2 Déconnexion : le jeton local est effacé même si le serveur ne répond pas.
     override suspend fun deconnecter() {
         appeler<Unit>(requete("api/auth/deconnexion").post(ByteArray(0).toRequestBody(null)), null)

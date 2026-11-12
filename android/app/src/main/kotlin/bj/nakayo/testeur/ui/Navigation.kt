@@ -10,6 +10,7 @@ import bj.nakayo.testeur.ui.connexion.ModeConnexion
 import bj.nakayo.testeur.ui.espace.EspaceModele
 import bj.nakayo.testeur.ui.inscription.InscriptionModele
 import bj.nakayo.testeur.ui.profil.ProfilModele
+import bj.nakayo.testeur.ui.support.SupportModele
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,7 @@ sealed interface Ecran {
     data class Inscription(val modele: InscriptionModele) : Ecran
     data class Espace(val modele: EspaceModele) : Ecran
     data class Profil(val modele: ProfilModele) : Ecran
+    data class Support(val modele: SupportModele) : Ecran
 }
 
 // Parcours de l'app. Chaque écran a sa portée, annulée quand on le quitte.
@@ -97,6 +99,18 @@ class Navigation(
         )
     }
 
+    fun allerSupport(profil: ProfilTesteur?): Unit = changer {
+        Ecran.Support(
+            SupportModele(
+                service = service,
+                portee = it,
+                profil = profil,
+                surQuitter = { connu -> allerEspace(connu) },
+                surSessionExpiree = { message -> allerAccueil(message) },
+            ),
+        )
+    }
+
     // Bouton retour du téléphone. Renvoie false quand l'app doit se fermer.
     fun retour(): Boolean = when (val actuel = ecranInterne.value) {
         is Ecran.Connexion -> {
@@ -109,6 +123,10 @@ class Navigation(
             true
         }
         is Ecran.Profil -> {
+            actuel.modele.retour()
+            true
+        }
+        is Ecran.Support -> {
             actuel.modele.retour()
             true
         }

@@ -37,6 +37,13 @@ fun depuis(iso: String): String? = try {
     null
 }
 
+// Date ISO du serveur -> « 12 nov. 2026 », à l'heure du Bénin.
+fun jour(iso: String): String? = try {
+    DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRENCH).withZone(ZoneId.of("Africa/Porto-Novo")).format(Instant.parse(iso))
+} catch (_: Exception) {
+    null
+}
+
 fun descriptionAppareil(appareil: Appareil): String {
     val nom = listOfNotNull(appareil.fabricant?.replaceFirstChar(Char::uppercase), appareil.modele)
         .distinct()
