@@ -15,9 +15,11 @@ import {
 } from '../services/support.js'
 import { deciderApp, lireAppAdmin, listerAppsAdmin, messageDecisionApp, STATUTS_FILE } from '../services/verificationApps.js'
 import { lireCampagne, listerCampagnesAdmin, messageNouvelleApp, remplacerTesteur, telephonesTesteurs } from '../services/campagnes.js'
+import { listerVersementsAdmin, relancerVersement, traiterVersements } from '../services/versements.js'
 import { transaction } from './auth.js'
 
 const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
+const STATUTS_VERSEMENT = ['a_verser', 'en_cours', 'verse', 'echoue']
 const ROLES = ['developpeur', 'testeur']
 const TRIS = ['ancien', 'recent']
 const TYPES_DOCUMENT = { 'piece-identite': 'piece_identite', selfie: 'selfie' }
@@ -276,6 +278,23 @@ export function routesAdmin(deps) {
       journal.error(erreur)
     }
     res.json({ campagne })
+  })
+
+  // Sprint 4 §2.4 Versements aux testeurs : liste (par défaut ceux en échec) et relance.
+  routeur.get('/versements', async (req, res) => {
+    const statut = texte(req.query.statut) || 'echoue'
+    exigerChamps({ statut: !STATUTS_VERSEMENT.includes(statut) && statut !== 'tous' && 'valeur_inconnue' })
+    res.json({ versements: await listerVersementsAdmin(pool, { statut: statut === 'tous' ? null : statut }) })
+  })
+
+  routeur.post('/versements/:reference/relance', async (req, res) => {
+    const reference = req.params.reference
+    if (!/^VER-[0-9A-F]{16}$/.test(reference)) throw introuvable('Versement introuvable.')
+    await transaction(pool, (client) => relancerVersement(client, { reference, maintenant: maintenant() }))
+    // Nouvelle tentative tout de suite, sans attendre le prochain passage.
+    await traiterVersements(deps)
+    const versements = await listerVersementsAdmin(pool, { statut: null, reference })
+    res.json({ versement: versements[0] })
   })
 
   // §12.2 Messages envoyés au support.

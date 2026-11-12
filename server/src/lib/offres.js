@@ -19,3 +19,6 @@ export function montantLisible(montant, devise) {
   if (devise === 'XOF') return `${new Intl.NumberFormat('fr-FR').format(montant).replace(/ /g, ' ')} FCFA`
   return `${(montant / 100).toFixed(2).replace('.', ',')} $ US`
 }
+
+// Rémunération d'un testeur (US-22) : 500 FCFA par app, versés à la clôture de la campagne.
+export const REMUNERATION_TESTEUR = { montant: 500, devise: 'XOF' }

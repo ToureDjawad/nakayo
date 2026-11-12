@@ -23,7 +23,7 @@ export async function viderBase() {
 }
 
 // Application de test : messageries en mémoire, horloge réglable, journal muet.
-export function creerAppTest({ maintenant, journal = silencieux, config } = {}) {
+export function creerAppTest({ maintenant, journal = silencieux, config, momo } = {}) {
   const emails = creerMessagerieJournal({ canal: 'email', journal: silencieux })
   const sms = creerMessagerieJournal({ canal: 'sms', journal: silencieux })
   const horloge = { date: maintenant ?? null }
@@ -32,6 +32,8 @@ export function creerAppTest({ maintenant, journal = silencieux, config } = {}) 
     emails,
     sms,
     journal,
+    // Fournisseur des versements aux testeurs : simulation par défaut (config de test).
+    ...(momo !== undefined && { momo }),
     // Photos des testeurs dans un dossier temporaire propre à chaque application de test.
     config: { dossierDocuments: mkdtempSync(path.join(tmpdir(), 'nakayo-documents-')), ...config },
     maintenant: () => (horloge.date ? new Date(horloge.date) : new Date()),
