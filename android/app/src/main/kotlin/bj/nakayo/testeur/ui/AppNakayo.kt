@@ -34,6 +34,7 @@ import bj.nakayo.testeur.ui.support.actions as actionsSupport
 @Composable
 fun AppNakayo(navigation: Navigation) {
     val ecran by navigation.ecran.collectAsStateWithLifecycle()
+    val mesureAutorisee by navigation.mesureAutorisee.collectAsStateWithLifecycle()
     BackHandler(
         enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil || ecran is Ecran.Support ||
             ecran is Ecran.App || ecran is Ecran.Rapport,
@@ -100,6 +101,7 @@ fun AppNakayo(navigation: Navigation) {
                 whatsapp = whatsapp,
                 surEcrire = { navigation.allerSupport((etat as? EtatEspace.Pret)?.profil) },
                 surApp = { a -> navigation.allerApp(a, (etat as? EtatEspace.Pret)?.profil) },
+                mesureAutorisee = mesureAutorisee,
                 // Sans WhatsApp ni navigateur sur le téléphone, le bouton ne fait rien plutôt que de planter.
                 surWhatsapp = { numero ->
                     runCatching { liens.openUri(lienWhatsapp(numero, messageSupport((etat as? EtatEspace.Pret)?.profil))) }
@@ -116,7 +118,7 @@ fun AppNakayo(navigation: Navigation) {
         }
         is Ecran.App -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()
-            EcranApp(etat, actuel.modele.actionsApp())
+            EcranApp(etat, actuel.modele.actionsApp(), mesureAutorisee)
         }
         is Ecran.Rapport -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()

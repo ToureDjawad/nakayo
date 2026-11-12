@@ -46,7 +46,6 @@ class TestQuotidienTest {
         reponseMoi = { Resultat.Succes(ServiceTesteurFactice.profil(statut = "valide")) }
     }
     private val outils = OutilsFactices()
-    private var jour = "2026-11-12"
     private var compressions = 0
     private val compresser: (File) -> ByteArray = { compressions++; byteArrayOf(1, 2, 3) }
 
@@ -57,24 +56,25 @@ class TestQuotidienTest {
         compresser,
         calcul = UnconfinedTestDispatcher(testScheduler),
         outils = outils,
-        aujourdhui = { jour },
     )
 
     private fun Navigation.espace() = assertIs<Ecran.Espace>(ecran.value).modele
 
     @Test
-    fun `compte validé, les apps sont chargées et l'ouverture signalée une fois par jour`() = runTest {
+    fun `compte validé, les apps sont chargées et chaque ouverture signalée une fois`() = runTest {
         val nav = navigation()
         advanceUntilIdle()
         val etat = assertIs<EtatEspace.Pret>(nav.espace().etat.value)
         assertEquals(listOf("31"), etat.apps?.map { it.id })
         assertEquals(1, service.appels.count { it == "signal" })
 
-        nav.auPremierPlan()
+        // Plusieurs écrans dans la même ouverture : un seul signal.
+        nav.allerApp(affectation(), ServiceTesteurFactice.profil(statut = "valide"))
+        nav.retour()
         advanceUntilIdle()
         assertEquals(1, service.appels.count { it == "signal" })
 
-        jour = "2026-11-13"
+        // Retour dans l'app : nouvelle ouverture.
         nav.auPremierPlan()
         advanceUntilIdle()
         assertEquals(2, service.appels.count { it == "signal" })

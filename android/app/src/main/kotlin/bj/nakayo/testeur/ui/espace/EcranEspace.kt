@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import bj.nakayo.noyau.AffectationTesteur
 import bj.nakayo.noyau.ProfilTesteur
 import bj.nakayo.testeur.ui.apps.Etape
+import bj.nakayo.testeur.ui.apps.BandeauMesure
 import bj.nakayo.testeur.ui.apps.IconeApp
 import bj.nakayo.testeur.ui.apps.etape
 import bj.nakayo.testeur.ui.apps.libelleEtape
@@ -66,6 +67,8 @@ fun EcranEspace(
     surEcrire: () -> Unit = {},
     // Une app à tester touchée dans la liste (US-17).
     surApp: (AffectationTesteur) -> Unit = {},
+    // US-18 : accès aux statistiques d'usage donné.
+    mesureAutorisee: Boolean = true,
 ) {
     when (etat) {
         EtatEspace.Chargement -> Ecran(centrer = true) { Chargement("Chargement de votre compte…") }
@@ -87,7 +90,7 @@ fun EcranEspace(
                 Bouton("Me déconnecter", surDeconnecter, StyleBouton.Fantome, enCours = etat.deconnexionEnCours, icone = R.drawable.ic_sortie)
             },
         ) {
-            if (etat.profil.statut == "valide") EspaceValide(etat, surReessayer, surApp) else Statut(etat.profil)
+            if (etat.profil.statut == "valide") EspaceValide(etat, surReessayer, surApp, mesureAutorisee) else Statut(etat.profil)
             Bouton("Écrire à l'équipe", surEcrire, StyleBouton.Secondaire, icone = R.drawable.ic_message)
             whatsapp?.let { ContactSupport(it, surWhatsapp) }
         }
@@ -132,7 +135,7 @@ private fun Statut(profil: ProfilTesteur) {
 
 // Compte validé : les apps à tester (T07), ou l'attente d'une campagne.
 @Composable
-private fun EspaceValide(etat: EtatEspace.Pret, surReessayer: () -> Unit, surApp: (AffectationTesteur) -> Unit) {
+private fun EspaceValide(etat: EtatEspace.Pret, surReessayer: () -> Unit, surApp: (AffectationTesteur) -> Unit, mesureAutorisee: Boolean) {
     val apps = etat.apps
     when {
         apps == null && etat.erreurApps != null -> {
@@ -146,6 +149,7 @@ private fun EspaceValide(etat: EtatEspace.Pret, surReessayer: () -> Unit, surApp
             Surtitre("Bonjour ${prenom(etat.profil.nom)}")
             Titre(if (apps.size == 1) "Votre app à tester" else "Vos ${apps.size} apps à tester")
             Paragraphe("Chaque jour : ouvrez Nakayo, utilisez l'app 2 minutes au moins et envoyez votre rapport.")
+            if (!mesureAutorisee && apps.any { it.installationConfirmee && !it.joursAcquis }) BandeauMesure()
             apps.forEach { CarteApp(it) { surApp(it) } }
         }
     }

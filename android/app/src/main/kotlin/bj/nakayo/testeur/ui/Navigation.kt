@@ -47,13 +47,18 @@ class Navigation(
     private val calcul: CoroutineDispatcher = Dispatchers.Default,
     // Apps installées et position (Android) ; remplacées dans les tests.
     private val outils: OutilsApps = OutilsApps.Aucun,
-    // Jour du Bénin, pour signaler l'ouverture de l'app une fois par jour.
-    private val aujourdhui: () -> String = { jourBenin() },
 ) {
     private val ecranInterne = MutableStateFlow<Ecran>(Ecran.Demarrage)
     val ecran: StateFlow<Ecran> = ecranInterne.asStateFlow()
     private var porteeEcran: CoroutineScope? = null
-    private var jourSignale: String? = null
+    // Ouverture en cours de l'app (incrémentée à chaque retour au premier plan) et dernière signalée.
+    private var ouverture = 0
+    private var ouvertureSignalee = -1
+
+    // US-18 : accès aux statistiques d'usage donné dans les réglages du téléphone.
+    private val mesureInterne = MutableStateFlow(true)
+    val mesureAutorisee: StateFlow<Boolean> = mesureInterne.asStateFlow()
+    private var testeurValide = false
     // Profil de l'espace, gardé pendant la visite des écrans d'app.
     private var profilEspace: ProfilTesteur? = null
 
@@ -143,6 +148,8 @@ class Navigation(
 
     // L'app revient au premier plan : on relit l'écran affiché (un nouveau jour a pu commencer).
     fun auPremierPlan() {
+        ouverture++
+        if (testeurValide) lancerMesure()
         when (val actuel = ecranInterne.value) {
             is Ecran.Espace -> actuel.modele.actualiser()
             is Ecran.App -> {
@@ -153,12 +160,22 @@ class Navigation(
         }
     }
 
-    // US-18 : une ouverture de l'app compagnon par jour suffit ; nouvel essai si le réseau manque.
+    // Le temps d'utilisation part en arrière-plan, et seulement si le testeur a donné l'accès.
+    private fun lancerMesure() {
+        mesureInterne.value = outils.mesureAutorisee()
+        if (mesureInterne.value) outils.planifierMesure()
+    }
+
+    // US-18 : chaque ouverture de l'app compagnon est signalée au serveur, qui l'horodate.
+    // Un seul signal par ouverture, même si plusieurs écrans le demandent ; sans réseau, nouvel essai à la suivante.
     private fun signalerOuverture() {
-        val jour = aujourdhui()
-        if (jourSignale == jour) return
-        jourSignale = jour
-        portee.launch { if (service.signaler() is Resultat.Echec && jourSignale == jour) jourSignale = null }
+        // Première fois : on lance la mesure ; ensuite, auPremierPlan() s'en charge.
+        if (!testeurValide) lancerMesure()
+        testeurValide = true
+        if (ouvertureSignalee == ouverture) return
+        val courante = ouverture
+        ouvertureSignalee = courante
+        portee.launch { if (service.signaler() is Resultat.Echec && ouvertureSignalee == courante) ouvertureSignalee = -1 }
     }
 
     fun allerProfil(profil: ProfilTesteur): Unit = changer {

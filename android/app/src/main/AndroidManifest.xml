@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Rapport du jour : position approximative (la ville), jamais la position précise. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Temps passé dans les apps testées : accès donné par le testeur dans les réglages (US-18). -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Sauvegarde désactivée : le jeton de session ne doit pas quitter le téléphone. -->
     <application
