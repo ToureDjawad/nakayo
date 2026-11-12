@@ -114,7 +114,7 @@ class ParcoursTestQuotidienTest {
         lancer().use {
             compose.attendreTexte("Votre app à tester")
             toucher("Mon portefeuille")
-            compose.attendreTexte("Gains en attente")
+            compose.attendreTexte("Gains en attente".uppercase())
             compose.onNodeWithText("Jour atteint : 6 sur 14 jours validés").assertExists()
             compose.onNodeWithText("Référence de transaction : MP2611120001").performScrollTo().assertExists()
             compose.onNodeWithContentDescription("Retour").performClick()
