@@ -45,6 +45,16 @@ const PAR_CHAMP = {
     trop_court: `Le motif doit contenir au moins ${LIMITES.motifRefusMin} caractères.`,
     trop_long: `Le motif ne doit pas dépasser ${LIMITES.motifRefusMax} caractères.`,
   },
+  sujet: {
+    requis: 'Indiquez le sujet de votre message.',
+    trop_court: `Le sujet doit contenir au moins ${LIMITES.sujetMin} caractères.`,
+    trop_long: `Le sujet ne doit pas dépasser ${LIMITES.sujetMax} caractères.`,
+  },
+  message: {
+    requis: 'Écrivez votre message.',
+    trop_court: `Le message doit contenir au moins ${LIMITES.messageMin} caractères.`,
+    trop_long: `Le message ne doit pas dépasser ${LIMITES.messageMax} caractères.`,
+  },
   whatsapp: {
     requis: 'Saisissez le numéro WhatsApp du support.',
     format_invalide: 'Saisissez le numéro au format international, avec l’indicatif. Exemple : +229 01 97 00 00 00',

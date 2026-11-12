@@ -98,6 +98,21 @@ class ParcoursConnexionTest {
     }
 
     @Test
+    fun ecrireALEquipe() {
+        service.jeton = "jeton-garde"
+        lancer().use {
+            compose.attendreTexte("Écrire à l'équipe")
+            compose.onNodeWithText("Écrire à l'équipe").performClick()
+            compose.attendreTexte("Écrire à l'équipe Nakayo")
+            compose.onNodeWithContentDescription("Sujet").performTextInput("Paiement Mobile Money")
+            compose.onNodeWithContentDescription("Votre message").performTextInput("Bonjour, mon paiement n'est pas arrivé.")
+            compose.onNodeWithText("Envoyer le message").performClick()
+            compose.attendreTexte("Message envoyé")
+            assertTrue("ticket:Paiement Mobile Money" in service.appels)
+        }
+    }
+
+    @Test
     fun profilLanguesEtDemandeMomo() {
         service.jeton = "jeton-garde"
         lancer().use {

@@ -28,6 +28,7 @@ describe('Contact WhatsApp du support sur l’espace développeur (US-40)', () =
     expect(lien).toHaveAttribute('target', '_blank')
     expect(lien).toHaveAttribute('rel', 'noopener noreferrer')
     expect(screen.getByText(/au \+229 01 97 00 00 00/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Écrire à l’équipe' })).toHaveAttribute('href', '/mon-compte/support')
   })
 
   it.each(['refuse', 'valide', 'suspendu'])('apparaît aussi pour un compte %s', async (statut) => {
@@ -39,7 +40,7 @@ describe('Contact WhatsApp du support sur l’espace développeur (US-40)', () =
     expect(await screen.findByRole('link', { name: /Écrire au support sur WhatsApp/ })).toBeInTheDocument()
   })
 
-  it('rien quand aucun numéro n’est publié ou que le serveur ne répond pas', async () => {
+  it('pas de WhatsApp quand aucun numéro n’est publié ou que le serveur ne répond pas, le formulaire reste proposé', async () => {
     const serveur = simulerApi({
       'GET /api/auth/moi': { corps: { utilisateur: DEV } },
       'GET /api/support': [{ corps: { support: { whatsapp: null } } }, 'reseau'],
@@ -47,12 +48,14 @@ describe('Contact WhatsApp du support sur l’espace développeur (US-40)', () =
     const { unmount } = rendreA('/mon-compte')
     await screen.findByRole('heading', { name: 'Votre compte est en cours de vérification' })
     await vi.waitFor(() => expect(serveur.appelsVers('GET', '/api/support')).toHaveLength(1))
-    expect(screen.queryByText('Une question ?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /WhatsApp/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Écrire à l’équipe' })).toBeInTheDocument()
     unmount()
 
     rendreA('/mon-compte')
     await screen.findByRole('heading', { name: 'Votre compte est en cours de vérification' })
     await vi.waitFor(() => expect(serveur.appelsVers('GET', '/api/support')).toHaveLength(2))
-    expect(screen.queryByText('Une question ?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /WhatsApp/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Écrire à l’équipe' })).toBeInTheDocument()
   })
 })

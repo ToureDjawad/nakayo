@@ -27,6 +27,11 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
         Resultat.Succes(DemandeChangementMomo("5", numero, operateur, "en_attente", "2026-11-11T10:00:00.000Z"))
     }
 
+    var reponseTicket: suspend (String, String) -> Resultat<Ticket> = { sujet, message ->
+        Resultat.Succes(Ticket("12", sujet, message, "ouvert", "2026-11-12T09:00:00.000Z"))
+    }
+    var reponseMesTickets: suspend () -> Resultat<List<Ticket>> = { Resultat.Succes(emptyList()) }
+
     // Derniers envois, pour vérifier ce que l'écran a transmis.
     var dernierFormulaire: FormulaireInscription? = null
     var dernieresPhotos: Pair<Photo, Photo>? = null
@@ -67,6 +72,13 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
         appels += "demande-momo:$numeroMomo:$operateurMomo"
         return reponseDemande(numeroMomo, operateurMomo, motif)
     }
+
+    override suspend fun envoyerTicket(sujet: String, message: String): Resultat<Ticket> {
+        appels += "ticket:$sujet"
+        return reponseTicket(sujet, message)
+    }
+
+    override suspend fun mesTickets() = reponseMesTickets().also { appels += "tickets" }
 
     override suspend fun moi(): Resultat<ProfilTesteur> {
         appels += "moi"

@@ -65,4 +65,18 @@ object MessagesChamps {
         "deja_utilise" -> "Ce numéro Mobile Money est déjà utilisé par un autre compte."
         else -> telephone(code)
     }
+
+    fun sujet(code: String): String = when (code) {
+        "requis" -> "Indiquez le sujet de votre message."
+        "trop_court" -> "Le sujet doit faire 3 caractères au moins."
+        "trop_long" -> "120 caractères au plus."
+        else -> "Ce sujet n'est pas valide."
+    }
+
+    fun message(code: String): String = when (code) {
+        "requis" -> "Écrivez votre message."
+        "trop_court" -> "Expliquez en quelques mots (10 caractères au moins)."
+        "trop_long" -> "2000 caractères au plus."
+        else -> "Ce message n'est pas valide."
+    }
 }

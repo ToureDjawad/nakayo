@@ -116,6 +116,22 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `message au support avec le jeton, puis historique`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(201, """{"ticket":{"id":"12","sujet":"Paiement","message":"Mon paiement n'est pas arrivé.","statut":"ouvert","creeLe":"2026-11-12T09:00:00.000Z","traiteLe":null}}""")
+        val envoye = api.envoyerTicket("Paiement", "Mon paiement n'est pas arrivé.") as Resultat.Succes
+        assertEquals("12", envoye.valeur.id)
+        val requete = serveur.takeRequest()
+        assertEquals("/api/tickets", requete.path)
+        assertEquals("Bearer jeton-secret", requete.getHeader("Authorization"))
+        assertEquals("""{"sujet":"Paiement","message":"Mon paiement n'est pas arrivé."}""", requete.body.readUtf8())
+
+        repondre(200, """{"tickets":[]}""")
+        assertEquals(Resultat.Succes(emptyList<Ticket>()), api.mesTickets())
+        assertEquals("/api/tickets/moi", serveur.takeRequest().path)
+    }
+
+    @Test
     fun `coupure réseau`() = runTest {
         serveur.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
         assertEquals(Resultat.Echec(ErreurApi.Reseau), api.sante())

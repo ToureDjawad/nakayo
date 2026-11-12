@@ -39,6 +39,8 @@ fun EcranEspace(
     // Numéro WhatsApp du support publié par l'admin, ou null.
     whatsapp: String? = null,
     surWhatsapp: (String) -> Unit = {},
+    // Formulaire « Écrire à l'équipe » (US-40).
+    surEcrire: () -> Unit = {},
 ) {
     when (etat) {
         EtatEspace.Chargement -> Ecran(centrer = true) { Chargement("Chargement de votre compte…") }
@@ -61,6 +63,7 @@ fun EcranEspace(
             },
         ) {
             Statut(etat.profil)
+            Bouton("Écrire à l'équipe", surEcrire, StyleBouton.Secondaire, icone = R.drawable.ic_message)
             whatsapp?.let { ContactSupport(it, surWhatsapp) }
         }
     }

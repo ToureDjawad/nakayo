@@ -8,6 +8,8 @@ import {
   validerMotifRefus,
   validerNom,
   validerPeriode,
+  validerMessage,
+  validerSujet,
   validerWhatsapp,
 } from '../lib/validation.js'
 import { photoDemo } from './comptesDemo.js'
@@ -80,6 +82,17 @@ function versCompteAdmin(u) {
         : null,
     controles: u.controles ?? { etat: 'en_cours', liste: [] },
   }
+}
+
+// Messages au support (§12) : absents des anciennes sauvegardes, créés à la première lecture.
+function tickets() {
+  const b = base()
+  b.tickets ??= []
+  return b.tickets
+}
+
+function versTicket(t) {
+  return { id: t.id, sujet: t.sujet, message: t.message, statut: t.statut, creeLe: t.creeLe, traiteLe: t.traiteLe }
 }
 
 // Contact du support (§11) : absent des anciennes sauvegardes, créé à la première lecture.
@@ -423,6 +436,76 @@ export const routes = [
       Object.assign(support(), { whatsappPublie: null, publieLe: horodatage() })
       sauver()
       return ok({ support: { ...support() } })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/tickets',
+    traiter({ corps }) {
+      const utilisateur = utilisateurConnecte()
+      if (!utilisateur) return erreur(401, 'non_authentifie')
+      if (utilisateur.role === 'admin') return erreur(403, 'interdit')
+      const sujet = (corps?.sujet ?? '').trim().replace(/\s+/g, ' ')
+      const message = (corps?.message ?? '').trim()
+      const champs = Object.fromEntries(
+        Object.entries({ sujet: validerSujet(sujet), message: validerMessage(message) }).filter(([, code]) => code),
+      )
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      const ticket = { id: nouvelId(), utilisateurId: utilisateur.id, sujet, message, statut: 'ouvert', creeLe: horodatage(), traiteLe: null }
+      tickets().push(ticket)
+      sauver()
+      return ok({ ticket: versTicket(ticket) }, 201)
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/tickets/moi',
+    traiter() {
+      const utilisateur = utilisateurConnecte()
+      if (!utilisateur) return erreur(401, 'non_authentifie')
+      const miens = tickets()
+        .filter((t) => t.utilisateurId === utilisateur.id)
+        .sort((a, b) => b.creeLe.localeCompare(a.creeLe))
+      return ok({ tickets: miens.slice(0, 20).map(versTicket) })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/admin/tickets',
+    traiter({ query }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const statut = query.get('statut') ?? 'ouvert'
+      const page = Number(query.get('page') ?? 1)
+      if (!['ouvert', 'traite'].includes(statut)) return erreur(422, 'validation', { champs: { statut: 'valeur_inconnue' } })
+      const liste = tickets()
+        .filter((t) => t.statut === statut)
+        .sort((a, b) => (statut === 'ouvert' ? a.creeLe.localeCompare(b.creeLe) : b.traiteLe.localeCompare(a.traiteLe)))
+      const auteur = (id) => {
+        const u = base().utilisateurs.find((x) => x.id === id)
+        return { id: u.id, role: u.role, nom: u.nom, email: u.email ?? null, telephone: u.telephone ?? null }
+      }
+      return ok({
+        tickets: liste.slice((page - 1) * 20, page * 20).map((t) => ({ ...versTicket(t), auteur: auteur(t.utilisateurId) })),
+        total: liste.length,
+        page,
+        parPage: 20,
+      })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/tickets/:id/traitement',
+    traiter({ params }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const t = tickets().find((x) => x.id === params.id)
+      if (!t) return erreur(404, 'introuvable')
+      if (t.statut !== 'ouvert') return erreur(409, 'statut_incompatible', { statut: t.statut })
+      Object.assign(t, { statut: 'traite', traiteLe: horodatage() })
+      sauver()
+      const u = base().utilisateurs.find((x) => x.id === t.utilisateurId)
+      return ok({ ticket: { ...versTicket(t), auteur: { id: u.id, role: u.role, nom: u.nom, email: u.email ?? null, telephone: u.telephone ?? null } } })
     },
   },
 ]

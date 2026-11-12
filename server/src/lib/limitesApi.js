@@ -18,6 +18,8 @@ export function creerLimitesApi(maintenant) {
     smsHeure: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
     // §2.1 : 5 inscriptions par heure depuis une IP.
     inscriptionIp: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
+    // §12.1 : 5 messages au support par heure pour un compte.
+    tickets: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
   }
 }
 

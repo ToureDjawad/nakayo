@@ -8,6 +8,10 @@ export const LIMITES = {
   lienFiche: 300,
   motifRefusMin: 10,
   motifRefusMax: 500,
+  sujetMin: 3,
+  sujetMax: 120,
+  messageMin: 10,
+  messageMax: 2000,
 }
 
 const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -96,4 +100,21 @@ export function validerWhatsapp(valeur) {
   if (!v) return 'requis'
   if (!/^\+[1-9]\d{7,14}$/.test(v)) return 'format_invalide'
   return null
+}
+
+// Message au support (§12.1). Longueurs en caractères, comme le serveur.
+function validerLongueur(valeur, min, max) {
+  const v = (valeur ?? '').trim()
+  if (!v) return 'requis'
+  if ([...v].length < min) return 'trop_court'
+  if ([...v].length > max) return 'trop_long'
+  return null
+}
+
+export function validerSujet(valeur) {
+  return validerLongueur((valeur ?? '').replace(/\s+/g, ' '), LIMITES.sujetMin, LIMITES.sujetMax)
+}
+
+export function validerMessage(valeur) {
+  return validerLongueur(valeur, LIMITES.messageMin, LIMITES.messageMax)
 }
