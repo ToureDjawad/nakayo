@@ -13,6 +13,7 @@ import {
   retirerWhatsapp,
   validerWhatsapp,
 } from '../services/support.js'
+import { deciderApp, lireAppAdmin, listerAppsAdmin, messageDecisionApp, STATUTS_FILE } from '../services/verificationApps.js'
 import { transaction } from './auth.js'
 
 const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
@@ -187,6 +188,50 @@ export function routesAdmin(deps) {
     const motif = texte(corps(req).motif)
     exigerChamps({ motif: validerMotifRefus(motif) })
     await decider(req, res, 'refuse', motif)
+  })
+
+  // Sprint 2 §5 : vérification des apps payées (US-14).
+  const idApp = (req) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('App introuvable.')
+    return req.params.id
+  }
+
+  routeur.get('/apps', async (req, res) => {
+    const statut = texte(req.query.statut) || 'en_verification'
+    const page = entier(req.query.page, 1)
+    const parPage = entier(req.query.parPage, 20)
+    const champs = {}
+    if (!STATUTS_FILE.includes(statut)) champs.statut = 'valeur_inconnue'
+    if (!Number.isInteger(page) || page < 1 || page > 100000) champs.page = 'format_invalide'
+    if (!Number.isInteger(parPage) || parPage < 1 || parPage > 50) champs.parPage = 'format_invalide'
+    exigerChamps(champs)
+    res.json(await listerAppsAdmin(pool, { statut, page, parPage }))
+  })
+
+  routeur.get('/apps/:id', async (req, res) => {
+    res.json(await lireAppAdmin(pool, idApp(req)))
+  })
+
+  async function deciderSurApp(req, res, decision, motif = null) {
+    const id = idApp(req)
+    const ligne = await transaction(pool, (client) =>
+      deciderApp(client, { id, adminId: req.session.utilisateur.id, decision, motif, maintenant: maintenant() }),
+    )
+    try {
+      await deps.emails.envoyer(messageDecisionApp(ligne, { clientUrl: config.clientUrl }))
+    } catch (erreur) {
+      // La décision est enregistrée ; l'envoi raté est journalisé pour être refait à la main.
+      journal.error(erreur)
+    }
+    res.json(await lireAppAdmin(pool, id))
+  }
+
+  routeur.post('/apps/:id/validation', (req, res) => deciderSurApp(req, res, 'validee'))
+
+  routeur.post('/apps/:id/refus', async (req, res) => {
+    const motif = texte(corps(req).motif)
+    exigerChamps({ motif: validerMotifRefus(motif) })
+    await deciderSurApp(req, res, 'refusee', motif)
   })
 
   // §12.2 Messages envoyés au support.

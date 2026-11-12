@@ -28,6 +28,7 @@ describe('soumission d’une app (§1.3)', () => {
       identifiantsTest: null,
       testObligatoire: true,
       statut: 'brouillon',
+      motifRefus: null,
       creeLe: '2026-11-12T09:00:00.000Z',
       modifieLe: '2026-11-12T09:00:00.000Z',
     })
@@ -62,7 +63,7 @@ describe('soumission d’une app (§1.3)', () => {
 
   it('une app refusée libère son package', async () => {
     const { body } = await soumettre()
-    await pool.query(`UPDATE apps SET statut = 'refusee' WHERE id = $1`, [body.app.id])
+    await pool.query(`UPDATE apps SET statut = 'refusee', motif_refus = 'App interdite.' WHERE id = $1`, [body.app.id])
     expect((await soumettre()).status).toBe(201)
   })
 
