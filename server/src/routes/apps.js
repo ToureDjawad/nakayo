@@ -9,6 +9,7 @@ import { MOYENS_PAIEMENT } from '../lib/offres.js'
 import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
 import { creerPaiement, versPaiementApi } from '../services/paiements.js'
 import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, telephonesTesteurs } from '../services/campagnes.js'
+import { lireAvancement } from '../services/avancement.js'
 import { transaction } from './auth.js'
 
 // Seul un compte validé par l'équipe peut soumettre ou modifier une app.
@@ -131,6 +132,12 @@ export function routesApps({ pool, limites, maintenant, config, sms, emails, jou
   })
 
   // Méthode de secours d'US-13 : la liste des Gmail des testeurs, à coller dans la Play Console.
+  // docs/api-sprint4.md §1 (US-21) : avancement de la campagne au jour le jour.
+  routeur.get('/:id/campagne/avancement', async (req, res) => {
+    const id = idApp(req)
+    res.json({ avancement: await lireAvancement(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() }) })
+  })
+
   routeur.get('/:id/campagne/testeurs.csv', async (req, res) => {
     const id = idApp(req)
     const campagne = await lireCampagneApp(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() })

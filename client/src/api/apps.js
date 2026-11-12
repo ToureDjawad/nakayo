@@ -38,3 +38,8 @@ export function lireCampagne(id, { signal } = {}) {
 export function demarrerCampagne(id) {
   return requete(`/apps/${encodeURIComponent(id)}/campagne`, { methode: 'POST' })
 }
+
+// Avancement de la campagne au jour le jour (docs/api-sprint4.md §1, US-21).
+export function lireAvancement(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne/avancement`, { signal })
+}
