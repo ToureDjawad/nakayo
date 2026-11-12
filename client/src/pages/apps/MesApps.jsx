@@ -92,6 +92,22 @@ export function MesApps() {
                     {app.statut === 'validee' && (
                       <p className="mt-2 text-sm text-texte">Votre app est validée : la campagne de test démarre bientôt.</p>
                     )}
+                    {['en_verification', 'validee'].includes(app.statut) && (
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <Link
+                          to={`/mon-compte/apps/${app.id}/preparation`}
+                          aria-label={`Préparer le lancement de ${app.nom}`}
+                          className={app.preparation?.complete ? 'text-sm font-semibold text-accent underline underline-offset-2' : lienBoutonPetit}
+                        >
+                          Préparer le lancement
+                        </Link>
+                        <span className="text-sm text-texte">
+                          {app.preparation?.complete
+                            ? 'Liste de vérification complète.'
+                            : `${app.preparation?.elements.length ?? 0} sur 6 points vérifiés.`}
+                        </span>
+                      </div>
+                    )}
                     {app.statut === 'refusee' && (
                       <div className="mt-2 text-sm text-texte">
                         <p>

@@ -168,12 +168,12 @@ function Liste({ app, donnees }) {
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">
-        <Bouton chargement={etat.envoi} libelleChargement="Enregistrement…" disabled={!modifie && !etat.envoi} className="sm:min-w-56">
+        <Bouton chargement={etat.envoi} libelleChargement="Enregistrement…" disabled={!modifie && !etat.envoi} className="sm:min-w-44">
           Enregistrer
         </Bouton>
         <Link
           to="/mon-compte"
-          className="inline-flex h-11 items-center justify-center rounded-champ border border-trait bg-white px-[18px] text-[15px] font-semibold text-encre hover:bg-fond-doux"
+          className="inline-flex h-11 items-center justify-center rounded-champ border border-trait bg-white px-[18px] text-[15px] font-semibold whitespace-nowrap text-encre hover:bg-fond-doux"
         >
           Retour à mon compte
         </Link>

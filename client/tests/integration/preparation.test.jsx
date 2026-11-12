@@ -79,3 +79,20 @@ describe('Préparer le lancement (US-42, US-13)', () => {
     await waitFor(() => expect(screen.getByRole('checkbox', { name: /La fiche Play Store est complète/ })).toBeChecked())
   })
 })
+
+describe('Lien vers la préparation dans « Vos apps »', () => {
+  const base = { 'GET /api/auth/moi': { corps: { utilisateur: DEV } }, 'GET /api/support': { corps: { support: { whatsapp: null } } } }
+
+  it('une app payée propose de préparer le lancement et montre l’avancement', async () => {
+    simulerApi({ ...base, 'GET /api/apps': { corps: { apps: [{ ...APP, statut: 'en_verification', preparation: { ...VIDE, elements: ['fiche_complete'] } }] } } })
+    rendreA('/mon-compte')
+    expect(await screen.findByRole('link', { name: 'Préparer le lancement de Marché Facile' })).toHaveAttribute('href', '/mon-compte/apps/7/preparation')
+    expect(screen.getByText('1 sur 6 points vérifiés.')).toBeInTheDocument()
+  })
+
+  it('une liste complète le dit', async () => {
+    simulerApi({ ...base, 'GET /api/apps': { corps: { apps: [{ ...APP, preparation: { elements: TOUT, complete: true, completeLe: '2026-11-12T09:00:00.000Z' } }] } } })
+    rendreA('/mon-compte')
+    expect(await screen.findByText('Liste de vérification complète.')).toBeInTheDocument()
+  })
+})

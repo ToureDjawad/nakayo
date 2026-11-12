@@ -111,6 +111,9 @@ function support() {
   return b.support
 }
 
+// Liste de vérification avant le lancement (docs/api-sprint2.md §5).
+const ELEMENTS_PREPARATION = ['testeurs_ajoutes', 'fiche_complete', 'version_publiee', 'pays_coches', 'pas_de_test_interne', 'mises_a_jour_prevues']
+
 // Apps des développeurs (docs/api-sprint2.md §1).
 function apps() {
   const b = base()
@@ -643,6 +646,36 @@ export const routes = [
       if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
       if (packagePris(valeurs.package, app.id)) return erreur(409, 'conflit', { champs: { package: 'deja_utilise' } })
       Object.assign(app, valeurs, { modifieLe: horodatage() })
+      sauver()
+      return ok({ app: versApp(app) })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/apps/:id/preparation',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      return ok({ preparation: versApp(app).preparation, elements: ELEMENTS_PREPARATION, groupeTesteurs: 'testeurs@nakayo.test' })
+    },
+  },
+  {
+    methode: 'PUT',
+    chemin: '/api/apps/:id/preparation',
+    traiter({ params, corps }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      if (!['en_verification', 'validee'].includes(app.statut)) return erreur(409, 'statut_incompatible', { statut: app.statut })
+      const elements = corps?.elements
+      if (!Array.isArray(elements)) return erreur(422, 'validation', { champs: { elements: 'requis' } })
+      if (elements.some((e) => !ELEMENTS_PREPARATION.includes(e))) return erreur(422, 'validation', { champs: { elements: 'valeur_inconnue' } })
+      const coches = ELEMENTS_PREPARATION.filter((e) => elements.includes(e))
+      const complete = coches.length === ELEMENTS_PREPARATION.length
+      app.preparation = { elements: coches, complete, completeLe: complete ? (app.preparation?.completeLe ?? horodatage()) : null }
       sauver()
       return ok({ app: versApp(app) })
     },
