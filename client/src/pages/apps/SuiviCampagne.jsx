@@ -5,6 +5,7 @@ import { ErreurApi } from '../../api/client.js'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton, Indicateur } from '../../components/Bouton.jsx'
 import { AdresseGroupe, BoutonCopier } from '../../components/Copier.jsx'
+import { AvancementCampagne } from './AvancementCampagne.jsx'
 import { PageCompte, PanneauEtapes } from '../../components/MiseEnPage.jsx'
 import { csvGmails, dateCourte, telechargerTexte } from '../../lib/campagnes.js'
 import { messageErreurGlobale } from '../../lib/messages.js'
@@ -122,6 +123,8 @@ function Campagne({ campagne, annonce }) {
         </section>
       )}
 
+      <AvancementCampagne appId={campagne.app.id} />
+
       <section aria-labelledby="liste-testeurs">
         <h2 id="liste-testeurs" className="text-lg font-semibold text-encre">
           Vos testeurs
@@ -220,7 +223,7 @@ function Suivi({ id, utilisateur }) {
   )
 }
 
-// /mon-compte/apps/:id/campagne (US-16, US-43).
+// /mon-compte/apps/:id/campagne (US-16, US-43, US-21).
 export default function SuiviCampagne() {
   const { id } = useParams()
   const session = useSession()

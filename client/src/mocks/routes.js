@@ -746,6 +746,58 @@ export const routes = [
     },
   },
   {
+    // US-21 : les testeurs simulés n'avancent pas ; l'avancement reste à zéro, jour par jour.
+    methode: 'GET',
+    chemin: '/api/apps/:id/campagne/avancement',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      const campagne = app && campagneDeLApp(app.id)
+      if (!campagne) return erreur(404, 'introuvable')
+      const vue = versCampagne(campagne)
+      const actifs = campagne.testeurs.filter((t) => t.statut !== 'remplacee')
+      const debut = new Date(campagne.demarreeLe).getTime() + 3600 * 1000
+      const parJour = Array.from({ length: vue.jour }, (_, i) => ({
+        jour: new Date(debut + i * 24 * 3600 * 1000).toISOString().slice(0, 10),
+        numero: i + 1,
+        tempsSecondes: 0,
+        testeursAvecUsage: 0,
+        rapports: 0,
+        testeursValides: i + 1 < vue.jour ? 0 : null,
+      }))
+      const appareils = new Map()
+      for (const t of actifs) appareils.set(t.modele, { modele: t.modele, versionAndroid: '14', testeurs: (appareils.get(t.modele)?.testeurs ?? 0) + 1 })
+      return ok({
+        avancement: {
+          campagneId: campagne.id,
+          statut: campagne.statut,
+          jour: vue.jour,
+          joursExiges: 14,
+          finPrevueLe: vue.finPrevueLe,
+          objectif: { atteint: false, testeursAtteints: 0, dateEstimee: null },
+          resume: { testeursActifs: 0, installes: vue.compteurs.installes, tempsTotalSecondes: 0, rapports: 0, noteMoyenne: null, bugs: 0 },
+          testeurs: actifs.map((t, i) => ({
+            numero: i + 1,
+            ville: t.ville,
+            modele: t.modele,
+            versionAndroid: '14',
+            inscriptionConfirmee: Boolean(t.inscriptionConfirmeeLe),
+            installationConfirmee: Boolean(t.installationConfirmeeLe),
+            joursValides: t.joursValides,
+            joursAcquis: false,
+            dernierRapport: null,
+            actif: false,
+          })),
+          parJour,
+          couverture: app.fonctionnalites.map((f) => ({ fonctionnalite: f, testeurs: 0, rapports: 0, part: 0 })),
+          appareils: [...appareils.values()].sort((a, b) => b.testeurs - a.testeurs || a.modele.localeCompare(b.modele)),
+          rapports: [],
+        },
+      })
+    },
+  },
+  {
     methode: 'GET',
     chemin: '/api/apps/:id/campagne',
     traiter({ params }) {

@@ -6,7 +6,7 @@ async function deconnecter(page) {
   await page.waitForURL(/\/connexion|\/$/)
 }
 
-test.describe('Campagnes de test (US-13, US-16, US-43)', () => {
+test.describe('Campagnes de test (US-13, US-16, US-43, US-21)', () => {
   test('le développeur démarre la campagne, l’admin remplace un testeur', async ({ page }) => {
     test.setTimeout(120_000)
     await seConnecter(page, 'valide@exemple.com')
@@ -55,6 +55,12 @@ test.describe('Campagnes de test (US-13, US-16, US-43)', () => {
     await page.waitForURL(/\/mon-compte\/apps\/[^/]+\/campagne$/)
     await expect(page.getByText('La campagne a démarré')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Jour 1 sur 16' })).toBeVisible()
+    // US-21 : avancement au jour le jour, vide au premier jour.
+    await expect(page.getByRole('heading', { name: 'Où en est le test' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Fonctionnalités testées' })).toBeVisible()
+    await expect(page.getByText('Aucun rapport pour l’instant.', { exact: false })).toBeVisible()
+    await page.getByText('Voir le détail par jour').click()
+    await expect(page.getByRole('table')).toBeVisible()
     await verifierAccessibilite(page)
     await verifierSansDefilementHorizontal(page)
     await page.getByRole('link', { name: 'Retour à mon compte' }).click()
