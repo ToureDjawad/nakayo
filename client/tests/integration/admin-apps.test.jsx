@@ -127,3 +127,23 @@ describe('Apps à vérifier (US-14)', () => {
     expect(await screen.findByRole('heading', { name: 'Aucune app à vérifier' })).toBeInTheDocument()
   })
 })
+
+describe('Décision vue par le développeur (US-14)', () => {
+  const DEV = { id: '2', role: 'developpeur', statut: 'valide', email: 'awa@studio.bj', emailVerifie: true, nom: 'Studio Awa', pays: 'BJ' }
+  const base = { 'GET /api/auth/moi': { corps: { utilisateur: DEV } }, 'GET /api/support': { corps: { support: { whatsapp: null } } } }
+
+  it('une app refusée montre le motif et le remboursement', async () => {
+    simulerApi({ ...base, 'GET /api/apps': { corps: { apps: [{ ...APP, statut: 'refusee', motifRefus: 'Le lien du test fermé ne s’ouvre pas.' }] } } })
+    rendreA('/mon-compte')
+    const carte = (await screen.findByText('Marché Facile', { selector: 'p' })).closest('li')
+    expect(within(carte).getByText('Refusée')).toBeInTheDocument()
+    expect(within(carte).getByText('Le lien du test fermé ne s’ouvre pas.')).toBeInTheDocument()
+    expect(within(carte).getByText(/Votre paiement vous est remboursé/)).toBeInTheDocument()
+  })
+
+  it('une app validée annonce la campagne', async () => {
+    simulerApi({ ...base, 'GET /api/apps': { corps: { apps: [{ ...APP, statut: 'validee' }] } } })
+    rendreA('/mon-compte')
+    expect(await screen.findByText('Votre app est validée : la campagne de test démarre bientôt.')).toBeInTheDocument()
+  })
+})
