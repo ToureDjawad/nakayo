@@ -3,9 +3,10 @@ import { lireApp } from '../lib/apps.js'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
 import { corps, exigerChamps } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
-import { creerApp, lireAppDeveloppeur, listerAppsDeveloppeur, modifierApp, supprimerApp, versAppApi } from '../services/apps.js'
+import { creerApp, enregistrerPreparation, lireAppDeveloppeur, listerAppsDeveloppeur, modifierApp, supprimerApp, versAppApi } from '../services/apps.js'
 import { normaliserWhatsapp, validerWhatsapp } from '../services/support.js'
 import { MOYENS_PAIEMENT } from '../lib/offres.js'
+import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
 import { creerPaiement, versPaiementApi } from '../services/paiements.js'
 
 // Seul un compte validé par l'équipe peut soumettre ou modifier une app.
@@ -77,6 +78,26 @@ export function routesApps({ pool, limites, maintenant, config }) {
       maintenant: maintenant(),
     })
     res.status(201).json({ paiement: versPaiementApi(paiement), redirection: `/paiement/simulation/${paiement.reference}` })
+  })
+
+  // §6 Préparation du lancement (US-42) : la liste des points et le groupe des testeurs (US-13).
+  routeur.get('/:id/preparation', async (req, res) => {
+    const app = versAppApi(await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) }))
+    res.json({ preparation: app.preparation, elements: ELEMENTS_PREPARATION, groupeTesteurs: config.groupeTesteurs })
+  })
+
+  routeur.put('/:id/preparation', async (req, res) => {
+    const id = idApp(req)
+    const { valeurs, erreur } = lirePreparation(corps(req))
+    exigerChamps({ elements: erreur })
+    const app = await enregistrerPreparation(pool, {
+      id,
+      developpeurId: developpeurId(req),
+      elements: valeurs,
+      total: ELEMENTS_PREPARATION.length,
+      maintenant: maintenant(),
+    })
+    res.json({ app })
   })
 
   routeur.delete('/:id', async (req, res) => {
