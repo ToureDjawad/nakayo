@@ -29,6 +29,7 @@ describe('soumission d’une app (§1.3)', () => {
       testObligatoire: true,
       statut: 'brouillon',
       motifRefus: null,
+      preparation: { elements: [], complete: false, completeLe: null },
       creeLe: '2026-11-12T09:00:00.000Z',
       modifieLe: '2026-11-12T09:00:00.000Z',
     })

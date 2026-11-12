@@ -25,6 +25,7 @@ Toutes les routes sont réservées au rôle `developpeur` (cookie du site) : `40
   "testObligatoire": true,
   "statut": "brouillon",
   "motifRefus": null,
+  "preparation": { "elements": [], "complete": false, "completeLe": null },
   "creeLe": "2026-11-12T09:00:00.000Z",
   "modifieLe": "2026-11-12T09:00:00.000Z"
 }
@@ -197,7 +198,31 @@ Une app payée arrive `en_verification`. Un admin vérifie le lien du test ferm�
   - colonnes `motif_refus`, `decide_par` et `decide_le` sur `apps` ;
   - table `decisions_apps` (historique, avec le paiement remboursé).
 
-## 5. Récapitulatif des routes
+## 5. Préparation du lancement (US-42 et US-13)
+
+Avant la campagne, le développeur coche une liste de vérification. Elle reprend les erreurs de préparation qui font le plus souvent refuser l'accès à la production. La campagne (Sprint 3) ne démarre que lorsque tous les points sont cochés.
+
+| Code | Point à vérifier |
+|---|---|
+| `testeurs_ajoutes` | Le groupe Google des testeurs Nakayo est ajouté au canal de test fermé (US-13) |
+| `fiche_complete` | Fiche Play Store, classification du contenu, Sécurité des données et politique de confidentialité remplies |
+| `version_publiee` | Version publiée sur le canal de test fermé (statut « Publié »), lien d'inscription qui fonctionne |
+| `pays_coches` | Bénin (et chaque pays des testeurs) coché dans « Pays/régions » du canal de test fermé |
+| `pas_de_test_interne` | Les testeurs ne sont pas aussi inscrits au test interne |
+| `mises_a_jour_prevues` | Le développeur prévoit au moins 2 nouvelles versions pendant les 14 jours, avec des notes de version |
+
+- `GET /api/apps/:id/preparation` (développeur) : `200 { "preparation": { "elements", "complete", "completeLe" }, "elements": [codes dans l'ordre], "groupeTesteurs": "adresse" | null }`.
+  - `groupeTesteurs` vient de `GROUPE_GOOGLE_TESTEURS`.
+  - `null` tant que le groupe n'est pas créé : l'équipe donne alors l'adresse par email.
+- `PUT /api/apps/:id/preparation` : corps `{ "elements": ["fiche_complete", ...] }`, la liste complète des points cochés.
+  - Répond `200 { "app": app }`. L'objet `app` du §1.1 porte `preparation`.
+  - `completeLe` est posé quand tout est coché, et remis à `null` si un point est décoché.
+  - `409 statut_incompatible` pour un brouillon ou une app refusée.
+  - `422` (`champs.elements` : `requis` ou `valeur_inconnue`).
+  - `404` pour l'app d'un autre compte.
+- Migration `011_preparation_lancement.sql` : colonnes `preparation` et `preparation_complete_le` sur `apps`.
+
+## 6. Récapitulatif des routes
 
 | Méthode | Route | Rôle | Section |
 |---|---|---|---|
@@ -213,6 +238,8 @@ Une app payée arrive `en_verification`. Un admin vérifie le lien du test ferm�
 | POST | `/api/paiements/:reference/simulation` | développeur (simulation) | §2.3 |
 | POST | `/api/paiements/webhook/:fournisseur` | fournisseur (signé) | §2.4 |
 | GET | `/api/factures/:numero` | développeur, admin | §3 |
+| GET | `/api/apps/:id/preparation` | développeur | §5 |
+| PUT | `/api/apps/:id/preparation` | développeur | §5 |
 | GET | `/api/admin/apps` | admin | §4 |
 | GET | `/api/admin/apps/:id` | admin | §4 |
 | POST | `/api/admin/apps/:id/validation` | admin | §4 |
