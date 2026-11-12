@@ -27,6 +27,8 @@ import bj.nakayo.testeur.ui.espace.EtatEspace
 import bj.nakayo.testeur.ui.inscription.EcranInscription
 import bj.nakayo.testeur.ui.profil.EcranProfil
 import bj.nakayo.testeur.ui.profil.actions
+import bj.nakayo.testeur.ui.portefeuille.EcranPortefeuille
+import bj.nakayo.testeur.ui.portefeuille.actions as actionsPortefeuille
 import bj.nakayo.testeur.ui.support.EcranSupport
 import bj.nakayo.testeur.ui.support.actions as actionsSupport
 
@@ -37,7 +39,7 @@ fun AppNakayo(navigation: Navigation) {
     val mesureAutorisee by navigation.mesureAutorisee.collectAsStateWithLifecycle()
     BackHandler(
         enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil || ecran is Ecran.Support ||
-            ecran is Ecran.App || ecran is Ecran.Rapport,
+            ecran is Ecran.App || ecran is Ecran.Rapport || ecran is Ecran.Portefeuille,
     ) { navigation.retour() }
 
     // Retour dans l'app (depuis le Play Store, l'app testée ou le lendemain) : l'écran est relu.
@@ -100,6 +102,7 @@ fun AppNakayo(navigation: Navigation) {
                 surProfil = { (etat as? EtatEspace.Pret)?.let { navigation.allerProfil(it.profil) } },
                 whatsapp = whatsapp,
                 surEcrire = { navigation.allerSupport((etat as? EtatEspace.Pret)?.profil) },
+                surPortefeuille = { navigation.allerPortefeuille((etat as? EtatEspace.Pret)?.profil) },
                 surApp = { a -> navigation.allerApp(a, (etat as? EtatEspace.Pret)?.profil) },
                 mesureAutorisee = mesureAutorisee,
                 // Sans WhatsApp ni navigateur sur le téléphone, le bouton ne fait rien plutôt que de planter.
@@ -123,6 +126,10 @@ fun AppNakayo(navigation: Navigation) {
         is Ecran.Rapport -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()
             EcranRapport(etat, actuel.modele.affectation, actuel.modele.actionsRapport())
+        }
+        is Ecran.Portefeuille -> {
+            val etat by actuel.modele.etat.collectAsStateWithLifecycle()
+            EcranPortefeuille(etat, actuel.modele.actionsPortefeuille())
         }
     }
 }

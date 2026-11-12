@@ -43,6 +43,8 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     }
     var reponseSignal: suspend () -> Resultat<Unit> = { Resultat.Succes(Unit) }
     var reponseUsages: suspend (List<UsageJour>) -> Resultat<BilanUsages> = { Resultat.Succes(BilanUsages(it.size, 0)) }
+    // Sprint 4 : une app en test et un versement reçu.
+    var reponsePortefeuille: suspend () -> Resultat<Portefeuille> = { Resultat.Succes(portefeuilleExemple()) }
     var dernierRapport: RapportJour? = null
     var dernieresUsages: List<UsageJour>? = null
 
@@ -130,7 +132,32 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
         return reponseUsages(usages)
     }
 
+    override suspend fun portefeuille() = reponsePortefeuille().also { appels += "portefeuille" }
+
     companion object {
+        fun portefeuilleExemple() = Portefeuille(
+            totalEnAttente = 500,
+            totalEnAttenteLisible = "500 FCFA",
+            totalVerse = 500,
+            totalVerseLisible = "500 FCFA",
+            compte = CompteMomo("mtn", "•••• 00"),
+            enAttente = listOf(
+                GainEnAttente("31", "Marché Facile", "en_test", 6, 14, 500, montantLisible = "500 FCFA", prevuLe = "2026-11-28T09:00:00.000Z"),
+            ),
+            historique = listOf(
+                VersementTesteur(
+                    reference = "VER-0A1B2C3D4E5F6071",
+                    referenceTransaction = "MP2611120001",
+                    appNom = "Tontine Facile",
+                    montant = 500,
+                    montantLisible = "500 FCFA",
+                    operateur = "mtn",
+                    numeroMasque = "•••• 00",
+                    verseLe = "2026-11-12T10:15:00.000Z",
+                ),
+            ),
+        )
+
         fun affectation(
             id: String = "31",
             inscription: Boolean = true,

@@ -65,6 +65,8 @@ fun EcranEspace(
     surWhatsapp: (String) -> Unit = {},
     // Formulaire « Écrire à l'équipe » (US-40).
     surEcrire: () -> Unit = {},
+    // Portefeuille du testeur validé (US-23).
+    surPortefeuille: () -> Unit = {},
     // Une app à tester touchée dans la liste (US-17).
     surApp: (AffectationTesteur) -> Unit = {},
     // US-18 : accès aux statistiques d'usage donné.
@@ -90,7 +92,12 @@ fun EcranEspace(
                 Bouton("Me déconnecter", surDeconnecter, StyleBouton.Fantome, enCours = etat.deconnexionEnCours, icone = R.drawable.ic_sortie)
             },
         ) {
-            if (etat.profil.statut == "valide") EspaceValide(etat, surReessayer, surApp, mesureAutorisee) else Statut(etat.profil)
+            if (etat.profil.statut == "valide") {
+                EspaceValide(etat, surReessayer, surApp, mesureAutorisee)
+                Bouton("Mon portefeuille", surPortefeuille, StyleBouton.Secondaire, icone = R.drawable.ic_portefeuille)
+            } else {
+                Statut(etat.profil)
+            }
             Bouton("Écrire à l'équipe", surEcrire, StyleBouton.Secondaire, icone = R.drawable.ic_message)
             whatsapp?.let { ContactSupport(it, surWhatsapp) }
         }

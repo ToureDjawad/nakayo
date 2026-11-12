@@ -297,4 +297,26 @@ class ApiNakayoTest {
             usages.body.readUtf8(),
         )
     }
+
+    @Test
+    fun `portefeuille du testeur, les champs inconnus sont ignorés`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(
+            200,
+            """{"portefeuille":{"devise":"XOF","totalEnAttente":500,"totalEnAttenteLisible":"500 FCFA","totalVerse":500,
+               |"totalVerseLisible":"500 FCFA","compte":{"operateur":"moov","numeroMasque":"•••• 12"},
+               |"enAttente":[{"affectationId":"31","appNom":"Marché Facile","etat":"en_test","joursValides":6,"joursExiges":14,
+               |"montant":500,"devise":"XOF","montantLisible":"500 FCFA","prevuLe":"2026-11-28T09:00:00.000Z"}],
+               |"historique":[{"reference":"VER-0A1B2C3D4E5F6071","referenceTransaction":"MP2611120001","appNom":"Zem Express",
+               |"montant":500,"devise":"XOF","montantLisible":"500 FCFA","operateur":"moov","numeroMasque":"•••• 12",
+               |"verseLe":"2026-11-12T10:15:00.000Z","champFutur":1}]}}""".trimMargin(),
+        )
+        val p = (api.portefeuille() as Resultat.Succes).valeur
+        assertEquals(6, p.enAttente.single().joursValides)
+        assertEquals("MP2611120001", p.historique.single().referenceTransaction)
+        assertEquals("•••• 12", p.compte?.numeroMasque)
+        val requete = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/portefeuille", requete.path)
+        assertEquals("Bearer jeton-secret", requete.getHeader("Authorization"))
+    }
 }
