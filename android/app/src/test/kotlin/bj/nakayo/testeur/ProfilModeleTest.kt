@@ -109,10 +109,34 @@ class ProfilModeleTest {
         val espace = EspaceModele(service, porteeTest(), null, { appareil }) { }
         advanceUntilIdle()
         assertTrue(espace.etat.value is EtatEspace.Pret)
-        assertEquals(listOf("moi", "profil:appareil"), service.appels)
+        assertEquals(listOf("moi", "profil:appareil"), service.appels - "support")
         espace.actualiser()
         advanceUntilIdle()
-        assertEquals(listOf("moi", "profil:appareil", "moi"), service.appels)
+        assertEquals(listOf("moi", "profil:appareil", "moi"), service.appels - "support")
+    }
+
+    @Test
+    fun `l'espace montre le WhatsApp du support seulement s'il est publié`() = runTest {
+        val sansNumero = EspaceModele(service, porteeTest(), null, null) { }
+        advanceUntilIdle()
+        assertNull(sansNumero.whatsapp.value)
+
+        service.reponseSupport = { Resultat.Succes(bj.nakayo.noyau.Support("+2290197000000")) }
+        val avecNumero = EspaceModele(service, porteeTest(), null, null) { }
+        advanceUntilIdle()
+        assertEquals("+2290197000000", avecNumero.whatsapp.value)
+
+        // Sans réseau, aucun contact affiché, et l'espace fonctionne quand même.
+        service.reponseSupport = { Resultat.Echec(bj.nakayo.noyau.ErreurApi.Reseau) }
+        val horsLigne = EspaceModele(service, porteeTest(), null, null) { }
+        advanceUntilIdle()
+        assertNull(horsLigne.whatsapp.value)
+        assertTrue(horsLigne.etat.value is EtatEspace.Pret)
+    }
+
+    @Test
+    fun `lien WhatsApp`() {
+        assertEquals("https://wa.me/2290197000000", bj.nakayo.testeur.ui.lienWhatsapp("+229 01 97 00 00 00"))
     }
 
     @Test

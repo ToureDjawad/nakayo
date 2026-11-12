@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
+import ContactSupport from './pages/admin/ContactSupport.jsx'
 import Connexion from './pages/connexion/Connexion.jsx'
 import MotDePasseOublie from './pages/connexion/MotDePasseOublie.jsx'
 import ReinitialiserMotDePasse from './pages/connexion/ReinitialiserMotDePasse.jsx'
@@ -23,6 +24,7 @@ export const routes = [
   { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
   { path: '/admin', element: <Navigate to="/admin/comptes" replace /> },
   { path: '/admin/comptes', element: <ComptesEnAttente /> },
+  { path: '/admin/support', element: <ContactSupport /> },
   { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },
   { path: '/confidentialite', element: <PageEnPreparation titre="Politique de confidentialité" /> },
   { path: '*', element: <PageIntrouvable /> },

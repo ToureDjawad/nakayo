@@ -9,6 +9,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Sante(val api: String, val base: String)
 
+// Contact du support publié par l'admin (§11.1) ; `whatsapp` vaut null tant que rien n'est publié.
+@Serializable
+data class Support(val whatsapp: String? = null)
+
 @Serializable
 data class Appareil(
     val fabricant: String? = null,
@@ -112,3 +116,6 @@ internal data class DetailErreur(
     val champs: Map<String, String> = emptyMap(),
     @SerialName("tentativesRestantes") val tentativesRestantes: Int? = null,
 )
+
+@Serializable
+internal data class ReponseSupport(val support: Support)

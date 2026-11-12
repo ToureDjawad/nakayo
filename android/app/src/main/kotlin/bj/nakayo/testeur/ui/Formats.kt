@@ -41,3 +41,6 @@ fun descriptionAppareil(appareil: Appareil): String {
         .joinToString(" ")
     return "$nom · Android ${appareil.versionAndroid}"
 }
+
+// Lien WhatsApp du support : « https://wa.me/ » suivi des chiffres du numéro international.
+fun lienWhatsapp(numero: String): String = "https://wa.me/" + numero.filter(Char::isDigit)

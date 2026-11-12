@@ -84,3 +84,16 @@ export function validerConfirmation(valeur, valeurs) {
   if (!valeur) return 'requis'
   return valeur === valeurs.motDePasse ? null : 'different'
 }
+
+// Numéro WhatsApp du support, au format international (même règle que le serveur, §11).
+export function normaliserWhatsapp(valeur) {
+  const v = (valeur ?? '').trim().replace(/[\s.()-]/g, '')
+  return v.startsWith('00') ? `+${v.slice(2)}` : v
+}
+
+export function validerWhatsapp(valeur) {
+  const v = normaliserWhatsapp(valeur)
+  if (!v) return 'requis'
+  if (!/^\+[1-9]\d{7,14}$/.test(v)) return 'format_invalide'
+  return null
+}

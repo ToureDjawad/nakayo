@@ -36,6 +36,9 @@ fun EcranEspace(
     surReessayer: () -> Unit,
     surDeconnecter: () -> Unit,
     surProfil: () -> Unit,
+    // Numéro WhatsApp du support publié par l'admin, ou null.
+    whatsapp: String? = null,
+    surWhatsapp: (String) -> Unit = {},
 ) {
     when (etat) {
         EtatEspace.Chargement -> Ecran(centrer = true) { Chargement("Chargement de votre compte…") }
@@ -48,6 +51,7 @@ fun EcranEspace(
         ) {
             Titre("Votre compte", alignement = TextAlign.Center)
             Bandeau(etat.message)
+            whatsapp?.let { ContactSupport(it, surWhatsapp) }
         }
         is EtatEspace.Pret -> Ecran(
             centrer = true,
@@ -57,6 +61,7 @@ fun EcranEspace(
             },
         ) {
             Statut(etat.profil)
+            whatsapp?.let { ContactSupport(it, surWhatsapp) }
         }
     }
 }
@@ -95,6 +100,12 @@ private fun Statut(profil: ProfilTesteur) {
             }
         }
     }
+}
+
+// Lien vers WhatsApp, affiché seulement quand l'admin a publié un numéro (§11).
+@Composable
+private fun ContactSupport(numero: String, surWhatsapp: (String) -> Unit) {
+    Bouton("Écrire au support sur WhatsApp", { surWhatsapp(numero) }, StyleBouton.Secondaire, icone = R.drawable.ic_message)
 }
 
 @Composable

@@ -103,6 +103,19 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `contact du support, sans jeton`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(200, """{"support":{"whatsapp":"+2290197000000"}}""")
+        assertEquals(Resultat.Succes(Support("+2290197000000")), api.support())
+        val requete = serveur.takeRequest()
+        assertEquals("/api/support", requete.path)
+        assertNull(requete.getHeader("Authorization"))
+
+        repondre(200, """{"support":{"whatsapp":null}}""")
+        assertEquals(Resultat.Succes(Support(null)), api.support())
+    }
+
+    @Test
     fun `coupure réseau`() = runTest {
         serveur.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
         assertEquals(Resultat.Echec(ErreurApi.Reseau), api.sante())

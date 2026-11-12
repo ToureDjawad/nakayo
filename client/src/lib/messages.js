@@ -45,6 +45,10 @@ const PAR_CHAMP = {
     trop_court: `Le motif doit contenir au moins ${LIMITES.motifRefusMin} caractères.`,
     trop_long: `Le motif ne doit pas dépasser ${LIMITES.motifRefusMax} caractères.`,
   },
+  whatsapp: {
+    requis: 'Saisissez le numéro WhatsApp du support.',
+    format_invalide: 'Saisissez le numéro au format international, avec l’indicatif. Exemple : +229 01 97 00 00 00',
+  },
   du: { format_invalide: 'Date invalide.' },
   au: {
     format_invalide: 'Date invalide.',

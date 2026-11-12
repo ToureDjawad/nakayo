@@ -27,3 +27,20 @@ export function validerCompte(id) {
 export function refuserCompte(id, motif) {
   return requete(`/admin/comptes/${encodeURIComponent(id)}/refus`, { methode: 'POST', corps: { motif } })
 }
+
+// Numéro WhatsApp du support (docs/api-sprint1.md §11.2).
+export function lireSupport({ signal } = {}) {
+  return requete('/admin/support', { signal })
+}
+
+export function enregistrerWhatsapp(whatsapp) {
+  return requete('/admin/support', { methode: 'PUT', corps: { whatsapp } })
+}
+
+export function publierWhatsapp() {
+  return requete('/admin/support/publication', { methode: 'POST' })
+}
+
+export function retirerWhatsapp() {
+  return requete('/admin/support/publication', { methode: 'DELETE' })
+}
