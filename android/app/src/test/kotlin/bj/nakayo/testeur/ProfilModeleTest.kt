@@ -34,11 +34,11 @@ class ProfilModeleTest {
         m.enregistrerLangues()
         assertTrue(service.appels.isEmpty())
 
-        m.basculerLangue("yo")
+        m.basculerLangue("en")
         assertTrue(m.etat.value.languesModifiees)
         m.enregistrerLangues()
         advanceUntilIdle()
-        assertTrue("profil:langues=fr,yo" in service.appels)
+        assertTrue("profil:langues=fr,en" in service.appels)
         assertFalse(m.etat.value.languesModifiees)
         assertNotNull(m.etat.value.information)
     }

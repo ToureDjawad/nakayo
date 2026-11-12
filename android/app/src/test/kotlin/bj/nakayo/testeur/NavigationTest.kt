@@ -143,11 +143,11 @@ class NavigationTest {
         advanceUntilIdle()
         nav.allerProfil(ServiceTesteurFactice.profil())
         val profil = (nav.ecran.value as Ecran.Profil).modele
-        profil.basculerLangue("fon")
+        profil.basculerLangue("en")
         profil.enregistrerLangues()
         advanceUntilIdle()
         assertTrue(nav.retour())
         val espace = assertIs<Ecran.Espace>(nav.ecran.value)
-        assertEquals(listOf("fr", "fon"), (espace.modele.etat.value as EtatEspace.Pret).profil.langues)
+        assertEquals(listOf("fr", "en"), (espace.modele.etat.value as EtatEspace.Pret).profil.langues)
     }
 }

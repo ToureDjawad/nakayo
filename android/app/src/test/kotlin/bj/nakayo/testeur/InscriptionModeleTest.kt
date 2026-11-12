@@ -82,7 +82,7 @@ class InscriptionModeleTest {
         advanceUntilIdle()
         assertEquals(appareil, m.etat.value.appareil)
         m.profilValide()
-        m.basculerLangue("fon")
+        m.basculerLangue("en")
         m.continuer()
         assertEquals(EtapeInscription.Pieces, m.etat.value.etape)
 
@@ -117,8 +117,8 @@ class InscriptionModeleTest {
         assertTrue(f.accepteConditions && f.consentementSuivi)
         assertContentEquals(byteArrayOf(0xFF.toByte(), 0xD8.toByte()), service.dernieresPhotos!!.first.octets)
         assertTrue("inscription:jeton-inscription" in service.appels)
-        assertTrue("profil:langues=fr,fon" in service.appels)
-        assertEquals(listOf("fr", "fon"), inscrit!!.langues)
+        assertTrue("profil:langues=fr,en" in service.appels)
+        assertEquals(listOf("fr", "en"), inscrit!!.langues)
     }
 
     @Test

@@ -318,7 +318,7 @@ Objet `profilTesteur` :
   "gmail": "koffi.agbo@gmail.com",
   "numeroMomo": "+2290196000000",
   "operateurMomo": "mtn",
-  "langues": ["fr", "fon"],
+  "langues": ["fr"],
   "appareil": { "fabricant": "Tecno", "modele": "Spark 20", "versionAndroid": "14", "niveauApi": 34 },
   "demandeChangementMomo": null,
   "motifRefus": null,
@@ -326,7 +326,7 @@ Objet `profilTesteur` :
 }
 ```
 
-Codes de langue acceptés (ISO 639) : `fr` français, `en` anglais, `fon` fon, `yo` yoruba, `guw` goun, `bba` bariba, `dee` dendi, `ajg` adja, `gej` mina.
+Codes de langue acceptés (ISO 639-1) : `fr` français, `en` anglais. Les testeurs suivent les apps dans l'une de ces deux langues.
 
 - `GET /api/testeurs/moi` : `200 { "utilisateur": profilTesteur }`.
 - `PATCH /api/testeurs/moi` : corps `{ "langues": [...], "appareil": {...} }`, les deux facultatifs. L'app envoie `appareil` à chaque ouverture si le modèle ou la version a changé. Répond `200 { "utilisateur": profilTesteur }`. Envoyer `numeroMomo`, `operateurMomo`, `gmail` ou `telephone` donne `422` avec `champs.<nom> = "non_modifiable"`.

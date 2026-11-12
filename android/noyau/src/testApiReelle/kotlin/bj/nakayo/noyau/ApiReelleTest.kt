@@ -172,8 +172,8 @@ class ApiReelleTest {
         assertEquals(401, rejoue.statut)
         assertNotNull(stockage.lire())
 
-        val modifie = (api.modifierProfil(langues = listOf("fr", "fon")) as Resultat.Succes).valeur
-        assertEquals(listOf("fr", "fon"), modifie.langues)
+        val modifie = (api.modifierProfil(langues = listOf("fr", "en")) as Resultat.Succes).valeur
+        assertEquals(listOf("fr", "en"), modifie.langues)
 
         val demande = (api.demanderChangementMomo(nouveauNumero(), "moov", "Je change de puce Mobile Money") as Resultat.Succes).valeur
         assertEquals("en_attente", demande.statut)

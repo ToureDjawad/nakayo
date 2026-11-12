@@ -74,11 +74,12 @@ describe('autres champs', () => {
 })
 
 describe('profil testeur (US-10)', () => {
-  it('langues : 1 à 10 codes connus, sans doublon', () => {
-    expect(lireLangues(['fr', 'FON', 'fr']).langues).toEqual(['fr', 'fon'])
+  it('langues : français ou anglais, sans doublon', () => {
+    expect(lireLangues(['fr', 'EN', 'fr']).langues).toEqual(['fr', 'en'])
     expect(lireLangues([]).erreur).toBe('requis')
     expect(lireLangues('fr').erreur).toBe('format_invalide')
     expect(lireLangues(['fr', 'de']).erreur).toBe('valeur_inconnue')
+    expect(lireLangues(['fon']).erreur).toBe('valeur_inconnue')
     expect(lireLangues([1]).erreur).toBe('format_invalide')
   })
 

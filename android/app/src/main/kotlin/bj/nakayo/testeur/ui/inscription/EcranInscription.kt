@@ -285,7 +285,7 @@ private fun ApercuProfil() {
                 nom = "Afi Dossou",
                 ville = "Cotonou",
                 gmail = "afi.dossou@gmail",
-                langues = setOf("fr", "fon"),
+                langues = setOf("fr", "en"),
                 operateur = "mtn",
                 appareil = Appareil("Tecno", "Spark 10", "13", 33),
                 erreurs = mapOf("gmail" to "format_invalide"),

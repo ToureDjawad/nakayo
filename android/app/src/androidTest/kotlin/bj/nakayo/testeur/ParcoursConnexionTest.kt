@@ -104,10 +104,10 @@ class ParcoursConnexionTest {
             compose.attendreTexte("Mon profil")
             compose.onNodeWithText("Mon profil").performClick()
             compose.attendreTexte("Koffi Agbo")
-            compose.onNodeWithText("Yoruba").performClick()
+            compose.onNodeWithText("Anglais").performClick()
             compose.onNodeWithText("Enregistrer mes langues").performClick()
             compose.attendreTexte("Vos langues sont enregistrées.")
-            assertTrue("profil:langues=fr,yo" in service.appels)
+            assertTrue("profil:langues=fr,en" in service.appels)
 
             compose.onNodeWithText("Demander une modification").performClick()
             compose.attendreTexte("Changer de numéro Mobile Money")
