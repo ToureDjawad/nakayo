@@ -65,6 +65,7 @@ export async function creerTesteur({
   operateurMomo = 'mtn',
   statut = 'en_attente',
   appareil = APPAREIL,
+  ville = 'Cotonou',
 } = {}) {
   const { ouvrirSession } = await import('../src/services/sessions.js')
   const { enregistrerAppareil } = await import('../src/services/testeurs.js')
@@ -78,8 +79,8 @@ export async function creerTesteur({
   await pool.query(
     `INSERT INTO profils_testeurs (utilisateur_id, ville, gmail, gmail_normalise, numero_momo, operateur_momo,
                                    consentement_suivi_le, conditions_acceptees_le)
-     VALUES ($1, 'Cotonou', $2, $3, $4, $5, now(), now())`,
-    [id, gmail, normaliserGmail(gmail), numeroMomo, operateurMomo],
+     VALUES ($1, $6, $2, $3, $4, $5, now(), now())`,
+    [id, gmail, normaliserGmail(gmail), numeroMomo, operateurMomo, ville],
   )
   if (appareil) await enregistrerAppareil(pool, { utilisateurId: id, appareil, maintenant: new Date() })
   const { jeton } = await ouvrirSession(pool, { utilisateurId: id, client: 'android', maintenant: new Date() })
@@ -96,4 +97,28 @@ export const APP = {
   fonctionnalites: ['Recherche de produits', 'Panier', 'Suivi de livraison'],
   connexionRequise: false,
   comptePlay: 'personnel_recent',
+}
+
+const VILLES = ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Bohicon']
+
+// `nombre` testeurs validés, chacun avec un téléphone différent, répartis sur plusieurs villes
+// et les deux opérateurs. `debut` décale les numéros pour en créer d'autres ensuite.
+export async function creerTesteursValides(nombre, { debut = 0, modele = (i) => `Modèle ${i}` } = {}) {
+  const testeurs = []
+  for (let i = debut; i < debut + nombre; i++) {
+    const numero = String(i).padStart(4, '0')
+    testeurs.push(
+      await creerTesteur({
+        telephone: `+229019700${numero}`,
+        nom: `Testeur ${i}`,
+        gmail: `testeur${i}@gmail.com`,
+        numeroMomo: `+229019600${numero}`,
+        operateurMomo: i % 2 ? 'moov' : 'mtn',
+        statut: 'valide',
+        ville: VILLES[i % VILLES.length],
+        appareil: { ...APPAREIL, modele: modele(i), identifiant: `app-${numero}` },
+      }),
+    )
+  }
+  return testeurs
 }

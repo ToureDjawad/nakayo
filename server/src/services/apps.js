@@ -30,10 +30,21 @@ export function versAppApi(l) {
       complete: Boolean(l.preparation_complete_le),
       completeLe: l.preparation_complete_le?.toISOString() ?? null,
     },
+    // Campagne de test la plus récente (US-16), ou null avant le démarrage.
+    campagne: l.campagne_id
+      ? { id: String(l.campagne_id), statut: l.campagne_statut, demarreeLe: l.campagne_demarree_le.toISOString() }
+      : null,
     creeLe: l.cree_le.toISOString(),
     modifieLe: l.modifie_le.toISOString(),
   }
 }
+
+// Apps avec leur dernière campagne.
+const SELECT_APP = `SELECT a.*, c.id AS campagne_id, c.statut AS campagne_statut, c.demarree_le AS campagne_demarree_le
+  FROM apps a
+  LEFT JOIN LATERAL (
+    SELECT id, statut, demarree_le FROM campagnes WHERE app_id = a.id ORDER BY demarree_le DESC, id DESC LIMIT 1
+  ) c ON true`
 
 const COLONNES = ['nom', 'package', 'lien_test_ferme', 'description', 'instructions', 'fonctionnalites', 'connexion_requise', 'identifiants_test', 'compte_play']
 const parametres = (v) => [v.nom, v.package, v.lienTestFerme, v.description, v.instructions, v.fonctionnalites, v.connexionRequise, v.identifiantsTest, v.comptePlay]
@@ -67,13 +78,13 @@ export async function creerApp(db, { developpeurId, valeurs, maintenant }) {
 
 // Les apps du développeur, de la plus récente à la plus ancienne.
 export async function listerAppsDeveloppeur(db, developpeurId) {
-  const { rows } = await db.query('SELECT * FROM apps WHERE developpeur_id = $1 ORDER BY cree_le DESC, id DESC', [developpeurId])
+  const { rows } = await db.query(`${SELECT_APP} WHERE a.developpeur_id = $1 ORDER BY a.cree_le DESC, a.id DESC`, [developpeurId])
   return rows.map(versAppApi)
 }
 
 // Une app du développeur ; celle d'un autre compte répond 404 comme une app inexistante.
 export async function lireAppDeveloppeur(db, { id, developpeurId }) {
-  const { rows } = await db.query('SELECT * FROM apps WHERE id = $1 AND developpeur_id = $2', [id, developpeurId])
+  const { rows } = await db.query(`${SELECT_APP} WHERE a.id = $1 AND a.developpeur_id = $2`, [id, developpeurId])
   if (!rows.length) throw introuvable('App introuvable.')
   return rows[0]
 }
@@ -105,6 +116,10 @@ export async function enregistrerPreparation(db, { id, developpeurId, elements, 
   const actuelle = await lireAppDeveloppeur(db, { id, developpeurId })
   if (!['en_verification', 'validee'].includes(actuelle.statut)) {
     throw new ErreurHttp(409, 'statut_incompatible', { message: 'La préparation commence une fois l’offre payée.', statut: actuelle.statut })
+  }
+  // Une fois la campagne démarrée, la liste ne bouge plus : elle a servi à autoriser le démarrage.
+  if (actuelle.campagne_id) {
+    throw new ErreurHttp(409, 'campagne_existante', { message: 'La campagne a démarré : la liste de vérification est figée.' })
   }
   const complete = elements.length === total
   const { rows } = await db.query(

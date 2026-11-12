@@ -113,7 +113,7 @@ export function messageDecisionApp(ligne, { clientUrl }) {
         'Bonjour,',
         '',
         `Notre équipe a vérifié votre app « ${ligne.nom} » : tout est prêt pour la campagne de test.`,
-        'Nous vous prévenons par email au lancement des 12 testeurs.',
+        'Terminez la liste de vérification, puis démarrez la campagne : 15 testeurs seront affectés à votre app.',
         '',
         `Suivre votre app : ${lien}`,
         '',
