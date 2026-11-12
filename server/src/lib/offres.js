@@ -3,10 +3,10 @@
 export const OFFRE_STANDARD = {
   code: 'standard',
   nom: 'Offre Standard',
-  description: '12 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
+  description: '15 testeurs vérifiés pendant 14 jours, rapports quotidiens et brouillon pour Google.',
   prix: {
     carte: { montant: 2900, devise: 'USD' },
-    mobile_money: { montant: 17500, devise: 'XOF' },
+    mobile_money: { montant: 17400, devise: 'XOF' },
   },
   garantie:
     'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
@@ -14,7 +14,7 @@ export const OFFRE_STANDARD = {
 
 export const MOYENS_PAIEMENT = Object.keys(OFFRE_STANDARD.prix)
 
-// Montant lisible : « 29,00 $ US » ou « 17 500 FCFA ».
+// Montant lisible : « 29,00 $ US » ou « 17 400 FCFA ».
 export function montantLisible(montant, devise) {
   if (devise === 'XOF') return `${new Intl.NumberFormat('fr-FR').format(montant).replace(/ /g, ' ')} FCFA`
   return `${(montant / 100).toFixed(2).replace('.', ',')} $ US`

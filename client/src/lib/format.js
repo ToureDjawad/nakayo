@@ -42,7 +42,7 @@ export function pluriel(n, singulier, plurielForme = `${singulier}s`) {
   return `${n} ${n > 1 ? plurielForme : singulier}`
 }
 
-// Montant en plus petite unité : 2900 USD devient « 29,00 $ US », 17500 XOF devient « 17 500 FCFA ».
+// Montant en plus petite unité : 2900 USD devient « 29,00 $ US », 17400 XOF devient « 17 400 FCFA ».
 export function montantLisible(montant, devise) {
   if (devise === 'XOF') return `${new Intl.NumberFormat('fr-FR').format(montant).replace(/\s/g, ' ')} FCFA`
   return `${(montant / 100).toFixed(2).replace('.', ',')} $ US`

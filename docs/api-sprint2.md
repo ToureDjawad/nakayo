@@ -84,7 +84,7 @@ Codes d'erreur par champ (`422`, `champs`) : `requis`, `trop_court`, `trop_long`
 
 Le développeur paie l'offre Standard pour une app en brouillon :
 - **par carte** : 29 $ US (2900 centimes) ;
-- **par Mobile Money** : 17 500 FCFA.
+- **par Mobile Money** : 17 400 FCFA (taux du modèle économique : 1 $ = 600 FCFA).
 
 Le paiement passe par un fournisseur, qui confirme par webhook. Après confirmation :
 - l'app passe en `en_verification` ;
@@ -99,7 +99,7 @@ Configuration :
 
 ### 2.1 Offre et objet `paiement`
 
-- `GET /api/offres` (public, mis en cache 5 min) : `200 { "offres": [{ "code": "standard", "nom", "description", "prix": { "carte": { "montant": 2900, "devise": "USD" }, "mobile_money": { "montant": 17500, "devise": "XOF" } }, "garantie": "..." }] }`. La garantie est affichée avant le paiement.
+- `GET /api/offres` (public, mis en cache 5 min) : `200 { "offres": [{ "code": "standard", "nom", "description", "prix": { "carte": { "montant": 2900, "devise": "USD" }, "mobile_money": { "montant": 17400, "devise": "XOF" } }, "garantie": "..." }] }`. La garantie est affichée avant le paiement.
 
 ```json
 {

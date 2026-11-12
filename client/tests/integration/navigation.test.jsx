@@ -5,7 +5,7 @@ import { rendreA, simulerFetch } from './outils.jsx'
 
 describe('Navigation', () => {
   it('mène de l’accueil à l’inscription', async () => {
-    simulerFetch({ corps: { api: 'ok', base: 'ok' } })
+    simulerFetch()
     const user = userEvent.setup()
     rendreA('/')
 

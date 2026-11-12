@@ -46,7 +46,7 @@ test.describe('Payer l’offre et retrouver la facture (US-12, US-15)', () => {
     await page.getByRole('radio', { name: /Mobile Money/ }).check()
     await page.getByLabel('Numéro Mobile Money').fill('+229 01 97 00 00 00')
     await verifierAccessibilite(page)
-    await page.getByRole('button', { name: /^Payer 17\s500/ }).click()
+    await page.getByRole('button', { name: /^Payer 17\s400/ }).click()
     await page.waitForURL(/\/paiement\/simulation\//)
     await page.getByRole('button', { name: 'Confirmer le paiement' }).click()
     await expect(page.getByRole('heading', { name: 'Paiement reçu, merci' })).toBeVisible()
