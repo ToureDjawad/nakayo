@@ -20,3 +20,12 @@ export function modifierApp(id, app) {
 export function supprimerApp(id) {
   return requete(`/apps/${encodeURIComponent(id)}`, { methode: 'DELETE' })
 }
+
+// Préparation du lancement (docs/api-sprint2.md §5).
+export function lirePreparation(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/preparation`, { signal })
+}
+
+export function enregistrerPreparation(id, elements) {
+  return requete(`/apps/${encodeURIComponent(id)}/preparation`, { methode: 'PUT', corps: { elements } })
+}
