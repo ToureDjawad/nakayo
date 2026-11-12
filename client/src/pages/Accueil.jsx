@@ -1,50 +1,79 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { EnTete } from '../components/MiseEnPage.jsx'
 
-// Bloc réservé au développement : indique si l'API et PostgreSQL répondent.
-function EtatServices() {
-  const [sante, setSante] = useState(null)
+const ETAPES = [
+  {
+    titre: 'Créez votre compte',
+    texte: 'Indiquez votre nom de développeur et le lien de votre fiche Google Play. Notre équipe vérifie votre compte sous 24 h ouvrées.',
+  },
+  {
+    titre: 'Soumettez votre app',
+    texte: 'Package, lien du test fermé, description, instructions et fonctionnalités à tester. Vous payez l’offre Standard, puis nous vérifions l’app.',
+  },
+  {
+    titre: 'Préparez le test fermé',
+    texte: 'Une liste de vérification évite les erreurs qui font perdre 14 jours. Vous ajoutez l’adresse de notre groupe de testeurs une seule fois.',
+  },
+  {
+    titre: '14 jours suivis chaque jour',
+    texte: '12 testeurs vérifiés au Bénin utilisent votre app tous les jours. À la fin, vous recevez un brouillon de réponses pour le formulaire de Google.',
+  },
+]
 
-  useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then(setSante)
-      .catch(() => setSante({ api: 'injoignable', base: 'inconnue' }))
-  }, [])
+const INCLUS = [
+  '12 testeurs vérifiés, inscrits à votre test fermé',
+  '14 jours d’affilée, avec remplacement d’un testeur qui abandonne',
+  'Un rapport d’activité chaque jour',
+  'Un brouillon de réponses pour le formulaire d’accès à la production',
+  'Une facture téléchargeable en PDF',
+]
 
+const QUESTIONS = [
+  {
+    question: 'Mon compte développeur est-il concerné par la règle des 12 testeurs ?',
+    reponse:
+      'La règle vise les comptes développeur personnels créés après le 13 novembre 2023. Un compte organisation, ou un compte personnel plus ancien, n’y est pas soumis : nous vous le signalons dès la soumission de votre app.',
+  },
+  {
+    question: 'Qui sont les testeurs ?',
+    reponse:
+      'Des personnes vivant au Bénin, inscrites sur l’app Nakayo avec un compte Google vérifié. Chaque jour, nous contrôlons qu’elles ouvrent et utilisent votre app.',
+  },
+  {
+    question: 'Comment payer ?',
+    reponse: 'Par carte bancaire (29 $) ou par Mobile Money (17 500 FCFA). La facture est disponible dans votre espace dès que le paiement est confirmé.',
+  },
+  {
+    question: 'Que se passe-t-il si Google refuse l’accès à la production ?',
+    reponse:
+      'Si le refus vient d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais. Si nous refusons votre app avant le lancement, vous êtes remboursé.',
+  },
+  {
+    question: 'Quelles apps sont refusées ?',
+    reponse:
+      'Les apps frauduleuses, interdites par les règles de Google Play, ou dont le lien de test fermé ne fonctionne pas. Chaque app est vérifiée par notre équipe avant le lancement de la campagne.',
+  },
+]
+
+function Coche() {
   return (
-    <section aria-labelledby="etat-services" className="mt-12 border-t border-trait pt-6">
-      <h2 id="etat-services" className="text-sm font-semibold text-discret">
-        Environnement de développement
-      </h2>
-      <dl className="mt-2 text-sm">
-        {[
-          ['API', sante?.api],
-          ['PostgreSQL', sante?.base],
-        ].map(([libelle, valeur]) => (
-          <div key={libelle} className="flex justify-between border-b border-trait py-2 last:border-0">
-            <dt className="text-texte">{libelle}</dt>
-            <dd className={valeur === 'ok' ? 'font-medium text-succes' : 'font-medium text-erreur'}>{valeur ?? '…'}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
+    <svg viewBox="0 0 20 20" className="mt-0.5 size-5 shrink-0 text-accent" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m5 10.5 3 3 7-7" />
+    </svg>
   )
 }
 
-// Haut de la page d'accueil (D01) : la promesse et la règle de Google. Les offres et la FAQ viendront
-// avec le paiement des campagnes.
+// Page d'accueil (D01) : la promesse, la règle de Google, le fonctionnement, l'offre et la FAQ.
 export default function Accueil() {
   return (
     <div className="min-h-screen bg-papier">
       <EnTete
         actions={
           <>
-            <Link to="/connexion" className="inline-flex h-10 items-center rounded-champ border border-trait bg-white px-4 text-sm font-semibold text-encre hover:bg-fond-doux">
+            <Link to="/connexion" className="hidden h-10 items-center rounded-champ border whitespace-nowrap sm:inline-flex border-trait bg-white px-4 text-sm font-semibold text-encre hover:bg-fond-doux">
               Se connecter
             </Link>
-            <Link to="/inscription" className="inline-flex h-10 items-center rounded-champ bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-fonce">
+            <Link to="/inscription" className="inline-flex h-10 items-center rounded-champ bg-accent px-4 whitespace-nowrap text-sm font-semibold text-white hover:bg-accent-fonce">
               Soumettre mon app
             </Link>
           </>
@@ -89,12 +118,100 @@ export default function Accueil() {
           </div>
         </section>
 
-        {import.meta.env.DEV && (
-          <div className="mx-auto max-w-md px-4 pb-16">
-            <EtatServices />
+        <section aria-labelledby="fonctionnement" className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+          <h2 id="fonctionnement" className="text-3xl text-encre sm:text-4xl">
+            Comment ça marche
+          </h2>
+          <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {ETAPES.map((etape, i) => (
+              <li key={etape.titre} className="rounded-carte border border-trait bg-white p-6">
+                <span className="flex size-9 items-center justify-center rounded-full bg-accent-clair font-titre font-semibold text-accent" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <h3 className="mt-4 text-lg font-semibold text-encre">{etape.titre}</h3>
+                <p className="mt-2 text-sm text-texte">{etape.texte}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section aria-labelledby="offre" className="bg-sable">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:py-20 md:grid-cols-[1fr_1.1fr]">
+            <div>
+              <h2 id="offre" className="text-3xl text-encre sm:text-4xl">
+                Une seule offre, tout compris
+              </h2>
+              <p className="mt-4 text-lg text-texte">
+                Pas d’abonnement : vous payez une fois par app. Si Google refuse l’accès à la production à cause d’un manque d’engagement des
+                testeurs, nous relançons une nouvelle campagne sans frais.
+              </p>
+            </div>
+            <div className="rounded-carte border border-trait bg-white p-6 sm:p-8">
+              <p className="text-xs font-semibold tracking-[0.07em] text-alerte uppercase">Offre Standard</p>
+              <p className="mt-3 font-titre text-4xl font-semibold text-encre">
+                29 $ <span className="text-lg font-normal text-discret">ou 17 500 FCFA</span>
+              </p>
+              <p className="mt-1 text-sm text-discret">Par carte bancaire ou par Mobile Money.</p>
+              <ul className="mt-6 space-y-3">
+                {INCLUS.map((element) => (
+                  <li key={element} className="flex gap-3 text-texte">
+                    <Coche />
+                    {element}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/inscription"
+                className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-champ bg-accent px-5 font-semibold text-white hover:bg-accent-fonce"
+              >
+                Commencer <span aria-hidden="true">→</span>
+              </Link>
+            </div>
           </div>
-        )}
+        </section>
+
+        <section aria-labelledby="questions" className="mx-auto max-w-3xl px-4 py-16 sm:py-20">
+          <h2 id="questions" className="text-3xl text-encre sm:text-4xl">
+            Questions fréquentes
+          </h2>
+          <div className="mt-8 divide-y divide-trait border-y border-trait">
+            {QUESTIONS.map(({ question, reponse }) => (
+              <details key={question} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 font-semibold text-encre [&::-webkit-details-marker]:hidden">
+                  {question}
+                  <span className="mt-0.5 text-xl leading-none text-discret transition-transform group-open:rotate-45" aria-hidden="true">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-texte">{reponse}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-accent-fonce text-white">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-14 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-xl font-titre text-2xl font-semibold sm:text-3xl">Prêt à lancer votre test fermé ?</p>
+            <Link to="/inscription" className="inline-flex h-12 items-center justify-center gap-2 rounded-champ bg-ocre px-5 font-semibold text-encre hover:bg-ocre-clair">
+              Créer mon compte <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t border-trait">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-discret sm:flex-row sm:items-center sm:justify-between">
+          <p>© Nakayo. Testeurs vérifiés au Bénin.</p>
+          <nav aria-label="Informations légales" className="flex gap-5">
+            <Link to="/conditions-utilisation" className="hover:text-encre hover:underline">
+              Conditions d’utilisation
+            </Link>
+            <Link to="/confidentialite" className="hover:text-encre hover:underline">
+              Politique de confidentialité
+            </Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   )
 }
