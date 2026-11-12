@@ -50,5 +50,6 @@ export const routes = [
   { path: '/admin/support', element: <ContactSupport /> },
   { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },
   { path: '/confidentialite', element: <PageEnPreparation titre="Politique de confidentialité" /> },
+  { path: '/mentions-legales', element: <PageEnPreparation titre="Mentions légales" /> },
   { path: '*', element: <PageIntrouvable /> },
 ]
