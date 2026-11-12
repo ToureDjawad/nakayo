@@ -22,3 +22,6 @@ export function montantLisible(montant, devise) {
 
 // Rémunération d'un testeur (US-22) : 500 FCFA par app, versés à la clôture de la campagne.
 export const REMUNERATION_TESTEUR = { montant: 500, devise: 'XOF' }
+
+// Taux du modèle économique pour ramener les paiements par carte en FCFA (1 $ = 600 FCFA).
+export const TAUX_USD_FCFA = 600

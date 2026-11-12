@@ -26,7 +26,7 @@ describe('destinationApresConnexion()', () => {
   const dev = { role: 'developpeur' }
 
   it('envoie chaque rôle sur sa page par défaut', () => {
-    expect(destinationApresConnexion(admin, null)).toBe('/admin/comptes')
+    expect(destinationApresConnexion(admin, null)).toBe('/admin/tableau-de-bord')
     expect(destinationApresConnexion(dev, null)).toBe('/mon-compte')
   })
 
@@ -40,7 +40,7 @@ describe('destinationApresConnexion()', () => {
   })
 
   it('ignore une suite dangereuse', () => {
-    expect(destinationApresConnexion(admin, '//exemple.com')).toBe('/admin/comptes')
+    expect(destinationApresConnexion(admin, '//exemple.com')).toBe('/admin/tableau-de-bord')
   })
 })
 

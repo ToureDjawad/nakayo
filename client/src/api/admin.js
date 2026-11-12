@@ -81,3 +81,12 @@ export function remplacerTesteur(campagneId, affectationId, motif) {
     corps: { motif },
   })
 }
+
+// Tableau de bord global (docs/api-sprint4.md §5) et relance d'un versement échoué (§2.4).
+export function lireTableauDeBord({ signal } = {}) {
+  return requete('/admin/tableau-de-bord', { signal })
+}
+
+export function relancerVersement(reference) {
+  return requete(`/admin/versements/${encodeURIComponent(reference)}/relance`, { methode: 'POST' })
+}

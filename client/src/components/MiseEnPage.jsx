@@ -106,6 +106,7 @@ export function BoiteIcone({ ton = 'ocre', children }) {
 }
 
 const LIENS_ADMIN = [
+  { to: '/admin/tableau-de-bord', libelle: 'Tableau de bord', icone: 'tableau' },
   { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
   { to: '/admin/apps', libelle: 'Apps à vérifier', icone: 'app' },
   { to: '/admin/campagnes', libelle: 'Campagnes', icone: 'campagne' },
@@ -127,6 +128,14 @@ function IconeAdmin({ nom }) {
       <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="6" y="2" width="12" height="20" rx="2" />
         <path d="M11 18h2" />
+      </svg>
+    )
+  }
+  if (nom === 'tableau') {
+    return (
+      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+        <path d="M7 16V11M12 16V7M17 16v-3" />
       </svg>
     )
   }
@@ -162,7 +171,7 @@ export function PageAdmin({ titre, intro, utilisateur, entete, children }) {
     <div className="min-h-screen bg-papier md:grid md:grid-cols-[220px_minmax(0,1fr)]">
       <aside className="flex flex-col gap-6 bg-encre px-3 py-5 md:min-h-screen">
         <div className="flex items-center gap-2 px-2">
-          <Link to="/admin/comptes" aria-label="Nakayo, administration">
+          <Link to="/admin/tableau-de-bord" aria-label="Nakayo, administration">
             <Logo clair className="text-[19px]" />
           </Link>
           <span className="rounded bg-ocre px-1.5 py-0.5 text-[11px] font-semibold text-encre">admin</span>

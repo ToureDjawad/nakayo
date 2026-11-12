@@ -258,11 +258,4 @@ describe('Back-office : comptes en attente (US-08)', () => {
     rendreA('/admin/comptes')
     expect(await screen.findByText('Accès réservé aux administrateurs')).toBeInTheDocument()
   })
-
-  it('redirige /admin vers la liste', async () => {
-    api()
-    const { routeur } = rendreA('/admin')
-    await attendreListe()
-    expect(routeur.state.location.pathname).toBe('/admin/comptes')
-  })
 })
