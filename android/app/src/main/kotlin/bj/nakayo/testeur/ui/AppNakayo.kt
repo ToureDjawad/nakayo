@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,11 +70,16 @@ fun AppNakayo(navigation: Navigation) {
         is Ecran.Espace -> {
             val m = actuel.modele
             val etat by m.etat.collectAsStateWithLifecycle()
+            val whatsapp by m.whatsapp.collectAsStateWithLifecycle()
+            val liens = LocalUriHandler.current
             EcranEspace(
                 etat,
                 surReessayer = m::actualiser,
                 surDeconnecter = m::deconnecter,
                 surProfil = { (etat as? EtatEspace.Pret)?.let { navigation.allerProfil(it.profil) } },
+                whatsapp = whatsapp,
+                // Sans WhatsApp ni navigateur sur le téléphone, le bouton ne fait rien plutôt que de planter.
+                surWhatsapp = { numero -> runCatching { liens.openUri(lienWhatsapp(numero)) } },
             )
         }
         is Ecran.Profil -> {

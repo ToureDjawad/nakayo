@@ -29,6 +29,13 @@ class ApiNakayo(
     // GET /api/health : l'API et la base répondent-elles ?
     override suspend fun sante(): Resultat<Sante> = appeler(requete("api/health").get(), Sante.serializer(), authentifie = false)
 
+    // §11.1 Contact du support, sans connexion.
+    override suspend fun support(): Resultat<Support> =
+        when (val r = appeler(requete("api/support").get(), ReponseSupport.serializer(), authentifie = false)) {
+            is Resultat.Succes -> Resultat.Succes(r.valeur.support)
+            is Resultat.Echec -> r
+        }
+
     // §4.1 Envoi d'un code SMS à 6 chiffres.
     override suspend fun envoyerCode(telephone: String): Resultat<EnvoiCode> =
         appeler(

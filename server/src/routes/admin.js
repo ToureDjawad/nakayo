@@ -4,6 +4,14 @@ import { corps, exigerChamps, texte } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
 import { lireCompte, listerComptes, VISIBLE } from '../services/comptesAdmin.js'
 import { cheminAbsolu } from '../services/documents.js'
+import {
+  enregistrerWhatsapp,
+  lireSupportAdmin,
+  normaliserWhatsapp,
+  publierWhatsapp,
+  retirerWhatsapp,
+  validerWhatsapp,
+} from '../services/support.js'
 import { transaction } from './auth.js'
 
 const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
@@ -178,6 +186,28 @@ export function routesAdmin(deps) {
     const motif = texte(corps(req).motif)
     exigerChamps({ motif: validerMotifRefus(motif) })
     await decider(req, res, 'refuse', motif)
+  })
+
+  // §11.2 Numéro WhatsApp du support : enregistré, puis publié ou retiré.
+  routeur.get('/support', async (_req, res) => {
+    res.json({ support: await lireSupportAdmin(pool) })
+  })
+
+  routeur.put('/support', async (req, res) => {
+    const whatsapp = normaliserWhatsapp(corps(req).whatsapp)
+    exigerChamps({ whatsapp: validerWhatsapp(whatsapp) })
+    const adminId = req.session.utilisateur.id
+    res.json({ support: await enregistrerWhatsapp(pool, { whatsapp, adminId, maintenant: maintenant() }) })
+  })
+
+  routeur.post('/support/publication', async (req, res) => {
+    const adminId = req.session.utilisateur.id
+    res.json({ support: await publierWhatsapp(pool, { adminId, maintenant: maintenant() }) })
+  })
+
+  routeur.delete('/support/publication', async (req, res) => {
+    const adminId = req.session.utilisateur.id
+    res.json({ support: await retirerWhatsapp(pool, { adminId, maintenant: maintenant() }) })
   })
 
   return routeur

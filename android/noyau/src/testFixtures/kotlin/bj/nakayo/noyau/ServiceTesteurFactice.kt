@@ -5,6 +5,7 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     val appels = mutableListOf<String>()
 
     var reponseSante: suspend () -> Resultat<Sante> = { Resultat.Succes(Sante("ok", "ok")) }
+    var reponseSupport: suspend () -> Resultat<Support> = { Resultat.Succes(Support()) }
     var reponseEnvoi: suspend (String) -> Resultat<EnvoiCode> = { Resultat.Succes(EnvoiCode(600, 60)) }
     var reponseVerification: suspend (String, String, Appareil) -> Resultat<ResultatVerification> = { telephone, _, _ ->
         Resultat.Succes(ResultatVerification.Connecte("jeton-test", profil(telephone)))
@@ -31,6 +32,8 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     var dernieresPhotos: Pair<Photo, Photo>? = null
 
     override suspend fun sante() = reponseSante().also { appels += "sante" }
+
+    override suspend fun support() = reponseSupport().also { appels += "support" }
 
     override suspend fun envoyerCode(telephone: String) = reponseEnvoi(telephone).also { appels += "envoi:$telephone" }
 

@@ -1,6 +1,15 @@
 import { aujourdhuiBenin } from '../lib/format.js'
 import { CODES_PAYS } from '../lib/pays.js'
-import { validerEmail, validerLienFiche, validerMotDePasse, validerMotifRefus, validerNom, validerPeriode } from '../lib/validation.js'
+import {
+  normaliserWhatsapp,
+  validerEmail,
+  validerLienFiche,
+  validerMotDePasse,
+  validerMotifRefus,
+  validerNom,
+  validerPeriode,
+  validerWhatsapp,
+} from '../lib/validation.js'
 import { photoDemo } from './comptesDemo.js'
 import { base, horodatage, nouvelId, sauver } from './base.js'
 import { erreur, ok, RESEAU_COUPE, vide } from './http.js'
@@ -71,6 +80,13 @@ function versCompteAdmin(u) {
         : null,
     controles: u.controles ?? { etat: 'en_cours', liste: [] },
   }
+}
+
+// Contact du support (§11) : absent des anciennes sauvegardes, créé à la première lecture.
+function support() {
+  const b = base()
+  b.support ??= { whatsapp: null, whatsappPublie: null, modifieLe: null, publieLe: null }
+  return b.support
 }
 
 function trouverCompte(id) {
@@ -357,6 +373,56 @@ export const routes = [
       base().sessionId = null
       sauver()
       return vide()
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/support',
+    traiter() {
+      return ok({ support: { whatsapp: support().whatsappPublie } })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/admin/support',
+    traiter() {
+      return exigerAdmin() ?? ok({ support: { ...support() } })
+    },
+  },
+  {
+    methode: 'PUT',
+    chemin: '/api/admin/support',
+    traiter({ corps }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const code = validerWhatsapp(corps?.whatsapp ?? '')
+      if (code) return erreur(422, 'validation', { champs: { whatsapp: code } })
+      Object.assign(support(), { whatsapp: normaliserWhatsapp(corps.whatsapp), modifieLe: horodatage() })
+      sauver()
+      return ok({ support: { ...support() } })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/support/publication',
+    traiter() {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      if (!support().whatsapp) return erreur(409, 'rien_a_publier')
+      Object.assign(support(), { whatsappPublie: support().whatsapp, publieLe: horodatage() })
+      sauver()
+      return ok({ support: { ...support() } })
+    },
+  },
+  {
+    methode: 'DELETE',
+    chemin: '/api/admin/support/publication',
+    traiter() {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      Object.assign(support(), { whatsappPublie: null, publieLe: horodatage() })
+      sauver()
+      return ok({ support: { ...support() } })
     },
   },
 ]

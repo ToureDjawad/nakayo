@@ -3,6 +3,7 @@ package bj.nakayo.noyau
 // Ce dont les écrans de l'app ont besoin. ApiNakayo l'implémente ; les tests utilisent un faux.
 interface ServiceTesteur {
     suspend fun sante(): Resultat<Sante>
+    suspend fun support(): Resultat<Support>
     suspend fun envoyerCode(telephone: String): Resultat<EnvoiCode>
     suspend fun verifierCode(telephone: String, code: String, appareil: Appareil): Resultat<ResultatVerification>
     suspend fun inscrire(jetonInscription: String, formulaire: FormulaireInscription, pieceIdentite: Photo, selfie: Photo): Resultat<ProfilTesteur>

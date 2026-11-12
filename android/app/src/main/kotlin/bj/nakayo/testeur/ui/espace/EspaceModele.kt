@@ -31,11 +31,16 @@ class EspaceModele(
     private val etatInterne = MutableStateFlow<EtatEspace>(profilConnu?.let { EtatEspace.Pret(it) } ?: EtatEspace.Chargement)
     val etat: StateFlow<EtatEspace> = etatInterne.asStateFlow()
 
+    // Numéro WhatsApp du support publié par l'admin, ou null : l'écran n'affiche alors aucun contact.
+    private val whatsappInterne = MutableStateFlow<String?>(null)
+    val whatsapp: StateFlow<String?> = whatsappInterne.asStateFlow()
+
     private var appareilSynchronise = false
 
     init {
         // Le profil est toujours relu au démarrage, pour voir une décision prise entre-temps par l'admin.
         actualiser()
+        portee.launch { (service.support() as? Resultat.Succes)?.let { whatsappInterne.value = it.valeur.whatsapp } }
     }
 
     private suspend fun synchroniserAppareil() {

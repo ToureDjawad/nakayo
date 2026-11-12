@@ -671,6 +671,11 @@ Les contrôles tournent après l'inscription (sans bloquer la réponse). Chaque 
 | GET | `/api/admin/comptes/:id/documents/:type` | cookie admin | US-08 |
 | POST | `/api/admin/comptes/:id/validation` | cookie admin | US-08 |
 | POST | `/api/admin/comptes/:id/refus` | cookie admin | US-08 |
+| GET | `/api/support` | aucune | US-40 |
+| GET | `/api/admin/support` | cookie admin | US-40 |
+| PUT | `/api/admin/support` | cookie admin | US-40 |
+| POST | `/api/admin/support/publication` | cookie admin | US-40 |
+| DELETE | `/api/admin/support/publication` | cookie admin | US-40 |
 
 ## 9. Découpage du travail backend
 
@@ -690,11 +695,34 @@ Ordre réellement suivi : 1, 2, 3, 5, 6, 7, 4, chaque branche partant de la pré
 
 Si deux branches touchent la même migration (lignes 2 et 4), la première fusionnée crée `002`, la suivante passe en `00X` suivante.
 
-## 10. Questions ouvertes
+## 10. Décisions (questions ouvertes du Sprint 1)
 
-1. Opérateurs : Celtiis existe aussi au Bénin ; on le garde hors liste pour le Sprint 1 ?
-2. Le premier compte admin est créé comment (script `npm run admin:creer` ou migration) ? **Proposé dans la branche 2** : script `npm run admin:creer -w @nakayo/server -- --email ...`, mot de passe demandé au clavier.
-3. Format de la pièce d'identité : une seule face suffit, ou recto et verso ?
-4. Hachage des mots de passe : argon2id (paquet `argon2`, compilation native) ou bcrypt (`bcryptjs`, pur JavaScript) ? **Proposé dans la branche 2** : scrypt du module `crypto` de Node (N = 2^17, r = 8, p = 1, recommandation OWASP), sans dépendance ; les paramètres sont stockés avec l'empreinte pour pouvoir changer plus tard.
-5. Fournisseurs email et SMS pour le Bénin : lesquels, et qui ouvre les comptes ?
-6. Contrôle `fiche_play_accessible` : Google Play peut bloquer les appels automatiques depuis un serveur. Si c'est le cas en production, le contrôle sort en `indisponible` et l'admin vérifie à la main.
+Décisions prises le 2026-11-12 avec l'accord des deux responsables.
+
+1. Opérateurs : MTN MoMo et Moov Money uniquement. Celtiis reste hors liste.
+2. Premier compte admin : script `npm run admin:creer -w @nakayo/server -- --email ...`, mot de passe demandé au clavier.
+3. Pièce d'identité : le recto seulement.
+4. Hachage des mots de passe : scrypt du module `crypto` de Node (N = 2^17, r = 8, p = 1, recommandation OWASP), sans dépendance ; les paramètres sont stockés avec l'empreinte pour pouvoir changer plus tard.
+5. Emails et SMS : tout reste en local (journal du serveur) jusqu'au déploiement. Le fournisseur sera choisi à ce moment-là (Cloudflare envisagé) ; il suffira de fournir un objet `{ envoyer(message) }` à `creerApp`.
+6. Fiche Google Play : l'admin la vérifie à la main. Le contrôle `fiche_play_accessible` reste une aide ; s'il sort en `indisponible`, rien ne change pour l'admin.
+7. Langues des testeurs : français et anglais uniquement (§4.4).
+8. Numéro WhatsApp du support : saisi et publié par un admin depuis le back-office (§11), jamais écrit dans le code.
+
+## 11. Contact du support (US-40)
+
+Le numéro WhatsApp du support est géré dans le back-office. L'admin l'enregistre, puis le publie ; tant qu'il n'est pas publié, l'app et le site n'affichent aucun contact. Un nouveau numéro enregistré ne remplace le numéro publié qu'après une nouvelle publication.
+
+Format : international, `+` puis 8 à 15 chiffres (`+2290197000000`). Le serveur retire espaces, points, tirets et parenthèses, et remplace `00` par `+`.
+
+### 11.1 `GET /api/support`
+
+Sans connexion. Répond `200 { "support": { "whatsapp": "+2290197000000" } }`, ou `whatsapp: null` si rien n'est publié. En-tête `Cache-Control: public, max-age=60`.
+
+### 11.2 Back-office (cookie admin)
+
+- `GET /api/admin/support` : `200 { "support": { "whatsapp": "+2290197000000", "whatsappPublie": "+2290197000000", "modifieLe": "...", "publieLe": "..." } }`. Tous les champs valent `null` au départ.
+- `PUT /api/admin/support` : corps `{ "whatsapp": "+229 01 97 00 00 00" }`. Enregistre sans publier. `422` avec `champs.whatsapp` = `requis` ou `format_invalide`.
+- `POST /api/admin/support/publication` : publie le numéro enregistré. `409 rien_a_publier` si aucun numéro n'est enregistré.
+- `DELETE /api/admin/support/publication` : retire le numéro de l'app et du site ; il reste enregistré.
+
+Migration `006_contact_support.sql` : table `contact_support` à une seule ligne (`whatsapp`, `whatsapp_publie`, `modifie_par`, `modifie_le`, `publie_par`, `publie_le`).

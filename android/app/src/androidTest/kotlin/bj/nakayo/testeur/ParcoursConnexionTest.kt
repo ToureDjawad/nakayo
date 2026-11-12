@@ -85,6 +85,19 @@ class ParcoursConnexionTest {
     }
 
     @Test
+    fun contactWhatsappAfficheSeulementSiPublie() {
+        service.jeton = "jeton-garde"
+        lancer().use {
+            compose.attendreTexte("Mon profil")
+            compose.onNodeWithText("Écrire au support sur WhatsApp").assertDoesNotExist()
+        }
+        service.reponseSupport = { bj.nakayo.noyau.Resultat.Succes(bj.nakayo.noyau.Support("+2290197000000")) }
+        lancer().use {
+            compose.attendreTexte("Écrire au support sur WhatsApp")
+        }
+    }
+
+    @Test
     fun profilLanguesEtDemandeMomo() {
         service.jeton = "jeton-garde"
         lancer().use {

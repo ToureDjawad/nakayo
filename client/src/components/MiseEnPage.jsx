@@ -105,9 +105,19 @@ export function BoiteIcone({ ton = 'ocre', children }) {
   return <span className={`grid size-14 place-items-center rounded-2xl ${tons[ton]}`}>{children}</span>
 }
 
-const LIENS_ADMIN = [{ to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' }]
+const LIENS_ADMIN = [
+  { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
+  { to: '/admin/support', libelle: 'Contact du support', icone: 'message' },
+]
 
 function IconeAdmin({ nom }) {
+  if (nom === 'message') {
+    return (
+      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+      </svg>
+    )
+  }
   if (nom !== 'utilisateurs') return null
   return (
     <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

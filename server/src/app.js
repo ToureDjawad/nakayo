@@ -9,6 +9,7 @@ import { routesAdmin } from './routes/admin.js'
 import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
+import { routesSupport } from './routes/support.js'
 import { routesTesteurs } from './routes/testeurs.js'
 import { health } from './routes/health.js'
 import { creerLanceurControles } from './services/controles.js'
@@ -45,6 +46,7 @@ export function creerApp(dependances = {}) {
   app.use('/api/auth', routesSms(deps))
   app.use('/api/testeurs', routesTesteurs(deps))
   app.use('/api/admin', routesAdmin(deps))
+  app.use('/api/support', routesSupport(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))
