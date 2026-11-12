@@ -85,3 +85,15 @@ export async function creerTesteur({
   const { jeton } = await ouvrirSession(pool, { utilisateurId: id, client: 'android', maintenant: new Date() })
   return { id: String(id), jeton }
 }
+
+// Corps valide d'une app soumise par un développeur (US-11).
+export const APP = {
+  nom: 'Marché Facile',
+  package: 'bj.studioawa.marche',
+  lienTestFerme: 'https://play.google.com/apps/testing/bj.studioawa.marche',
+  description: 'Une app pour commander au marché de Dantokpa et se faire livrer.',
+  instructions: 'Chaque jour, ouvrez l’app, cherchez un produit et ajoutez-le au panier.',
+  fonctionnalites: ['Recherche de produits', 'Panier', 'Suivi de livraison'],
+  connexionRequise: false,
+  comptePlay: 'personnel_recent',
+}
