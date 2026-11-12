@@ -1,3 +1,5 @@
+import { DUREE_SESSION_MS, NOM_COOKIE } from '../services/sessions.js'
+
 // Lecture d'un cookie sans dépendance supplémentaire.
 export function lireCookie(req, nom) {
   const entete = req.headers.cookie
@@ -14,4 +16,13 @@ export function lireCookie(req, nom) {
     }
   }
   return null
+}
+
+export function optionsCookie(config) {
+  return { httpOnly: true, sameSite: 'lax', secure: config.cookieSecurise, path: '/' }
+}
+
+// Pose le cookie de session web : 30 jours, renouvelés quand la session est prolongée.
+export function poserCookieSession(res, config, jeton) {
+  res.cookie(NOM_COOKIE, jeton, { ...optionsCookie(config), maxAge: DUREE_SESSION_MS })
 }

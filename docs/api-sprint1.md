@@ -27,8 +27,10 @@ Le front est développé contre des données simulées qui respectent exactement
 
 | Client | Mécanisme | Durée |
 |---|---|---|
-| Site web (développeurs, admins) | Cookie `nakayo_session` : `HttpOnly`, `SameSite=Lax`, `Secure` en production, `Path=/` | 30 jours |
-| App Android (testeurs) | En-tête `Authorization: Bearer <jeton>` | 30 jours |
+| Site web (développeurs, admins) | Cookie `nakayo_session` : `HttpOnly`, `SameSite=Lax`, `Secure` en production, `Path=/` | 30 jours sans utilisation |
+| App Android (testeurs) | En-tête `Authorization: Bearer <jeton>` | 30 jours sans utilisation |
+
+- La session expire après 30 jours d'inactivité : chaque utilisation repousse l'échéance de 30 jours (enregistré au plus une fois par heure). Le site reçoit alors un nouveau cookie `nakayo_session` de 30 jours ; l'app Android garde le même jeton.
 
 - Le front web envoie ses requêtes en même origine (proxy Vite en dev), donc pas de CORS avec cookies à gérer.
 - Une route protégée sans session valide répond `401 non_authentifie`. Une route admin appelée par un non-admin répond `403 interdit`.
@@ -496,7 +498,7 @@ CREATE TABLE sessions (
   jeton_hash BYTEA NOT NULL UNIQUE,
   client client_session NOT NULL,
   cree_le TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expire_le TIMESTAMPTZ NOT NULL,          -- cree_le + 30 jours
+  expire_le TIMESTAMPTZ NOT NULL,          -- dernière utilisation + 30 jours
   utilisee_le TIMESTAMPTZ NOT NULL DEFAULT now(),
   revoquee_le TIMESTAMPTZ
 );
