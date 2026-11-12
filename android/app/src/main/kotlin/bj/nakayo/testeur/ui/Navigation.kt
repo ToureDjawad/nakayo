@@ -54,6 +54,11 @@ class Navigation(
     val ecran: StateFlow<Ecran> = ecranInterne.asStateFlow()
     private var porteeEcran: CoroutineScope? = null
     private var jourSignale: String? = null
+
+    // US-18 : accès aux statistiques d'usage donné dans les réglages du téléphone.
+    private val mesureInterne = MutableStateFlow(true)
+    val mesureAutorisee: StateFlow<Boolean> = mesureInterne.asStateFlow()
+    private var testeurValide = false
     // Profil de l'espace, gardé pendant la visite des écrans d'app.
     private var profilEspace: ProfilTesteur? = null
 
@@ -143,6 +148,7 @@ class Navigation(
 
     // L'app revient au premier plan : on relit l'écran affiché (un nouveau jour a pu commencer).
     fun auPremierPlan() {
+        if (testeurValide) lancerMesure()
         when (val actuel = ecranInterne.value) {
             is Ecran.Espace -> actuel.modele.actualiser()
             is Ecran.App -> {
@@ -153,8 +159,17 @@ class Navigation(
         }
     }
 
+    // Le temps d'utilisation part en arrière-plan, et seulement si le testeur a donné l'accès.
+    private fun lancerMesure() {
+        mesureInterne.value = outils.mesureAutorisee()
+        if (mesureInterne.value) outils.planifierMesure()
+    }
+
     // US-18 : une ouverture de l'app compagnon par jour suffit ; nouvel essai si le réseau manque.
     private fun signalerOuverture() {
+        // Première fois : on lance la mesure ; ensuite, auPremierPlan() s'en charge.
+        if (!testeurValide) lancerMesure()
+        testeurValide = true
         val jour = aujourdhui()
         if (jourSignale == jour) return
         jourSignale = jour

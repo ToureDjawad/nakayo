@@ -17,6 +17,12 @@ interface OutilsApps {
     // null sans permission de localisation, ou quand le téléphone ne donne aucune position.
     suspend fun position(): Position?
 
+    // US-18 : le testeur a-t-il donné l'accès aux statistiques d'usage ?
+    fun mesureAutorisee(): Boolean = true
+
+    // Lance l'envoi du temps d'utilisation (tout de suite, puis toutes les heures).
+    fun planifierMesure() = Unit
+
     object Aucun : OutilsApps {
         override fun installation(paquet: String): InstallationApp? = null
         override suspend fun position(): Position? = null

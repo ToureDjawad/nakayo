@@ -16,6 +16,12 @@ import kotlin.coroutines.resume
 
 // Lecture des apps installées et de la position approximative, sans services Google.
 class OutilsAndroid(private val contexte: Context) : OutilsApps {
+    private val statistiques = StatistiquesUsage(contexte)
+
+    override fun mesureAutorisee() = statistiques.autorisee()
+
+    override fun planifierMesure() = PlanificationUsages.planifier(contexte)
+
     override fun installation(paquet: String): InstallationApp? {
         val pm = contexte.packageManager
         val version = try {

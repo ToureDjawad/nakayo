@@ -3,6 +3,7 @@ package bj.nakayo.testeur.ui.apps
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,7 +74,7 @@ fun AppModele.actions() = ActionsApp(::retour, ::captureChoisie, ::afficherErreu
 
 // Une app à tester (T08) : inscription au test, installation depuis le Play Store, test du jour.
 @Composable
-fun EcranApp(etat: EtatApp, actions: ActionsApp) {
+fun EcranApp(etat: EtatApp, actions: ActionsApp, mesureAutorisee: Boolean = true) {
     val a = etat.affectation
     val contexte = LocalContext.current
     val liens = LocalUriHandler.current
@@ -109,6 +110,7 @@ fun EcranApp(etat: EtatApp, actions: ActionsApp) {
                 titre = "Vos ${a.joursExiges} jours sont validés",
             )
         }
+        if (a.installationConfirmee && !a.joursAcquis && !mesureAutorisee) BandeauMesure()
         if (a.installationConfirmee) Progression(a)
 
         EtapeInscription(a, etat.envoiCapture, { a.lienInscription?.let(::ouvrir) }) {
@@ -210,7 +212,7 @@ private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surOuvrir:
             }
         }
         val fait = a.usageDuJourSecondes >= a.usageMinimumSecondes
-        LigneIcone(
+        if (!a.joursAcquis) LigneIcone(
             if (fait) R.drawable.ic_coche else R.drawable.ic_horloge,
             "Temps aujourd'hui : ${minutes(a.usageDuJourSecondes.coerceAtMost(a.usageMinimumSecondes))} sur ${minutes(a.usageMinimumSecondes)}",
             if (fait) Couleurs.vert else Couleurs.ocreEncre,
@@ -224,6 +226,23 @@ private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surOuvrir:
             Bouton("Écrire le rapport du jour", surRapport, icone = R.drawable.ic_message)
         }
     }
+}
+
+// US-18 : sans l'accès aux statistiques d'usage, le temps passé dans l'app n'est pas mesuré et le jour ne compte pas.
+@Composable
+fun BandeauMesure() {
+    val contexte = LocalContext.current
+    Bandeau(
+        "Sans cet accès, le temps passé dans l'app testée n'est pas mesuré et vos jours ne comptent pas. " +
+            "Dans la liste, choisissez Nakayo et activez l'accès.",
+        TypeBandeau.Attention,
+        titre = "Autorisez Nakayo à mesurer le temps d'utilisation",
+        icone = R.drawable.ic_horloge,
+    )
+    Bouton("Autoriser l'accès", {
+        runCatching { contexte.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { runCatching { contexte.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
+    }, StyleBouton.Secondaire)
 }
 
 // Icône de l'app installée sur le téléphone, sinon son initiale.
