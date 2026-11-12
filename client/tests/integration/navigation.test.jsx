@@ -9,7 +9,7 @@ describe('Navigation', () => {
     const user = userEvent.setup()
     rendreA('/')
 
-    await user.click(screen.getByRole('link', { name: 'Créer un compte développeur' }))
+    await user.click(screen.getByRole('link', { name: /Soumettre mon app · 29/ }))
     expect(screen.getByRole('heading', { name: 'Créer votre compte développeur' })).toBeInTheDocument()
   })
 

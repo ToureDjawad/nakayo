@@ -10,7 +10,7 @@ test.describe('Inscription développeur (US-05)', () => {
   test('parcours complet : inscription, email, lien, compte en attente', async ({ page }) => {
     const lien = capturerLienVerification(page)
     await page.goto('/')
-    await page.getByRole('link', { name: 'Créer un compte développeur' }).click()
+    await page.getByRole('link', { name: /Soumettre mon app · 29/ }).click()
 
     const saisie = await remplirInscription(page)
     await page.getByRole('button', { name: 'Créer mon compte' }).click()
