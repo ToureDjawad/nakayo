@@ -5,6 +5,7 @@ import ContactSupport from './pages/admin/ContactSupport.jsx'
 import MessagesSupport from './pages/admin/MessagesSupport.jsx'
 import EcrireAuSupport from './pages/support/EcrireAuSupport.jsx'
 import FormulaireApp from './pages/apps/FormulaireApp.jsx'
+import PreparationLancement from './pages/apps/PreparationLancement.jsx'
 import MesPaiements from './pages/paiements/MesPaiements.jsx'
 import PayerApp from './pages/paiements/PayerApp.jsx'
 import RetourPaiement from './pages/paiements/RetourPaiement.jsx'
@@ -30,6 +31,7 @@ export const routes = [
   { path: '/mon-compte/support', element: <EcrireAuSupport /> },
   { path: '/mon-compte/apps/nouvelle', element: <FormulaireApp /> },
   { path: '/mon-compte/apps/:id/modifier', element: <FormulaireApp /> },
+  { path: '/mon-compte/apps/:id/preparation', element: <PreparationLancement /> },
   { path: '/mon-compte/apps/:id/paiement', element: <PayerApp /> },
   { path: '/mon-compte/paiements', element: <MesPaiements /> },
   { path: '/mon-compte/paiements/:reference', element: <RetourPaiement /> },
