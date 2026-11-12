@@ -746,6 +746,32 @@ export const routes = [
     },
   },
   {
+    // US-36 : le rapport de fin est prêt au 14e jour ; en démo, une campagne vient de démarrer.
+    methode: 'GET',
+    chemin: '/api/apps/:id/campagne/rapport',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      const campagne = app && campagneDeLApp(app.id)
+      if (!campagne) return erreur(404, 'introuvable')
+      const debut = new Date(campagne.demarreeLe).getTime() + 3600 * 1000
+      const disponibleLe = new Date(debut + 13 * 24 * 3600 * 1000).toISOString().slice(0, 10)
+      return ok({ rapport: { pret: false, disponibleLe, bilan: null, brouillon: null, decisionGoogle: null } })
+    },
+  },
+  {
+    methode: 'PUT',
+    chemin: '/api/apps/:id/campagne/decision-google',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app || !campagneDeLApp(app.id)) return erreur(404, 'introuvable')
+      return erreur(409, 'rapport_pas_pret', { message: 'La décision de Google se saisit après le 14e jour du test.' })
+    },
+  },
+  {
     // US-21 : les testeurs simulés n'avancent pas ; l'avancement reste à zéro, jour par jour.
     methode: 'GET',
     chemin: '/api/apps/:id/campagne/avancement',
@@ -1024,6 +1050,11 @@ export const routes = [
             annulees: liste.filter((c) => c.statut === 'annulee').length,
             enRetard: enRetard.length,
             retards: enRetard,
+            decisionsGoogle: (() => {
+              const acceptees = liste.filter((c) => c.decisionGoogle?.decision === 'acceptee').length
+              const refusees = liste.filter((c) => c.decisionGoogle?.decision === 'refusee').length
+              return { acceptees, refusees, tauxReussite: acceptees + refusees ? acceptees / (acceptees + refusees) : null }
+            })(),
           },
           testeurs: {
             valides: base().utilisateurs.filter((u) => u.role === 'testeur' && u.statut === 'valide').length,

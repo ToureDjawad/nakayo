@@ -139,3 +139,19 @@ Réservé aux admins. Il renvoie `{ tableauDeBord }` :
 - `/admin` y redirige.
 - Un admin y arrive après sa connexion.
 - Chaque versement échoué a un bouton « Relancer » (§2.4).
+
+## 6. Rapport de fin et réponses pour Google (US-36)
+
+Le rapport est prêt quand la campagne est terminée ou atteint son 14e jour. Le développeur est prévenu une fois par email (`rapport_pret_le`), lors de la vérification quotidienne.
+
+| Méthode | Chemin | Rôle |
+| --- | --- | --- |
+| GET | `/api/apps/:id/campagne/rapport` | État du rapport, bilan chiffré, brouillon des réponses, décision de Google |
+| GET | `/api/apps/:id/campagne/rapport.pdf` | Rapport PDF (409 `rapport_pas_pret` avant le 14e jour) |
+| PUT | `/api/apps/:id/campagne/decision-google` | `{ decision: "acceptee" \| "refusee", le?: "AAAA-MM-JJ" }` |
+
+- Avant le 14e jour : `{ pret: false, disponibleLe, bilan: null, brouillon: null }`. Campagne annulée : `disponibleLe` vaut `null`.
+- Bilan : testeurs, temps d'utilisation, téléphones et versions Android, versions de l'app testées, retours par fonctionnalité.
+- Brouillon : 3 parties et 8 questions du formulaire de la Play Console. Les réponses sont construites à partir des chiffres réels ; ce que Nakayo ne peut pas savoir est laissé entre crochets « [À compléter : …] ». Rien n'est inventé.
+- Côté web, les modifications du brouillon restent dans le navigateur (`localStorage`, clé `nakayo:brouillon-google:<appId>`).
+- Décision : la date `le` est facultative et ne peut pas être dans le futur (422 `format_invalide`). Elle alimente le taux de réussite du tableau de bord admin (`campagnes.decisionsGoogle`).

@@ -1,4 +1,4 @@
-// Petit générateur PDF (une page A4, texte et traits) pour les factures, sans dépendance.
+// Petit générateur PDF (pages A4, texte et traits) pour les factures et les rapports, sans dépendance.
 // Polices standard Helvetica en WinAnsiEncoding : les accents français sont pris en charge.
 
 // Caractères hors Latin-1 présents dans nos textes, et leur code WinAnsi.
@@ -45,27 +45,33 @@ export function creerPage() {
   }
 }
 
-// Assemble le document : catalogue, page A4, deux polices et le flux de contenu.
-export function documentPdf(page, { titre }) {
-  const flux = Buffer.from(octets(page.contenu()))
+// Assemble le document : catalogue, pages A4, deux polices et un flux de contenu par page.
+// `pages` est une page de creerPage() ou une liste de pages.
+export function documentPdf(pages, { titre }) {
+  const liste = Array.isArray(pages) ? pages : [pages]
+  // Objets : 1 catalogue, 2 arbre des pages, 3-4 polices, 5 infos, puis (page, flux) pour chaque page.
+  const premiere = 6
   const objets = [
     '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+    `<< /Type /Pages /Kids [${liste.map((_, i) => `${premiere + 2 * i} 0 R`).join(' ')}] /Count ${liste.length} >>`,
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
-    null, // flux, ajouté à part (binaire)
     `<< /Title (${chaine(titre)}) /Producer (Nakayo) >>`,
   ]
+  liste.forEach((page, i) => {
+    objets.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${premiere + 2 * i + 1} 0 R >>`,
+    )
+    objets.push(Buffer.from(octets(page.contenu())))
+  })
   const morceaux = [Buffer.from('%PDF-1.4\n%\xe2\xe3\xcf\xd3\n', 'latin1')]
   const positions = []
   let taille = morceaux[0].length
   objets.forEach((objet, i) => {
     positions.push(taille)
-    const morceau =
-      objet === null
-        ? Buffer.concat([Buffer.from(`${i + 1} 0 obj\n<< /Length ${flux.length} >>\nstream\n`, 'latin1'), flux, Buffer.from('\nendstream\nendobj\n', 'latin1')])
-        : Buffer.from(`${i + 1} 0 obj\n${objet}\nendobj\n`, 'latin1')
+    const morceau = Buffer.isBuffer(objet)
+      ? Buffer.concat([Buffer.from(`${i + 1} 0 obj\n<< /Length ${objet.length} >>\nstream\n`, 'latin1'), objet, Buffer.from('\nendstream\nendobj\n', 'latin1')])
+      : Buffer.from(`${i + 1} 0 obj\n${objet}\nendobj\n`, 'latin1')
     morceaux.push(morceau)
     taille += morceau.length
   })
@@ -75,11 +81,92 @@ export function documentPdf(page, { titre }) {
     '0000000000 65535 f ',
     ...positions.map((p) => `${String(p).padStart(10, '0')} 00000 n `),
     'trailer',
-    `<< /Size ${objets.length + 1} /Root 1 0 R /Info 7 0 R >>`,
+    `<< /Size ${objets.length + 1} /Root 1 0 R /Info 5 0 R >>`,
     'startxref',
     String(taille),
     '%%EOF',
   ].join('\n')
   morceaux.push(Buffer.from(`${xref}\n`, 'latin1'))
   return Buffer.concat(morceaux)
+}
+
+// Coupe un texte en lignes d'au plus `largeur` points (largeur approchée).
+export function couperLignes(texte, largeur, taille) {
+  const lignes = []
+  for (const paragraphe of String(texte).split('\n')) {
+    let ligne = ''
+    for (const mot of paragraphe.split(/\s+/).filter(Boolean)) {
+      const essai = ligne ? `${ligne} ${mot}` : mot
+      if (ligne && largeurApprochee(essai, taille) > largeur) {
+        lignes.push(ligne)
+        ligne = mot
+      } else {
+        ligne = essai
+      }
+    }
+    lignes.push(ligne)
+  }
+  return lignes
+}
+
+// Document à plusieurs pages écrit de haut en bas : titres, paragraphes coupés, nouvelle page au besoin.
+export function creerRedaction({ marge = 56, piedDePage = '' } = {}) {
+  const pages = []
+  const largeur = 595 - 2 * marge
+  let page
+  let y
+  const nouvellePage = () => {
+    page = creerPage()
+    pages.push(page)
+    y = 790
+  }
+  const place = (hauteur) => {
+    if (y - hauteur < 70) nouvellePage()
+  }
+  nouvellePage()
+  return {
+    get page() {
+      return page
+    },
+    get y() {
+      return y
+    },
+    descendre(points) {
+      y -= points
+    },
+    titre(texte, { taille = 14 } = {}) {
+      place(taille + 30)
+      y -= 10
+      page.texte(marge, y, texte, { taille, gras: true })
+      y -= taille + 6
+    },
+    paragraphe(texte, { taille = 10, gras = false, gris = false, retrait = 0 } = {}) {
+      for (const ligne of couperLignes(texte, largeur - retrait, taille)) {
+        place(taille + 4)
+        page.texte(marge + retrait, y, ligne, { taille, gras, gris })
+        y -= taille + 4
+      }
+      y -= 4
+    },
+    // Ligne « libellé ............ valeur ».
+    ligneInfo(libelle, valeur, { taille = 10 } = {}) {
+      place(taille + 6)
+      page.texte(marge, y, libelle, { taille, gris: true })
+      page.texteADroite(marge + largeur, y, valeur, { taille })
+      y -= taille + 6
+    },
+    trait() {
+      place(10)
+      page.trait(marge, y + 4, marge + largeur)
+      y -= 8
+    },
+    terminer(titreDocument) {
+      pages.forEach((p, i) => {
+        p.trait(marge, 56, marge + largeur)
+        p.texte(marge, 42, piedDePage, { taille: 8, gris: true })
+        p.texteADroite(marge + largeur, 42, `Page ${i + 1} sur ${pages.length}`, { taille: 8, gris: true })
+      })
+      return documentPdf(pages, { titre: titreDocument })
+    },
+  }
 }

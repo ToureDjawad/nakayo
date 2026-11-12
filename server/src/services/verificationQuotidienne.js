@@ -1,6 +1,7 @@
 import { transaction } from '../routes/auth.js'
 import { USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, debutJourBenin, jourBenin } from '../lib/temps.js'
+import { prevenirRapportsPrets } from './rapportFinal.js'
 import { creerVersementsCampagnes } from './versements.js'
 
 // Vérification de chaque nuit (US-20, docs/api-sprint3.md §3). Un jour est validé pour une
@@ -130,6 +131,8 @@ export function demarrerVerificationNocturne(deps, { delaiMs = 5 * 60 * 1000 } =
         const bilan = await verifierJour(deps, { jour, maintenant: deps.maintenant() })
         deps.journal.info(`[vérification] ${jour} : ${bilan.affectations} affectations, ${bilan.joursValides} jours validés, ${bilan.remises} remises à zéro`)
       }
+      // US-36 : rapports de fin prêts au 14e jour, développeurs prévenus par email.
+      await prevenirRapportsPrets(deps, { maintenant: deps.maintenant() })
     } catch (erreur) {
       deps.journal.error(erreur)
     }

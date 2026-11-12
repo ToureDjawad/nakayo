@@ -36,12 +36,23 @@ function Section({ id, titre, intro, children }) {
   )
 }
 
+// Réponses de Google indiquées par les développeurs (US-36) et campagnes annulées.
+function detailTerminees(c) {
+  const d = c.decisionsGoogle
+  const morceaux = []
+  if (d && d.acceptees + d.refusees > 0) {
+    morceaux.push(`Google : ${pluriel(d.acceptees, 'acceptée', 'acceptées')}, ${pluriel(d.refusees, 'refusée', 'refusées')} (${pourcentage(d.tauxReussite)} de réussite).`)
+  }
+  if (c.annulees) morceaux.push(`${pluriel(c.annulees, 'annulée', 'annulées')}.`)
+  return morceaux.join(' ') || undefined
+}
+
 function Campagnes({ c }) {
   return (
     <Section id="tdb-campagnes" titre="Campagnes">
       <div className="grid gap-3 sm:grid-cols-3">
         <Chiffre valeur={String(c.enCours)} libelle="en cours" />
-        <Chiffre valeur={String(c.terminees)} libelle={c.terminees > 1 ? 'terminées' : 'terminée'} detail={c.annulees ? pluriel(c.annulees, 'annulée', 'annulées') : undefined} />
+        <Chiffre valeur={String(c.terminees)} libelle={c.terminees > 1 ? 'terminées' : 'terminée'} detail={detailTerminees(c)} />
         <Chiffre
           valeur={String(c.enRetard)}
           libelle="en retard"

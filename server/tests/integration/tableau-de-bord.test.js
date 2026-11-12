@@ -85,7 +85,9 @@ describe('tableau de bord global (US-24)', () => {
     await pool.query(`UPDATE versements SET statut = 'echoue', tentatives = 4 WHERE statut = 'a_verser'`)
 
     t = await tableau()
-    expect(t.campagnes).toMatchObject({ enCours: 0, terminees: 1, enRetard: 0 })
+    expect(t.campagnes).toMatchObject({ enCours: 0, terminees: 1, enRetard: 0, decisionsGoogle: { acceptees: 0, refusees: 0, tauxReussite: null } })
+    await pool.query(`UPDATE campagnes SET decision_google = 'acceptee', decision_saisie_le = now()`)
+    expect((await tableau()).campagnes.decisionsGoogle).toEqual({ acceptees: 1, refusees: 0, tauxReussite: 1 })
     expect(t.testeurs.tauxAbandon).toBeCloseTo(1 / 15)
     expect(t.finances).toMatchObject({ versesTesteurs: 1000, dusTesteurs: 500, marge: 17400 - 1500, margeLisible: '15 900 FCFA' })
     expect(t.finances.parApp[0]).toMatchObject({ statut: 'terminee', versesTesteurs: 1000, dusTesteurs: 500, marge: 15900, margeDefinitive: true })

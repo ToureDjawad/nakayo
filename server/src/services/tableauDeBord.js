@@ -22,6 +22,12 @@ export async function lireTableauDeBord(db, { maintenant }) {
 
   const { rows: statuts } = await db.query('SELECT statut, count(*)::int AS n FROM campagnes GROUP BY statut')
   const compte = Object.fromEntries(statuts.map((s) => [s.statut, s.n]))
+  // US-36 : réponses de Google indiquées par les développeurs, pour mesurer le taux de réussite.
+  const { rows: decisions } = await db.query(
+    `SELECT count(*) FILTER (WHERE decision_google = 'acceptee')::int AS acceptees,
+            count(*) FILTER (WHERE decision_google = 'refusee')::int AS refusees FROM campagnes`,
+  )
+  const { acceptees, refusees } = decisions[0]
 
   const { rows: enCours } = await db.query(
     `SELECT c.id, c.demarree_le, c.jours_exiges, ap.nom AS app_nom,
@@ -99,6 +105,7 @@ export async function lireTableauDeBord(db, { maintenant }) {
       annulees: compte.annulee ?? 0,
       enRetard: enRetard.length,
       retards: enRetard,
+      decisionsGoogle: { acceptees, refusees, tauxReussite: acceptees + refusees ? acceptees / (acceptees + refusees) : null },
     },
     testeurs: {
       valides: t.valides,
