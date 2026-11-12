@@ -1,4 +1,4 @@
-import { lireCookie } from '../lib/cookies.js'
+import { lireCookie, poserCookieSession } from '../lib/cookies.js'
 import { interdit, nonAuthentifie } from '../lib/erreurs.js'
 import { lireSession, NOM_COOKIE } from '../services/sessions.js'
 
@@ -10,11 +10,13 @@ export function jetonDeLaRequete(req) {
 }
 
 // Charge la session si elle existe : req.session = { sessionId, client, utilisateur } ou null.
-export function chargerSession({ pool, maintenant }) {
-  return async (req, _res, next) => {
+// Une session web prolongée renvoie son cookie avec une nouvelle durée de 30 jours.
+export function chargerSession({ pool, maintenant, config }) {
+  return async (req, res, next) => {
     try {
       const jeton = jetonDeLaRequete(req)
       req.session = jeton ? await lireSession(pool, { jeton, maintenant: maintenant() }) : null
+      if (req.session?.prolongee && !req.headers.authorization) poserCookieSession(res, config, jeton)
       next()
     } catch (erreur) {
       next(erreur)

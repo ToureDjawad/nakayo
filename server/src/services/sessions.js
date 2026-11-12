@@ -25,12 +25,14 @@ export async function lireSession(db, { jeton, maintenant }) {
   )
   if (!rows.length) return null
   const { session_id: sessionId, client, ...utilisateur } = rows[0]
-  // Date de dernière utilisation, mise à jour au plus une fois par heure.
-  await db.query(
-    `UPDATE sessions SET utilisee_le = $2 WHERE id = $1 AND utilisee_le < $2::timestamptz - interval '1 hour'`,
-    [sessionId, maintenant],
+  // La session expire après 30 jours d'inactivité : chaque utilisation repousse l'échéance.
+  // Mise à jour au plus une fois par heure pour ne pas écrire à chaque requête.
+  const { rowCount } = await db.query(
+    `UPDATE sessions SET utilisee_le = $2, expire_le = $3
+      WHERE id = $1 AND utilisee_le < $2::timestamptz - interval '1 hour'`,
+    [sessionId, maintenant, new Date(maintenant.getTime() + DUREE_SESSION_MS)],
   )
-  return { sessionId, client, utilisateur }
+  return { sessionId, client, utilisateur, prolongee: rowCount > 0 }
 }
 
 export async function revoquerSession(db, { sessionId, maintenant }) {
