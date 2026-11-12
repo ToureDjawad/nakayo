@@ -24,6 +24,12 @@ export function versAppApi(l) {
     statut: l.statut,
     // Motif donné par l'équipe quand l'app est refusée (US-14).
     motifRefus: l.motif_refus ?? null,
+    // Liste de vérification avant le lancement (US-42).
+    preparation: {
+      elements: l.preparation ?? [],
+      complete: Boolean(l.preparation_complete_le),
+      completeLe: l.preparation_complete_le?.toISOString() ?? null,
+    },
     creeLe: l.cree_le.toISOString(),
     modifieLe: l.modifie_le.toISOString(),
   }
@@ -92,4 +98,20 @@ export async function modifierApp(db, { id, developpeurId, valeurs, maintenant }
 export async function supprimerApp(db, { id, developpeurId }) {
   const { rowCount } = await db.query(`DELETE FROM apps WHERE id = $1 AND developpeur_id = $2 AND statut = 'brouillon'`, [id, developpeurId])
   if (!rowCount) throw statutIncompatible((await lireAppDeveloppeur(db, { id, developpeurId })).statut)
+}
+
+// US-42 : enregistre les points cochés ; la date « complète » est posée quand tout est coché.
+export async function enregistrerPreparation(db, { id, developpeurId, elements, total, maintenant }) {
+  const actuelle = await lireAppDeveloppeur(db, { id, developpeurId })
+  if (!['en_verification', 'validee'].includes(actuelle.statut)) {
+    throw new ErreurHttp(409, 'statut_incompatible', { message: 'La préparation commence une fois l’offre payée.', statut: actuelle.statut })
+  }
+  const complete = elements.length === total
+  const { rows } = await db.query(
+    `UPDATE apps SET preparation = $3,
+        preparation_complete_le = CASE WHEN $4 THEN COALESCE(preparation_complete_le, $5) ELSE NULL END
+      WHERE id = $1 AND developpeur_id = $2 RETURNING *`,
+    [id, developpeurId, elements, complete, maintenant],
+  )
+  return versAppApi(rows[0])
 }
