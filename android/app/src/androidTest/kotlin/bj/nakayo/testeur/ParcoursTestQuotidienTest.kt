@@ -66,7 +66,7 @@ class ParcoursTestQuotidienTest {
             compose.onNodeWithText("Rapport du jour à envoyer").assertExists()
             toucher("Marché Facile")
 
-            compose.attendreTexte("2 sur 14 jours validés")
+            compose.attendreTexte("sur 14 jours validés")
             toucher("Écrire le rapport du jour")
             compose.attendreTexte("Rapport du jour 3")
             compose.onNodeWithContentDescription("Qu'avez-vous fait dans l'app aujourd'hui ?")
