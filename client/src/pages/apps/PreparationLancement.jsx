@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
-import { enregistrerPreparation, lireApp, lirePreparation } from '../../api/apps.js'
+import { Link, useNavigate, useParams } from 'react-router'
+import { demarrerCampagne, enregistrerPreparation, lireApp, lirePreparation } from '../../api/apps.js'
 import { ErreurApi } from '../../api/client.js'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton, Indicateur } from '../../components/Bouton.jsx'
+import { AdresseGroupe } from '../../components/Copier.jsx'
 import { PageCompte, PanneauEtapes } from '../../components/MiseEnPage.jsx'
 import { messageErreurGlobale } from '../../lib/messages.js'
 import { useSession } from '../../lib/useSession.js'
@@ -50,25 +51,54 @@ const POINTS = {
 }
 
 function GroupeTesteurs({ adresse }) {
-  const [copie, setCopie] = useState(false)
   if (!adresse) {
     return <p className="mt-2 text-sm text-texte">L’équipe vous envoie l’adresse du groupe par email après la vérification de votre app.</p>
   }
-  async function copier() {
+  return <AdresseGroupe adresse={adresse} />
+}
+
+// US-13 : une fois l'app validée et la liste complète, le développeur démarre la campagne.
+function DemarrageCampagne({ app }) {
+  const naviguer = useNavigate()
+  const [envoi, setEnvoi] = useState(false)
+  const [erreur, setErreur] = useState(null)
+  const suivi = `/mon-compte/apps/${app.id}/campagne`
+
+  async function demarrer() {
+    setEnvoi(true)
+    setErreur(null)
     try {
-      await navigator.clipboard.writeText(adresse)
-      setCopie(true)
-    } catch {
-      setCopie(false)
+      await demarrerCampagne(app.id)
+      naviguer(suivi, { state: { demarree: true } })
+    } catch (err) {
+      setEnvoi(false)
+      if (err instanceof ErreurApi && err.code === 'campagne_existante') return naviguer(suivi)
+      if (err instanceof ErreurApi && err.code === 'testeurs_insuffisants') {
+        return setErreur('Pas assez de testeurs disponibles pour le moment. Notre équipe est prévenue et revient vers vous par email.')
+      }
+      if (err instanceof ErreurApi && err.code === 'preparation_incomplete') return setErreur('Cochez et enregistrez tous les points avant de démarrer.')
+      setErreur(messageErreurGlobale(err))
     }
   }
+
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      <code className="rounded-md bg-fond-doux px-2 py-1 text-sm [overflow-wrap:anywhere] text-encre">{adresse}</code>
-      <button type="button" onClick={copier} className="text-sm font-semibold text-accent underline-offset-2 hover:underline">
-        {copie ? 'Adresse copiée' : 'Copier l’adresse'}
-      </button>
-    </div>
+    <section aria-labelledby="demarrage" className="mt-8 rounded-carte border border-accent bg-white p-5">
+      <h2 id="demarrage" className="text-lg font-semibold text-encre">
+        Démarrer la campagne
+      </h2>
+      <p className="mt-2 text-sm text-texte">
+        En démarrant, vous confirmez que le groupe des testeurs est ajouté à votre test fermé. 15 testeurs sont affectés à votre app et prévenus
+        aussitôt. La campagne dure 16 jours, dont 14 exigés par Google.
+      </p>
+      {erreur && (
+        <Alerte ton="erreur" className="mt-4">
+          {erreur}
+        </Alerte>
+      )}
+      <Bouton type="button" className="mt-4 w-full sm:w-auto" chargement={envoi} libelleChargement="Démarrage…" onClick={demarrer}>
+        Démarrer la campagne
+      </Bouton>
+    </section>
   )
 }
 
@@ -156,8 +186,8 @@ function Liste({ app, donnees }) {
           (etat.preparation.complete ? (
             <Alerte ton="succes" titre="Tout est prêt">
               {app.statut === 'validee'
-                ? 'Votre app est validée et prête : la campagne peut démarrer.'
-                : 'Votre liste est complète. La campagne démarrera une fois l’app validée par l’équipe.'}
+                ? 'Votre app est validée : vous pouvez démarrer la campagne ci-dessous.'
+                : 'Votre liste est complète. Vous pourrez démarrer la campagne une fois l’app validée par l’équipe.'}
             </Alerte>
           ) : (
             <Alerte ton="info">
@@ -178,6 +208,10 @@ function Liste({ app, donnees }) {
           Retour à mon compte
         </Link>
       </div>
+      {app.statut === 'validee' && etat.preparation.complete && !modifie && <DemarrageCampagne app={app} />}
+      {app.statut === 'en_verification' && etat.preparation.complete && !modifie && !etat.enregistre && (
+        <p className="mt-6 text-sm text-texte">Vous pourrez démarrer la campagne dès que l’équipe aura validé votre app, sous 24 h ouvrées.</p>
+      )}
     </form>
   )
 }
@@ -233,6 +267,20 @@ function Preparation({ id, utilisateur }) {
         <p className="mt-8">
           <Link to="/mon-compte" className="font-medium text-accent underline underline-offset-2">
             Retour à mon compte
+          </Link>
+        </p>
+      </PageCompte>
+    )
+  }
+  if (app.campagne) {
+    return (
+      <PageCompte titre={TITRE} utilisateur={utilisateur} panneau={PANNEAU}>
+        <Alerte ton="succes" titre="La campagne a démarré">
+          La liste de vérification est complète et figée pour « <span className="[overflow-wrap:anywhere]">{app.nom}</span> ».
+        </Alerte>
+        <p className="mt-6">
+          <Link to={`/mon-compte/apps/${app.id}/campagne`} className="font-medium text-accent underline underline-offset-2">
+            Suivre la campagne
           </Link>
         </p>
       </PageCompte>

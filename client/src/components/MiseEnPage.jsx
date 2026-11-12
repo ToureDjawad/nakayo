@@ -108,6 +108,7 @@ export function BoiteIcone({ ton = 'ocre', children }) {
 const LIENS_ADMIN = [
   { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
   { to: '/admin/apps', libelle: 'Apps à vérifier', icone: 'app' },
+  { to: '/admin/campagnes', libelle: 'Campagnes', icone: 'campagne' },
   { to: '/admin/messages', libelle: 'Messages reçus', icone: 'boite' },
   { to: '/admin/support', libelle: 'Contact du support', icone: 'message' },
 ]
@@ -126,6 +127,14 @@ function IconeAdmin({ nom }) {
       <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="6" y="2" width="12" height="20" rx="2" />
         <path d="M11 18h2" />
+      </svg>
+    )
+  }
+  if (nom === 'campagne') {
+    return (
+      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <path d="M16 2v4M8 2v4M3 10h18M8 15l2 2 4-4" />
       </svg>
     )
   }
