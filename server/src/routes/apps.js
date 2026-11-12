@@ -8,6 +8,8 @@ import { normaliserWhatsapp, validerWhatsapp } from '../services/support.js'
 import { MOYENS_PAIEMENT } from '../lib/offres.js'
 import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
 import { creerPaiement, versPaiementApi } from '../services/paiements.js'
+import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, telephonesTesteurs } from '../services/campagnes.js'
+import { transaction } from './auth.js'
 
 // Seul un compte validé par l'équipe peut soumettre ou modifier une app.
 function exigerCompteValide(req, _res, next) {
@@ -28,7 +30,7 @@ function lireCorps(req) {
 }
 
 // docs/api-sprint2.md §1 : apps du développeur connecté (cookie du site).
-export function routesApps({ pool, limites, maintenant, config }) {
+export function routesApps({ pool, limites, maintenant, config, sms, emails, journal }) {
   const routeur = Router()
   routeur.use(exigerRole('developpeur'))
   const developpeurId = (req) => req.session.utilisateur.id
@@ -100,10 +102,67 @@ export function routesApps({ pool, limites, maintenant, config }) {
     res.json({ app })
   })
 
+  // docs/api-sprint3.md §1.3 : campagne de test de l'app (null tant qu'elle n'a pas démarré).
+  routeur.get('/:id/campagne', async (req, res) => {
+    const id = idApp(req)
+    await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
+    res.json({ campagne: await lireCampagneApp(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() }) })
+  })
+
+  // US-13 : le développeur confirme avoir ajouté les testeurs à son test fermé ; la campagne
+  // démarre et 15 testeurs sont affectés (US-16), puis prévenus par SMS.
+  routeur.post('/:id/campagne', exigerCompteValide, async (req, res) => {
+    const id = idApp(req)
+    const instant = maintenant()
+    const campagneId = await transaction(pool, (client) =>
+      demarrerCampagne(client, { appId: id, developpeurId: developpeurId(req), groupeGoogle: config.groupeTesteurs, maintenant: instant }),
+    )
+    const campagne = await lireCampagne(pool, campagneId, { maintenant: instant, vue: 'developpeur' })
+    try {
+      for (const telephone of await telephonesTesteurs(pool, campagneId)) {
+        await sms.envoyer({ a: telephone, texte: messageNouvelleApp(campagne.app.nom) })
+      }
+      await emails.envoyer(messageCampagneDemarree(campagne, { email: req.session.utilisateur.email, clientUrl: config.clientUrl }))
+    } catch (erreur) {
+      // La campagne est démarrée ; un envoi raté est journalisé pour être refait à la main.
+      journal.error(erreur)
+    }
+    res.status(201).json({ campagne })
+  })
+
+  // Méthode de secours d'US-13 : la liste des Gmail des testeurs, à coller dans la Play Console.
+  routeur.get('/:id/campagne/testeurs.csv', async (req, res) => {
+    const id = idApp(req)
+    const campagne = await lireCampagneApp(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() })
+    if (!campagne) throw introuvable('Campagne introuvable.')
+    res.set('Content-Type', 'text/csv; charset=utf-8')
+    res.set('Content-Disposition', `attachment; filename="testeurs-${campagne.app.package}.csv"`)
+    res.send(['gmail', ...campagne.testeurs.map((t) => t.gmail)].join('\n') + '\n')
+  })
+
   routeur.delete('/:id', async (req, res) => {
     await supprimerApp(pool, { id: idApp(req), developpeurId: developpeurId(req) })
     res.status(204).end()
   })
 
   return routeur
+}
+
+function messageCampagneDemarree(campagne, { email, clientUrl }) {
+  return {
+    a: email,
+    sujet: `La campagne de « ${campagne.app.nom} » a démarré`,
+    texte: [
+      'Bonjour,',
+      '',
+      `${campagne.compteurs.affectes} testeurs sont affectés à votre app « ${campagne.app.nom} » et viennent d’être prévenus.`,
+      `Ils s’inscrivent à votre test fermé dans les prochaines heures. La campagne dure ${campagne.joursCampagne} jours, dont ${campagne.joursExiges} exigés par Google.`,
+      '',
+      'Gardez les testeurs inscrits jusqu’au bout : ne retirez ni le groupe ni la liste de votre test fermé.',
+      '',
+      `Suivre la campagne : ${clientUrl}/mon-compte/apps/${campagne.app.id}/campagne`,
+      '',
+      'L’équipe Nakayo',
+    ].join('\n'),
+  }
 }

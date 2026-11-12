@@ -14,6 +14,7 @@ import {
   validerWhatsapp,
 } from '../services/support.js'
 import { deciderApp, lireAppAdmin, listerAppsAdmin, messageDecisionApp, STATUTS_FILE } from '../services/verificationApps.js'
+import { lireCampagne, listerCampagnesAdmin, messageNouvelleApp, remplacerTesteur, telephonesTesteurs } from '../services/campagnes.js'
 import { transaction } from './auth.js'
 
 const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
@@ -232,6 +233,49 @@ export function routesAdmin(deps) {
     const motif = texte(corps(req).motif)
     exigerChamps({ motif: validerMotifRefus(motif) })
     await deciderSurApp(req, res, 'refusee', motif)
+  })
+
+  // docs/api-sprint3.md §1.4 : suivi des campagnes et remplacement manuel (US-43).
+  const STATUTS_CAMPAGNE = ['en_cours', 'terminee', 'annulee']
+  const idCampagne = (req) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Campagne introuvable.')
+    return req.params.id
+  }
+
+  routeur.get('/campagnes', async (req, res) => {
+    const statut = texte(req.query.statut) || 'en_cours'
+    const page = entier(req.query.page, 1)
+    const parPage = entier(req.query.parPage, 20)
+    const champs = {}
+    if (!STATUTS_CAMPAGNE.includes(statut)) champs.statut = 'valeur_inconnue'
+    if (!Number.isInteger(page) || page < 1 || page > 100000) champs.page = 'format_invalide'
+    if (!Number.isInteger(parPage) || parPage < 1 || parPage > 50) champs.parPage = 'format_invalide'
+    exigerChamps(champs)
+    res.json(await listerCampagnesAdmin(pool, { statut, page, parPage, maintenant: maintenant() }))
+  })
+
+  routeur.get('/campagnes/:id', async (req, res) => {
+    res.json({ campagne: await lireCampagne(pool, idCampagne(req), { maintenant: maintenant(), vue: 'admin' }) })
+  })
+
+  routeur.post('/campagnes/:id/affectations/:affectationId/remplacement', async (req, res) => {
+    const id = idCampagne(req)
+    if (!/^\d{1,18}$/.test(req.params.affectationId)) throw introuvable('Testeur introuvable dans cette campagne.')
+    const motif = texte(corps(req).motif)
+    exigerChamps({ motif: validerMotifRefus(motif) })
+    const instant = maintenant()
+    const { testeurId } = await transaction(pool, (client) =>
+      remplacerTesteur(client, { campagneId: id, affectationId: req.params.affectationId, motif, maintenant: instant }),
+    )
+    const campagne = await lireCampagne(pool, id, { maintenant: instant, vue: 'admin' })
+    try {
+      for (const telephone of await telephonesTesteurs(pool, id, [testeurId])) {
+        await deps.sms.envoyer({ a: telephone, texte: messageNouvelleApp(campagne.app.nom) })
+      }
+    } catch (erreur) {
+      journal.error(erreur)
+    }
+    res.json({ campagne })
   })
 
   // §12.2 Messages envoyés au support.
