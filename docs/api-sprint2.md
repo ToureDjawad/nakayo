@@ -24,6 +24,7 @@ Toutes les routes sont réservées au rôle `developpeur` (cookie du site) : `40
   "comptePlay": "personnel_recent",
   "testObligatoire": true,
   "statut": "brouillon",
+  "motifRefus": null,
   "creeLe": "2026-11-12T09:00:00.000Z",
   "modifieLe": "2026-11-12T09:00:00.000Z"
 }
@@ -36,6 +37,7 @@ Toutes les routes sont réservées au rôle `developpeur` (cookie du site) : `40
 - `testObligatoire` : calculé, `true` seulement pour `personnel_recent`. Les autres comptes ne sont pas soumis à la règle des 12 testeurs pendant 14 jours ; le site les prévient sans bloquer la soumission.
 - `identifiantsTest` : `null` quand `connexionRequise` vaut `false`. Ils seront montrés aux testeurs de la campagne.
 - `statut` : `brouillon`, `en_verification`, `validee` ou `refusee`.
+- `motifRefus` : motif donné par l'équipe quand l'app est refusée (§4), sinon `null`.
 
 ### 1.2 Limites des champs
 
@@ -172,7 +174,30 @@ Configuration :
   - la date et le moyen de paiement, et la référence ;
   - la mention « Remboursé le ... » si le paiement a été remboursé.
 
-## 4. Récapitulatif des routes
+## 4. Vérification des apps par l'équipe (US-14)
+
+Une app payée arrive `en_verification`. Un admin vérifie le lien du test fermé, les instructions et le compte de test, puis valide ou refuse l'app.
+
+- `GET /api/admin/apps?statut=en_verification&page=1&parPage=20` : `200 { "apps": [appAdmin], "total", "page", "parPage" }`.
+  - `statut` : `en_verification` (par défaut, les plus anciennes d'abord), `validee` ou `refusee` (les plus récentes décisions d'abord).
+  - `appAdmin` est l'objet `app` du §1.1, plus :
+    - `developpeur` : `{ id, nom, email, pays, lienFicheDeveloppeur }` ;
+    - `paiement` : `{ reference, moyen, montant, devise, montantLisible, statut, facture, confirmeLe, rembourseLe }` ;
+    - `decideLe`.
+  - `422` sur `statut`, `page` ou `parPage`.
+- `GET /api/admin/apps/:id` : `200 { "app": appAdmin, "historique": [{ "decision", "motif", "admin", "creeLe" }] }`. `404` pour un brouillon ou un id inconnu.
+- `POST /api/admin/apps/:id/validation` : l'app passe `validee`. Le développeur reçoit un email. Réponse identique au détail.
+- `POST /api/admin/apps/:id/refus` : corps `{ "motif": "..." }` (10 à 500 caractères, `422` sinon).
+  - L'app passe `refusee` avec le motif, et son package est libéré.
+  - Le paiement réussi passe `rembourse` (avec `rembourseLe`), et la facture porte la mention « Remboursé le ... ».
+  - Le développeur reçoit un email avec le motif et le montant remboursé.
+- `409 statut_incompatible` (avec `statut`) si l'app a déjà été traitée, par exemple par un autre admin.
+- Remboursement : tant que les comptes marchands ne sont pas ouverts (US-03), le statut `rembourse` est seulement enregistré. Avec un vrai fournisseur, l'adaptateur devra déclencher le remboursement et ne marquer le paiement qu'à sa confirmation.
+- Migration `010_verification_apps.sql` :
+  - colonnes `motif_refus`, `decide_par` et `decide_le` sur `apps` ;
+  - table `decisions_apps` (historique, avec le paiement remboursé).
+
+## 5. Récapitulatif des routes
 
 | Méthode | Route | Rôle | Section |
 |---|---|---|---|
@@ -188,3 +213,7 @@ Configuration :
 | POST | `/api/paiements/:reference/simulation` | développeur (simulation) | §2.3 |
 | POST | `/api/paiements/webhook/:fournisseur` | fournisseur (signé) | §2.4 |
 | GET | `/api/factures/:numero` | développeur, admin | §3 |
+| GET | `/api/admin/apps` | admin | §4 |
+| GET | `/api/admin/apps/:id` | admin | §4 |
+| POST | `/api/admin/apps/:id/validation` | admin | §4 |
+| POST | `/api/admin/apps/:id/refus` | admin | §4 |
