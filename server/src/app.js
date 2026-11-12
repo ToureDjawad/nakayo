@@ -6,6 +6,7 @@ import { gestionnaireErreurs, introuvable } from './lib/erreurs.js'
 import { creerLimitesApi } from './lib/limitesApi.js'
 import { chargerSession } from './middlewares/authentification.js'
 import { routesAdmin } from './routes/admin.js'
+import { routesApps } from './routes/apps.js'
 import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
@@ -49,6 +50,7 @@ export function creerApp(dependances = {}) {
   app.use('/api/admin', routesAdmin(deps))
   app.use('/api/support', routesSupport(deps))
   app.use('/api/tickets', routesTickets(deps))
+  app.use('/api/apps', routesApps(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))

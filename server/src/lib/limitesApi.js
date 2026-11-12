@@ -20,6 +20,8 @@ export function creerLimitesApi(maintenant) {
     inscriptionIp: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
     // §12.1 : 5 messages au support par heure pour un compte.
     tickets: creerLimiteur({ max: 5, fenetreMs: HEURE, maintenant: horloge }),
+    // Sprint 2 §1.3 : 10 apps soumises par heure pour un compte.
+    apps: creerLimiteur({ max: 10, fenetreMs: HEURE, maintenant: horloge }),
   }
 }
 

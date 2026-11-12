@@ -96,7 +96,7 @@ npm run dev:mocks
 
 Ce mode a ses propres comptes fictifs, qui n'existent pas dans la base : voir `client/src/mocks/README.md`.
 
-Le contrat de l'API est dans `docs/api-sprint1.md`.
+Le contrat de l'API est dans `docs/api-sprint1.md` (Sprint 1) et `docs/api-sprint2.md` (Sprint 2).
 
 ## Tests du front
 
