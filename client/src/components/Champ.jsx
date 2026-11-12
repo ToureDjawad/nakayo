@@ -54,7 +54,7 @@ export function Champ({ id, nom, messages, libelle, aide, valeur, erreur, onChan
         {libelle}
       </Libelle>
       {aide && (
-        <p id={idAide} className="mt-0.5 text-sm text-discret">
+        <p id={idAide} className="mt-0.5 text-sm [overflow-wrap:anywhere] text-discret">
           {aide}
         </p>
       )}
@@ -87,7 +87,7 @@ export function ChampMotDePasse({ id, nom, messages, libelle, aide, valeur, erre
     <div>
       <Libelle htmlFor={id ?? `champ-${nom}`}>{libelle}</Libelle>
       {aide && (
-        <p id={idAide} className="mt-0.5 text-sm text-discret">
+        <p id={idAide} className="mt-0.5 text-sm [overflow-wrap:anywhere] text-discret">
           {aide}
         </p>
       )}
@@ -129,7 +129,7 @@ export function ChampSelection({ id, nom, messages, libelle, aide, valeur, erreu
     <div>
       <Libelle htmlFor={id ?? `champ-${nom}`}>{libelle}</Libelle>
       {aide && (
-        <p id={idAide} className="mt-0.5 text-sm text-discret">
+        <p id={idAide} className="mt-0.5 text-sm [overflow-wrap:anywhere] text-discret">
           {aide}
         </p>
       )}
@@ -194,7 +194,7 @@ export function ChampTexte({ id, nom, messages, libelle, aide, valeur, erreur, o
     <div>
       <Libelle htmlFor={id ?? `champ-${nom}`}>{libelle}</Libelle>
       {aide && (
-        <p id={idAide} className="mt-0.5 text-sm text-discret">
+        <p id={idAide} className="mt-0.5 text-sm [overflow-wrap:anywhere] text-discret">
           {aide}
         </p>
       )}
@@ -214,5 +214,56 @@ export function ChampTexte({ id, nom, messages, libelle, aide, valeur, erreur, o
       <Compteur id={idCompteur} longueur={valeur.length} max={max} />
       <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
     </div>
+  )
+}
+
+// Groupe de boutons radio. Le premier bouton porte l'identifiant du champ (focus sur erreur).
+export function ChoixRadio({ id, nom, messages, libelle, aide, valeur, erreur, onChange, onBlur, options }) {
+  const base = useId()
+  const idAide = `${base}-aide`
+  const idErreur = `${base}-erreur`
+  const decrit = [aide && idAide, erreur && idErreur].filter(Boolean).join(' ')
+  const premier = id ?? `champ-${nom}`
+
+  return (
+    <fieldset aria-describedby={decrit || undefined}>
+      <legend className="block text-[13px] font-medium text-texte">{libelle}</legend>
+      {aide && (
+        <p id={idAide} className="mt-0.5 text-sm [overflow-wrap:anywhere] text-discret">
+          {aide}
+        </p>
+      )}
+      <div className="mt-1.5 grid gap-2">
+        {options.map((o, i) => {
+          const idOption = i === 0 ? premier : `${premier}-${o.valeur}`
+          const choisi = valeur === o.valeur
+          return (
+            <label
+              key={o.valeur}
+              htmlFor={idOption}
+              className={`flex cursor-pointer items-start gap-3 rounded-champ border bg-white px-3.5 py-3 ${
+                choisi ? 'border-accent' : erreur ? 'border-erreur' : 'border-trait hover:border-discret'
+              }`}
+            >
+              <input
+                id={idOption}
+                type="radio"
+                name={nom}
+                value={o.valeur}
+                checked={choisi}
+                onChange={() => onChange(o.valeur)}
+                onBlur={onBlur}
+                className="mt-0.5 size-[18px] shrink-0 accent-accent"
+              />
+              <span>
+                <span className="block text-[15px] text-encre">{o.libelle}</span>
+                {o.detail && <span className="mt-0.5 block text-sm text-discret">{o.detail}</span>}
+              </span>
+            </label>
+          )
+        })}
+      </div>
+      <Message id={idErreur} nom={nom} erreur={erreur} messages={messages} />
+    </fieldset>
   )
 }

@@ -3,6 +3,7 @@ import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
 import ContactSupport from './pages/admin/ContactSupport.jsx'
 import MessagesSupport from './pages/admin/MessagesSupport.jsx'
 import EcrireAuSupport from './pages/support/EcrireAuSupport.jsx'
+import FormulaireApp from './pages/apps/FormulaireApp.jsx'
 import Connexion from './pages/connexion/Connexion.jsx'
 import MotDePasseOublie from './pages/connexion/MotDePasseOublie.jsx'
 import ReinitialiserMotDePasse from './pages/connexion/ReinitialiserMotDePasse.jsx'
@@ -22,6 +23,8 @@ export const routes = [
   { path: '/compte-en-attente', element: <CompteEnAttente /> },
   { path: '/mon-compte', element: <CompteEnAttente /> },
   { path: '/mon-compte/support', element: <EcrireAuSupport /> },
+  { path: '/mon-compte/apps/nouvelle', element: <FormulaireApp /> },
+  { path: '/mon-compte/apps/:id/modifier', element: <FormulaireApp /> },
   { path: '/connexion', element: <Connexion /> },
   { path: '/mot-de-passe-oublie', element: <MotDePasseOublie /> },
   { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
