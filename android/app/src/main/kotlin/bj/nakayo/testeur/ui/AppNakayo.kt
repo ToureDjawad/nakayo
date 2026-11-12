@@ -5,6 +5,14 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import bj.nakayo.testeur.ui.apps.EcranApp
+import bj.nakayo.testeur.ui.apps.EcranRapport
+import bj.nakayo.testeur.ui.apps.actions as actionsApp
+import bj.nakayo.testeur.ui.apps.actions as actionsRapport
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -26,7 +34,17 @@ import bj.nakayo.testeur.ui.support.actions as actionsSupport
 @Composable
 fun AppNakayo(navigation: Navigation) {
     val ecran by navigation.ecran.collectAsStateWithLifecycle()
-    BackHandler(enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil || ecran is Ecran.Support) { navigation.retour() }
+    BackHandler(
+        enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil || ecran is Ecran.Support ||
+            ecran is Ecran.App || ecran is Ecran.Rapport,
+    ) { navigation.retour() }
+
+    // Retour dans l'app (depuis le Play Store, l'app testée ou le lendemain) : l'écran est relu.
+    var premiereReprise by remember { mutableStateOf(true) }
+    LifecycleResumeEffect(navigation) {
+        if (premiereReprise) premiereReprise = false else navigation.auPremierPlan()
+        onPauseOrDispose { }
+    }
 
     // Icônes de la barre d'état claires sur le fond vert de l'accueil, sombres ailleurs.
     val vue = LocalView.current
@@ -81,6 +99,7 @@ fun AppNakayo(navigation: Navigation) {
                 surProfil = { (etat as? EtatEspace.Pret)?.let { navigation.allerProfil(it.profil) } },
                 whatsapp = whatsapp,
                 surEcrire = { navigation.allerSupport((etat as? EtatEspace.Pret)?.profil) },
+                surApp = { a -> navigation.allerApp(a, (etat as? EtatEspace.Pret)?.profil) },
                 // Sans WhatsApp ni navigateur sur le téléphone, le bouton ne fait rien plutôt que de planter.
                 surWhatsapp = { numero ->
                     runCatching { liens.openUri(lienWhatsapp(numero, messageSupport((etat as? EtatEspace.Pret)?.profil))) }
@@ -94,6 +113,14 @@ fun AppNakayo(navigation: Navigation) {
         is Ecran.Support -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()
             EcranSupport(etat, actuel.modele.actionsSupport())
+        }
+        is Ecran.App -> {
+            val etat by actuel.modele.etat.collectAsStateWithLifecycle()
+            EcranApp(etat, actuel.modele.actionsApp())
+        }
+        is Ecran.Rapport -> {
+            val etat by actuel.modele.etat.collectAsStateWithLifecycle()
+            EcranRapport(etat, actuel.modele.affectation, actuel.modele.actionsRapport())
         }
     }
 }

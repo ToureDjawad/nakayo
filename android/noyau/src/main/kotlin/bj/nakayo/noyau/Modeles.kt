@@ -139,3 +139,79 @@ internal data class ReponseTicket(val ticket: Ticket)
 
 @Serializable
 internal data class ReponseTickets(val tickets: List<Ticket>)
+
+// ---- Sprint 3 : test quotidien (docs/api-sprint3.md §2) ----
+
+// App du développeur, telle que le testeur la voit.
+@Serializable
+data class AppTestee(
+    val id: String,
+    val nom: String,
+    @SerialName("package") val paquet: String,
+    val instructions: String? = null,
+    val fonctionnalites: List<String> = emptyList(),
+    val connexionRequise: Boolean = false,
+    val identifiantsTest: String? = null,
+)
+
+// Dernière remise à zéro du compteur (US-20) : le jour et ce qui manquait (« connexion », « usage », « rapport »).
+@Serializable
+data class DerniereRemise(val jour: String, val manquait: List<String> = emptyList())
+
+// Une app à tester par le testeur, avec où il en est aujourd'hui (§2.1 et §3.3).
+@Serializable
+data class AffectationTesteur(
+    val id: String,
+    val campagneId: String,
+    val app: AppTestee,
+    val lienInscription: String? = null,
+    val lienPlayStore: String,
+    val jourCampagne: Int,
+    val joursCampagne: Int,
+    val joursExiges: Int,
+    val joursValides: Int,
+    val joursAcquis: Boolean = false,
+    val derniereRemise: DerniereRemise? = null,
+    val inscriptionConfirmee: Boolean,
+    val installationConfirmee: Boolean,
+    val rapportDuJour: Boolean,
+    val retourDetailleAttendu: Boolean,
+    val usageDuJourSecondes: Int = 0,
+    val usageMinimumSecondes: Int = 120,
+)
+
+// Position du téléphone : le serveur l'arrondit à 1 km environ.
+@Serializable
+data class Position(val latitude: Double, val longitude: Double)
+
+// Rapport du jour (§2.4).
+@Serializable
+data class RapportJour(
+    val actions: String,
+    val note: Int,
+    val bug: Boolean,
+    val commentaireBug: String? = null,
+    val fonctionnalites: List<String>,
+    val versionApp: String,
+    val position: Position,
+    val retourDetaille: String? = null,
+)
+
+// Temps passé dans une app testée un jour donné (heure du Bénin, « AAAA-MM-JJ »).
+@Serializable
+data class UsageJour(@SerialName("package") val paquet: String, val jour: String, val secondes: Int)
+
+@Serializable
+data class BilanUsages(val enregistres: Int, val ignores: Int)
+
+@Serializable
+internal data class ReponseApps(val apps: List<AffectationTesteur>)
+
+@Serializable
+internal data class ReponseApp(val app: AffectationTesteur)
+
+@Serializable
+internal data class CorpsInstallation(val sourceInstallation: String)
+
+@Serializable
+internal data class CorpsUsages(val usages: List<UsageJour>)

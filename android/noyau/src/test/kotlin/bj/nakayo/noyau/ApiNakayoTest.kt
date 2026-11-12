@@ -227,4 +227,74 @@ class ApiNakayoTest {
         assertEquals("/api/testeurs/moi/demande-changement-momo", requete.path)
         assertEquals("""{"numeroMomo":"+2290196000000","operateurMomo":"moov","motif":"Nouveau numéro professionnel"}""", requete.body.readUtf8())
     }
+
+    private val app = """{"id":"31","campagneId":"4","app":{"id":"12","nom":"Marché Facile","package":"bj.studioawa.marche",
+        |"instructions":"…","fonctionnalites":["Recherche","Panier"],"connexionRequise":false,"identifiantsTest":null},
+        |"lienInscription":"https://play.google.com/apps/testing/bj.studioawa.marche",
+        |"lienPlayStore":"https://play.google.com/store/apps/details?id=bj.studioawa.marche",
+        |"jourCampagne":3,"joursCampagne":16,"joursExiges":14,"joursValides":2,"joursAcquis":false,
+        |"derniereRemise":{"jour":"2026-11-11","manquait":["usage","rapport"]},
+        |"inscriptionConfirmee":true,"installationConfirmee":false,"rapportDuJour":false,"retourDetailleAttendu":true,
+        |"usageDuJourSecondes":95,"usageMinimumSecondes":120,"champFutur":1}""".trimMargin()
+
+    @Test
+    fun `liste des apps à tester`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(200, """{"apps":[$app]}""")
+        val apps = (api.mesApps() as Resultat.Succes).valeur
+        assertEquals("bj.studioawa.marche", apps.single().app.paquet)
+        assertEquals(listOf("usage", "rapport"), apps.single().derniereRemise?.manquait)
+        val requete = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/apps", requete.path)
+        assertEquals("Bearer jeton-secret", requete.getHeader("Authorization"))
+    }
+
+    @Test
+    fun `capture d'inscription en multipart, installation et rapport en JSON`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repeat(3) { repondre(200, """{"app":$app}""") }
+        assertIs<Resultat.Succes<AffectationTesteur>>(api.confirmerInscription("31", Photo(byteArrayOf(1, 2), "image/png")))
+        val inscription = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/apps/31/inscription", inscription.path)
+        val corps = inscription.body.readUtf8()
+        assertTrue("name=\"capture\"; filename=\"capture.png\"" in corps)
+
+        api.confirmerInstallation("31", "com.android.vending")
+        val installation = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/apps/31/installation", installation.path)
+        assertEquals("""{"sourceInstallation":"com.android.vending"}""", installation.body.readUtf8())
+
+        val rapport = RapportJour("J'ai cherché du riz.", 4, false, null, listOf("Recherche"), "1.0.3", Position(6.36536, 2.41833))
+        api.envoyerRapport("31", rapport)
+        val envoi = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/apps/31/rapports", envoi.path)
+        assertEquals(
+            """{"actions":"J'ai cherché du riz.","note":4,"bug":false,"fonctionnalites":["Recherche"],"versionApp":"1.0.3",""" +
+                """"position":{"latitude":6.36536,"longitude":2.41833}}""",
+            envoi.body.readUtf8(),
+        )
+    }
+
+    @Test
+    fun `rapport déjà envoyé, signal et temps d'utilisation`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(409, """{"erreur":{"code":"rapport_deja_envoye","message":"Déjà envoyé."}}""")
+        val rapport = RapportJour("J'ai cherché du riz.", 4, true, "Le panier se vide.", listOf("Panier"), "1.0.3", Position(6.0, 2.0))
+        assertEquals("rapport_deja_envoye", ((api.envoyerRapport("31", rapport) as Resultat.Echec).erreur as ErreurApi.Http).code)
+        serveur.takeRequest()
+
+        repondre(200, """{"recuLe":"2026-11-12T09:00:00.000Z"}""")
+        assertEquals(Resultat.Succes(Unit), api.signaler())
+        assertEquals("/api/testeurs/moi/signal", serveur.takeRequest().path)
+
+        repondre(200, """{"enregistres":1,"ignores":1}""")
+        val bilan = api.envoyerUsages(listOf(UsageJour("bj.studioawa.marche", "2026-11-12", 130), UsageJour("x.y", "2026-11-12", 5)))
+        assertEquals(Resultat.Succes(BilanUsages(1, 1)), bilan)
+        val usages = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/usages", usages.path)
+        assertEquals(
+            """{"usages":[{"package":"bj.studioawa.marche","jour":"2026-11-12","secondes":130},{"package":"x.y","jour":"2026-11-12","secondes":5}]}""",
+            usages.body.readUtf8(),
+        )
+    }
 }

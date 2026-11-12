@@ -1,5 +1,6 @@
 package bj.nakayo.testeur.ui.espace
 
+import bj.nakayo.noyau.AffectationTesteur
 import bj.nakayo.noyau.Appareil
 import bj.nakayo.noyau.ErreurApi
 import bj.nakayo.noyau.ProfilTesteur
@@ -14,7 +15,13 @@ import kotlinx.coroutines.launch
 
 sealed interface EtatEspace {
     data object Chargement : EtatEspace
-    data class Pret(val profil: ProfilTesteur, val deconnexionEnCours: Boolean = false) : EtatEspace
+    data class Pret(
+        val profil: ProfilTesteur,
+        val deconnexionEnCours: Boolean = false,
+        // Apps à tester (compte validé) ; null tant qu'elles ne sont pas chargées.
+        val apps: List<AffectationTesteur>? = null,
+        val erreurApps: String? = null,
+    ) : EtatEspace
     data class Erreur(val message: String) : EtatEspace
 }
 
@@ -25,6 +32,8 @@ class EspaceModele(
     profilConnu: ProfilTesteur?,
     // Téléphone actuel, renvoyé au serveur une fois par ouverture (contrôle d'appareil partagé, US-07 et US-10).
     private val appareil: (suspend () -> Appareil)?,
+    // Compte validé : l'ouverture de l'app compagnon est signalée au serveur (US-18).
+    private val surValide: () -> Unit = {},
     // Appelé après la déconnexion, ou quand la session a expiré (avec un message).
     private val surSortie: (message: String?) -> Unit,
 ) {
@@ -48,7 +57,7 @@ class EspaceModele(
         if (appareilSynchronise) return
         appareilSynchronise = true
         when (val r = service.modifierProfil(appareil = lire())) {
-            is Resultat.Succes -> if (etatInterne.value is EtatEspace.Pret) etatInterne.value = EtatEspace.Pret(r.valeur)
+            is Resultat.Succes -> (etatInterne.value as? EtatEspace.Pret)?.let { etatInterne.value = it.copy(profil = r.valeur) }
             // Sans réseau, nouvel essai à la prochaine actualisation.
             is Resultat.Echec -> appareilSynchronise = false
         }
@@ -59,8 +68,13 @@ class EspaceModele(
         portee.launch {
             when (val r = service.moi()) {
                 is Resultat.Succes -> {
-                    etatInterne.value = EtatEspace.Pret(r.valeur)
+                    val avant = etatInterne.value as? EtatEspace.Pret
+                    etatInterne.value = EtatEspace.Pret(r.valeur, apps = avant?.apps)
                     synchroniserAppareil()
+                    if (r.valeur.statut == "valide") {
+                        surValide()
+                        chargerApps()
+                    }
                 }
                 is Resultat.Echec -> {
                     val code = (r.erreur as? ErreurApi.Http)?.code
@@ -71,6 +85,19 @@ class EspaceModele(
                         etatInterne.value is EtatEspace.Pret -> Unit
                         else -> etatInterne.value = EtatEspace.Erreur(MessagesErreur.pour(r.erreur))
                     }
+                }
+            }
+        }
+    }
+
+    private suspend fun chargerApps() {
+        when (val r = service.mesApps()) {
+            is Resultat.Succes -> (etatInterne.value as? EtatEspace.Pret)?.let { etatInterne.value = it.copy(apps = r.valeur, erreurApps = null) }
+            is Resultat.Echec -> {
+                if ((r.erreur as? ErreurApi.Http)?.code == "non_authentifie") return surSortie(MessagesErreur.pour(r.erreur))
+                // Hors ligne avec des apps déjà affichées : on les garde.
+                (etatInterne.value as? EtatEspace.Pret)?.let {
+                    if (it.apps == null) etatInterne.value = it.copy(erreurApps = MessagesErreur.pour(r.erreur))
                 }
             }
         }

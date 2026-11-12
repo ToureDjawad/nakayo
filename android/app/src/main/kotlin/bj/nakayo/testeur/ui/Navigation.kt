@@ -1,6 +1,11 @@
 package bj.nakayo.testeur.ui
 
+import bj.nakayo.noyau.AffectationTesteur
 import bj.nakayo.noyau.Appareil
+import bj.nakayo.noyau.Resultat
+import bj.nakayo.testeur.campagne.OutilsApps
+import bj.nakayo.testeur.ui.apps.AppModele
+import bj.nakayo.testeur.ui.apps.RapportModele
 import bj.nakayo.noyau.ProfilTesteur
 import bj.nakayo.noyau.ServiceTesteur
 import bj.nakayo.testeur.ui.accueil.AccueilModele
@@ -28,6 +33,8 @@ sealed interface Ecran {
     data class Espace(val modele: EspaceModele) : Ecran
     data class Profil(val modele: ProfilModele) : Ecran
     data class Support(val modele: SupportModele) : Ecran
+    data class App(val modele: AppModele) : Ecran
+    data class Rapport(val modele: RapportModele) : Ecran
 }
 
 // Parcours de l'app. Chaque écran a sa portée, annulée quand on le quitte.
@@ -38,10 +45,17 @@ class Navigation(
     // Réduction des photos de l'inscription (Android) ; remplacée dans les tests.
     private val compresser: (File) -> ByteArray,
     private val calcul: CoroutineDispatcher = Dispatchers.Default,
+    // Apps installées et position (Android) ; remplacées dans les tests.
+    private val outils: OutilsApps = OutilsApps.Aucun,
+    // Jour du Bénin, pour signaler l'ouverture de l'app une fois par jour.
+    private val aujourdhui: () -> String = { jourBenin() },
 ) {
     private val ecranInterne = MutableStateFlow<Ecran>(Ecran.Demarrage)
     val ecran: StateFlow<Ecran> = ecranInterne.asStateFlow()
     private var porteeEcran: CoroutineScope? = null
+    private var jourSignale: String? = null
+    // Profil de l'espace, gardé pendant la visite des écrans d'app.
+    private var profilEspace: ProfilTesteur? = null
 
     init {
         portee.launch {
@@ -84,7 +98,67 @@ class Navigation(
     }
 
     fun allerEspace(profil: ProfilTesteur?): Unit = changer {
-        Ecran.Espace(EspaceModele(service, it, profil, appareil, surSortie = { message -> allerAccueil(message) }))
+        Ecran.Espace(
+            EspaceModele(
+                service, it, profil, appareil,
+                surSortie = { message -> allerAccueil(message) },
+                surValide = ::signalerOuverture,
+            ),
+        )
+    }
+
+    // US-17 : une app à tester, ouverte depuis la liste de l'espace.
+    fun allerApp(affectation: AffectationTesteur, profil: ProfilTesteur?, information: String? = null): Unit = changer {
+        profilEspace = profil
+        Ecran.App(
+            AppModele(
+                service = service,
+                portee = it,
+                affectation = affectation,
+                outils = outils,
+                compresser = compresser,
+                calcul = calcul,
+                information = information,
+                surRapport = { a -> allerRapport(a) },
+                surQuitter = { allerEspace(profilEspace) },
+                surSessionExpiree = { message -> allerAccueil(message) },
+            ),
+        )
+    }
+
+    // US-19 : rapport du jour ; retour à l'app une fois envoyé.
+    fun allerRapport(affectation: AffectationTesteur): Unit = changer {
+        Ecran.Rapport(
+            RapportModele(
+                service = service,
+                portee = it,
+                affectation = affectation,
+                outils = outils,
+                surEnvoye = { aJour -> allerApp(aJour, profilEspace, "Rapport envoyé. Merci, à demain !") },
+                surQuitter = { allerApp(affectation, profilEspace) },
+                surSessionExpiree = { message -> allerAccueil(message) },
+            ),
+        )
+    }
+
+    // L'app revient au premier plan : on relit l'écran affiché (un nouveau jour a pu commencer).
+    fun auPremierPlan() {
+        when (val actuel = ecranInterne.value) {
+            is Ecran.Espace -> actuel.modele.actualiser()
+            is Ecran.App -> {
+                signalerOuverture()
+                actuel.modele.actualiser()
+            }
+            else -> Unit
+        }
+    }
+
+    // US-18 : une ouverture de l'app compagnon par jour suffit ; nouvel essai si le réseau manque.
+    private fun signalerOuverture() {
+        val jour = aujourdhui()
+        if (jourSignale == jour) return
+        jourSignale = jour
+        portee.launch { if (service.signaler() is Resultat.Echec && jourSignale == jour) jourSignale = null }
     }
 
     fun allerProfil(profil: ProfilTesteur): Unit = changer {
@@ -127,6 +201,14 @@ class Navigation(
             true
         }
         is Ecran.Support -> {
+            actuel.modele.retour()
+            true
+        }
+        is Ecran.App -> {
+            actuel.modele.retour()
+            true
+        }
+        is Ecran.Rapport -> {
             actuel.modele.retour()
             true
         }

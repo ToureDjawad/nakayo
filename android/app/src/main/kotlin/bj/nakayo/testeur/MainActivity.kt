@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             NakayoTheme {
                 val modele: AppViewModel = viewModel(
-                    factory = viewModelFactory { initializer { AppViewModel(application.service, application.identiteAppareil::appareil) } },
+                    factory = viewModelFactory { initializer { AppViewModel(application.service, application.identiteAppareil::appareil, application.outils) } },
                 )
                 AppNakayo(modele.navigation)
             }
