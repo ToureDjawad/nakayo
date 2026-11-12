@@ -5,7 +5,8 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 import bj.nakayo.noyau.ServiceTesteur
 
-fun ComposeTestRule.attendreTexte(texte: String, delaiMs: Long = 10_000) {
+// 30 s : l'émulateur de la CI rend l'interface en logiciel, le premier écran peut être lent.
+fun ComposeTestRule.attendreTexte(texte: String, delaiMs: Long = 30_000) {
     waitUntil(delaiMs) { onAllNodes(hasText(texte, substring = true)).fetchSemanticsNodes().isNotEmpty() }
 }
 
