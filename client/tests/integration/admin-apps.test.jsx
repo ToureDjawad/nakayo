@@ -144,6 +144,6 @@ describe('Décision vue par le développeur (US-14)', () => {
   it('une app validée annonce la campagne', async () => {
     simulerApi({ ...base, 'GET /api/apps': { corps: { apps: [{ ...APP, statut: 'validee' }] } } })
     rendreA('/mon-compte')
-    expect(await screen.findByText('Votre app est validée : la campagne de test démarre bientôt.')).toBeInTheDocument()
+    expect(await screen.findByText('Votre app est validée : terminez la liste de vérification, puis démarrez la campagne.')).toBeInTheDocument()
   })
 })

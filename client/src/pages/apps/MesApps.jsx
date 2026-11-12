@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { dateCourte } from '../../lib/campagnes.js'
 import { listerMesApps } from '../../api/apps.js'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton, Indicateur } from '../../components/Bouton.jsx'
@@ -89,10 +90,22 @@ export function MesApps() {
                     {app.statut === 'en_verification' && (
                       <p className="mt-2 text-sm text-texte">Offre payée. L’équipe vérifie votre app sous 24 h ouvrées avant de lancer la campagne.</p>
                     )}
-                    {app.statut === 'validee' && (
-                      <p className="mt-2 text-sm text-texte">Votre app est validée : la campagne de test démarre bientôt.</p>
+                    {app.statut === 'validee' && !app.campagne && (
+                      <p className="mt-2 text-sm text-texte">Votre app est validée : terminez la liste de vérification, puis démarrez la campagne.</p>
                     )}
-                    {['en_verification', 'validee'].includes(app.statut) && (
+                    {app.campagne && (
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <Link to={`/mon-compte/apps/${app.id}/campagne`} aria-label={`Suivre la campagne de ${app.nom}`} className={lienBoutonPetit}>
+                          {app.campagne.statut === 'en_cours' ? 'Suivre la campagne' : 'Voir la campagne'}
+                        </Link>
+                        <span className="text-sm text-texte">
+                          {app.campagne.statut === 'en_cours'
+                            ? `Campagne en cours depuis le ${dateCourte(app.campagne.demarreeLe)}.`
+                            : 'Campagne terminée.'}
+                        </span>
+                      </div>
+                    )}
+                    {['en_verification', 'validee'].includes(app.statut) && !app.campagne && (
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                         <Link
                           to={`/mon-compte/apps/${app.id}/preparation`}

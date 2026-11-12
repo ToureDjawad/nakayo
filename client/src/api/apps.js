@@ -29,3 +29,12 @@ export function lirePreparation(id, { signal } = {}) {
 export function enregistrerPreparation(id, elements) {
   return requete(`/apps/${encodeURIComponent(id)}/preparation`, { methode: 'PUT', corps: { elements } })
 }
+
+// Campagne de test (docs/api-sprint3.md §1.3).
+export function lireCampagne(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne`, { signal })
+}
+
+export function demarrerCampagne(id) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne`, { methode: 'POST' })
+}

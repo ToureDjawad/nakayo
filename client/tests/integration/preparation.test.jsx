@@ -53,7 +53,7 @@ describe('Préparer le lancement (US-42, US-13)', () => {
     await screen.findByText('0 sur 6 points vérifiés')
     for (const caseACocher of screen.getAllByRole('checkbox')) await user.click(caseACocher)
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
-    expect(await screen.findByText('Votre app est validée et prête : la campagne peut démarrer.')).toBeInTheDocument()
+    expect(await screen.findByText('Votre app est validée : vous pouvez démarrer la campagne ci-dessous.')).toBeInTheDocument()
   })
 
   it('sans groupe configuré, explique que l’adresse arrive par email', async () => {

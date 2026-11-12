@@ -61,3 +61,23 @@ export function validerApp(id) {
 export function refuserApp(id, motif) {
   return requete(`/admin/apps/${encodeURIComponent(id)}/refus`, { methode: 'POST', corps: { motif } })
 }
+
+// Suivi des campagnes (docs/api-sprint3.md §1.4).
+export function listerCampagnes({ statut = 'en_cours', page = 1 } = {}, { signal } = {}) {
+  const parametres = new URLSearchParams()
+  if (statut !== 'en_cours') parametres.set('statut', statut)
+  if (page > 1) parametres.set('page', String(page))
+  const requeteTexte = parametres.toString()
+  return requete(`/admin/campagnes${requeteTexte ? `?${requeteTexte}` : ''}`, { signal })
+}
+
+export function lireCampagneAdmin(id, { signal } = {}) {
+  return requete(`/admin/campagnes/${encodeURIComponent(id)}`, { signal })
+}
+
+export function remplacerTesteur(campagneId, affectationId, motif) {
+  return requete(`/admin/campagnes/${encodeURIComponent(campagneId)}/affectations/${encodeURIComponent(affectationId)}/remplacement`, {
+    methode: 'POST',
+    corps: { motif },
+  })
+}

@@ -1,0 +1,24 @@
+// Aides d'affichage des campagnes de test (docs/api-sprint3.md §1).
+
+// Fichier CSV des Gmail des testeurs : la méthode de secours d'US-13.
+export function csvGmails(testeurs) {
+  return ['gmail', ...testeurs.map((t) => t.gmail)].join('\n') + '\n'
+}
+
+// Propose le fichier au téléchargement dans le navigateur.
+export function telechargerTexte(contenu, nomFichier, type = 'text/csv;charset=utf-8') {
+  const url = URL.createObjectURL(new Blob([contenu], { type }))
+  const lien = document.createElement('a')
+  lien.href = url
+  lien.download = nomFichier
+  document.body.append(lien)
+  lien.click()
+  lien.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// « 12 nov. 2026 » à l'heure du Bénin.
+const formatDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Porto-Novo' })
+export function dateCourte(iso) {
+  return iso ? formatDate.format(new Date(iso)) : ''
+}

@@ -127,10 +127,94 @@ function versApp(a) {
     testObligatoire: a.comptePlay === 'personnel_recent',
     motifRefus: a.motifRefus ?? null,
     preparation: a.preparation ?? { elements: [], complete: false, completeLe: null },
+    campagne: null,
   }
+  const campagne = campagneDeLApp(a.id)
+  if (campagne) copie.campagne = { id: campagne.id, statut: campagne.statut, demarreeLe: campagne.demarreeLe }
   delete copie.developpeurId
   delete copie.decideLe
   return copie
+}
+
+// Campagnes de test (docs/api-sprint3.md §1). Les testeurs sont simulés côté navigateur.
+const JOURS_CAMPAGNE = 16
+const VILLES = ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Bohicon']
+const MODELES = ['Tecno Spark 10', 'Infinix Hot 30', 'Samsung Galaxy A14', 'Itel A70', 'Xiaomi Redmi 12C']
+
+function campagnes() {
+  const b = base()
+  b.campagnes ??= []
+  return b.campagnes
+}
+
+function testeurSimule(n, maintenant) {
+  return {
+    id: nouvelId(),
+    testeurId: nouvelId(),
+    statut: 'active',
+    nom: `Testeur simulé ${n}`,
+    telephone: `+2290197${String(100000 + n).slice(-6)}`,
+    ville: VILLES[n % VILLES.length],
+    modele: MODELES[n % MODELES.length],
+    gmail: `testeur.simule${n}@gmail.com`,
+    affecteLe: maintenant,
+    inscriptionConfirmeeLe: null,
+    installationConfirmeeLe: null,
+    joursValides: 0,
+    nombreRemises: 0,
+    remplaceeLe: null,
+    motifRemplacement: null,
+  }
+}
+
+function jourCampagne(c) {
+  const ecart = Math.floor((Date.now() - new Date(c.demarreeLe).getTime()) / (24 * 3600 * 1000))
+  return Math.min(JOURS_CAMPAGNE, Math.max(1, ecart + 1))
+}
+
+function versCampagne(c, vue = 'developpeur') {
+  const app = apps().find((a) => a.id === c.appId)
+  const actifs = c.testeurs.filter((t) => t.statut !== 'remplacee')
+  const inscrits = actifs.filter((t) => t.inscriptionConfirmeeLe).length
+  const jour = jourCampagne(c)
+  const admin = vue === 'admin'
+  const dev = admin ? base().utilisateurs.find((u) => u.id === c.developpeurId) : null
+  return {
+    id: c.id,
+    app: { id: app.id, nom: app.nom, package: app.package },
+    ...(admin ? { developpeur: { id: dev.id, nom: dev.nom, email: dev.email } } : {}),
+    statut: c.statut,
+    jour,
+    joursCampagne: JOURS_CAMPAGNE,
+    joursExiges: 14,
+    testeursVises: 15,
+    groupeGoogle: 'testeurs@nakayo.test',
+    demarreeLe: c.demarreeLe,
+    finPrevueLe: new Date(new Date(c.demarreeLe).getTime() + JOURS_CAMPAGNE * 24 * 3600 * 1000).toISOString(),
+    termineeLe: c.termineeLe ?? null,
+    compteurs: { affectes: actifs.length, inscritsConfirmes: inscrits, installes: actifs.filter((t) => t.installationConfirmeeLe).length },
+    alerteInscrits: c.statut === 'en_cours' && jour >= 2 && inscrits < 13,
+    remplacementPossible: admin && c.statut === 'en_cours' && jour <= 2,
+    testeurs: (admin ? c.testeurs : actifs).map((t, i) => {
+      const commun = {
+        id: t.id,
+        statut: t.statut,
+        ville: t.ville,
+        gmail: t.gmail,
+        inscriptionConfirmee: Boolean(t.inscriptionConfirmeeLe),
+        installationConfirmee: Boolean(t.installationConfirmeeLe),
+        joursValides: t.joursValides,
+      }
+      if (!admin) return { ...commun, numero: i + 1 }
+      return { ...commun, ...t }
+    }),
+  }
+}
+
+function campagneDeLApp(appId) {
+  return campagnes()
+    .filter((c) => c.appId === appId)
+    .at(-1)
 }
 
 function exigerDeveloppeur() {
@@ -662,6 +746,44 @@ export const routes = [
     },
   },
   {
+    methode: 'GET',
+    chemin: '/api/apps/:id/campagne',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      const campagne = campagneDeLApp(app.id)
+      return ok({ campagne: campagne ? versCampagne(campagne) : null })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/apps/:id/campagne',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      if (app.statut !== 'validee') return erreur(409, 'statut_incompatible', { statut: app.statut })
+      if (!app.preparation?.complete) return erreur(409, 'preparation_incomplete')
+      if (campagneDeLApp(app.id)) return erreur(409, 'campagne_existante')
+      const maintenant = horodatage()
+      const campagne = {
+        id: nouvelId(),
+        appId: app.id,
+        developpeurId: utilisateur.id,
+        statut: 'en_cours',
+        demarreeLe: maintenant,
+        testeurs: Array.from({ length: 15 }, (_, i) => testeurSimule(campagnes().length * 15 + i + 1, maintenant)),
+      }
+      campagnes().push(campagne)
+      sauver()
+      console.info(`[mocks] SMS envoyés aux 15 testeurs de « ${app.nom} »`)
+      return ok({ campagne: versCampagne(campagne) }, 201)
+    },
+  },
+  {
     methode: 'PUT',
     chemin: '/api/apps/:id/preparation',
     traiter({ params, corps }) {
@@ -670,6 +792,7 @@ export const routes = [
       const app = appDuDeveloppeur(params.id, utilisateur)
       if (!app) return erreur(404, 'introuvable')
       if (!['en_verification', 'validee'].includes(app.statut)) return erreur(409, 'statut_incompatible', { statut: app.statut })
+      if (campagneDeLApp(app.id)) return erreur(409, 'campagne_existante')
       const elements = corps?.elements
       if (!Array.isArray(elements)) return erreur(422, 'validation', { champs: { elements: 'requis' } })
       if (elements.some((e) => !ELEMENTS_PREPARATION.includes(e))) return erreur(422, 'validation', { champs: { elements: 'valeur_inconnue' } })
@@ -797,6 +920,60 @@ export const routes = [
       const paiement = paiements().find((p) => p.facture === params.numero && p.developpeurId === utilisateur.id)
       if (!paiement) return erreur(404, 'introuvable')
       return { statut: 200, corps: null, brut: pdfFacture(params.numero), entetes: { 'Content-Type': 'application/pdf' } }
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/admin/campagnes',
+    traiter({ query }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const statut = query.get('statut') || 'en_cours'
+      if (!['en_cours', 'terminee', 'annulee'].includes(statut)) return erreur(422, 'validation', { champs: { statut: 'valeur_inconnue' } })
+      const page = Number(query.get('page') || 1)
+      const liste = campagnes()
+        .filter((c) => c.statut === statut)
+        .sort((a, b) => (statut === 'en_cours' ? a.demarreeLe.localeCompare(b.demarreeLe) : b.demarreeLe.localeCompare(a.demarreeLe)))
+      const resumes = liste.slice((page - 1) * 20, page * 20).map((c) => {
+        const { testeurs: _detail, ...resume } = versCampagne(c, 'admin')
+        return resume
+      })
+      return ok({ campagnes: resumes, total: liste.length, page, parPage: 20 })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/admin/campagnes/:id',
+    traiter({ params }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const campagne = campagnes().find((c) => c.id === params.id)
+      return campagne ? ok({ campagne: versCampagne(campagne, 'admin') }) : erreur(404, 'introuvable')
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/campagnes/:id/affectations/:affectationId/remplacement',
+    traiter({ params, corps }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const campagne = campagnes().find((c) => c.id === params.id)
+      if (!campagne) return erreur(404, 'introuvable')
+      const motif = (corps?.motif ?? '').trim()
+      const code = validerMotifRefus(motif)
+      if (code) return erreur(422, 'validation', { champs: { motif: code } })
+      if (campagne.statut !== 'en_cours') return erreur(409, 'statut_incompatible', { statut: campagne.statut })
+      if (jourCampagne(campagne) > 2) return erreur(409, 'delai_depasse')
+      const sortant = campagne.testeurs.find((t) => t.id === params.affectationId)
+      if (!sortant) return erreur(404, 'introuvable')
+      if (sortant.statut !== 'active') return erreur(409, 'statut_incompatible', { statut: sortant.statut })
+      const maintenant = horodatage()
+      const entrant = testeurSimule(campagne.testeurs.length + 100, maintenant)
+      Object.assign(sortant, { statut: 'remplacee', remplaceeLe: maintenant, motifRemplacement: motif })
+      campagne.testeurs.push(entrant)
+      sauver()
+      console.info(`[mocks] SMS envoyé au remplaçant de ${sortant.nom}`)
+      return ok({ campagne: versCampagne(campagne, 'admin') })
     },
   },
   {
