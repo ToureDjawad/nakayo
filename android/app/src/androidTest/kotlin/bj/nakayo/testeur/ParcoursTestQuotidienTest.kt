@@ -107,4 +107,18 @@ class ParcoursTestQuotidienTest {
             compose.onNodeWithText("ne vous désinscrivez pas", substring = true).assertExists()
         }
     }
+
+    // US-23 : le portefeuille, depuis l'espace, puis retour à la liste des apps.
+    @Test
+    fun portefeuilleDepuisLEspace() {
+        lancer().use {
+            compose.attendreTexte("Votre app à tester")
+            toucher("Mon portefeuille")
+            compose.attendreTexte("Gains en attente")
+            compose.onNodeWithText("Jour atteint : 6 sur 14 jours validés").assertExists()
+            compose.onNodeWithText("Référence de transaction : MP2611120001").performScrollTo().assertExists()
+            compose.onNodeWithContentDescription("Retour").performClick()
+            compose.attendreTexte("Votre app à tester")
+        }
+    }
 }

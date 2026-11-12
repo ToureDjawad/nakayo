@@ -204,6 +204,53 @@ data class UsageJour(@SerialName("package") val paquet: String, val jour: String
 @Serializable
 data class BilanUsages(val enregistres: Int, val ignores: Int)
 
+// US-23 : portefeuille du testeur (docs/api-sprint4.md §3).
+@Serializable
+data class CompteMomo(val operateur: String, val numeroMasque: String)
+
+// Une app qui rapportera 500 FCFA : « en_test » (jours atteints) ou « en_paiement » (versement en route).
+@Serializable
+data class GainEnAttente(
+    val affectationId: String,
+    val appNom: String,
+    val etat: String,
+    val joursValides: Int,
+    val joursExiges: Int,
+    val montant: Int,
+    val devise: String = "XOF",
+    val montantLisible: String,
+    val prevuLe: String? = null,
+)
+
+// Un versement arrivé, avec la référence de la transaction Mobile Money.
+@Serializable
+data class VersementTesteur(
+    val reference: String,
+    val referenceTransaction: String? = null,
+    val appNom: String,
+    val montant: Int,
+    val devise: String = "XOF",
+    val montantLisible: String,
+    val operateur: String,
+    val numeroMasque: String,
+    val verseLe: String,
+)
+
+@Serializable
+data class Portefeuille(
+    val devise: String = "XOF",
+    val totalEnAttente: Int,
+    val totalEnAttenteLisible: String,
+    val totalVerse: Int,
+    val totalVerseLisible: String,
+    val compte: CompteMomo? = null,
+    val enAttente: List<GainEnAttente> = emptyList(),
+    val historique: List<VersementTesteur> = emptyList(),
+)
+
+@Serializable
+internal data class ReponsePortefeuille(val portefeuille: Portefeuille)
+
 @Serializable
 internal data class ReponseApps(val apps: List<AffectationTesteur>)
 

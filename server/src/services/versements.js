@@ -251,6 +251,73 @@ export async function listerVersementsAdmin(db, { statut, reference }) {
   return rows.map(versVersementAdmin)
 }
 
+// US-23 : portefeuille du testeur. « En attente » : les apps en cours de test (500 FCFA à
+// gagner avec les 14 jours) et les versements pas encore arrivés ; puis l'historique.
+export async function lirePortefeuille(db, { testeurId }) {
+  const { rows: profil } = await db.query('SELECT numero_momo, operateur_momo FROM profils_testeurs WHERE utilisateur_id = $1', [testeurId])
+  const { rows: enTest } = await db.query(
+    `SELECT a.id, ap.nom AS app_nom, a.jours_valides, c.jours_exiges, c.fin_prevue_le
+       FROM affectations a JOIN campagnes c ON c.id = a.campagne_id JOIN apps ap ON ap.id = a.app_id
+      WHERE a.testeur_id = $1 AND a.statut = 'active' AND c.statut = 'en_cours'
+      ORDER BY a.affecte_le, a.id`,
+    [testeurId],
+  )
+  const { rows: verses } = await db.query(`${SELECT_VERSEMENT} WHERE v.testeur_id = $1 ORDER BY v.cree_le DESC, v.id DESC`, [testeurId])
+  const { montant, devise } = REMUNERATION_TESTEUR
+
+  const enAttente = [
+    ...enTest.map((l) => ({
+      affectationId: String(l.id),
+      appNom: l.app_nom,
+      etat: 'en_test',
+      joursValides: Math.min(l.jours_valides, l.jours_exiges),
+      joursExiges: l.jours_exiges,
+      montant,
+      devise,
+      montantLisible: montantLisible(montant, devise),
+      prevuLe: l.fin_prevue_le.toISOString(),
+    })),
+    ...verses
+      .filter((v) => v.statut !== 'verse')
+      .map((v) => ({
+        affectationId: String(v.affectation_id),
+        appNom: v.app_nom,
+        // Un versement abandonné reste « en paiement » pour le testeur : l'équipe le reprend.
+        etat: 'en_paiement',
+        joursValides: 14,
+        joursExiges: 14,
+        montant: v.montant,
+        devise: v.devise,
+        montantLisible: montantLisible(v.montant, v.devise),
+        prevuLe: null,
+      })),
+  ]
+  const historique = verses
+    .filter((v) => v.statut === 'verse')
+    .map((v) => ({
+      reference: v.reference,
+      referenceTransaction: v.reference_fournisseur,
+      appNom: v.app_nom,
+      montant: v.montant,
+      devise: v.devise,
+      montantLisible: montantLisible(v.montant, v.devise),
+      operateur: v.operateur_momo,
+      numeroMasque: masquerNumero(v.numero_momo),
+      verseLe: v.verse_le.toISOString(),
+    }))
+  const somme = (liste) => liste.reduce((total, l) => total + l.montant, 0)
+  return {
+    devise,
+    totalEnAttente: somme(enAttente),
+    totalEnAttenteLisible: montantLisible(somme(enAttente), devise),
+    totalVerse: somme(historique),
+    totalVerseLisible: montantLisible(somme(historique), devise),
+    compte: profil.length ? { operateur: profil[0].operateur_momo, numeroMasque: masquerNumero(profil[0].numero_momo) } : null,
+    enAttente,
+    historique,
+  }
+}
+
 // Passage toutes les 15 minutes, et un premier au démarrage.
 export function demarrerVersements(deps, { intervalleMs = 15 * 60 * 1000 } = {}) {
   let enCours = null

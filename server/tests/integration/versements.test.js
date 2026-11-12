@@ -14,6 +14,7 @@ let test
 let admin
 let momo
 let affectations
+let testeurs
 
 // Fournisseur de test : répond selon `reponses` (une par appel, la dernière se répète).
 function creerMomoTest(reponses = [{ statut: 'verse' }]) {
@@ -71,7 +72,7 @@ async function preparer(reponses) {
   await creerUtilisateur({ email: 'admin@nakayo.bj', role: 'admin', statut: 'valide' })
   const dev = await connecter('awa@studio.bj')
   admin = await connecter('admin@nakayo.bj')
-  await creerTesteursValides(15)
+  testeurs = await creerTesteursValides(15)
   const id = (await request(test.app).post('/api/apps').set('Cookie', dev).send(APP)).body.app.id
   const { reference } = (await request(test.app).post(`/api/apps/${id}/paiements`).set('Cookie', dev).send({ moyen: 'carte' })).body.paiement
   await request(test.app).post(`/api/paiements/${reference}/simulation`).set('Cookie', dev).send({ resultat: 'reussi' })
@@ -228,5 +229,47 @@ describe('confirmation par webhook (US-22)', () => {
     expect((await versements())[0]).toMatchObject({ statut: 'a_verser', dernier_motif: 'solde_agregateur_insuffisant' })
     expect((await webhook({ reference: 'VER-INCONNU', statut: 'verse' })).status).toBe(404)
     expect((await webhook({ reference: v.reference, statut: 'perdu' })).status).toBe(400)
+  })
+})
+
+describe('portefeuille du testeur (US-23)', () => {
+  beforeEach(() => preparer([{ statut: 'en_cours' }]))
+
+  const portefeuille = async (affectationId) => {
+    const { rows } = await pool.query('SELECT testeur_id FROM affectations WHERE id = $1', [affectationId])
+    const { jeton } = testeurs.find((t) => t.id === String(rows[0].testeur_id))
+    const r = await request(test.app).get('/api/testeurs/moi/portefeuille').set({ Authorization: `Bearer ${jeton}` })
+    expect(r.status).toBe(200)
+    return r.body.portefeuille
+  }
+
+  it('montre l’app en test avec le jour atteint, puis le versement en cours, puis l’historique', async () => {
+    await pool.query('UPDATE affectations SET jours_valides = 6 WHERE id = $1', [affectations[0]])
+    const pendant = await portefeuille(affectations[0])
+    expect(pendant).toMatchObject({ devise: 'XOF', totalEnAttente: 500, totalEnAttenteLisible: '500 FCFA', totalVerse: 0, historique: [] })
+    expect(pendant.compte.numeroMasque).toMatch(/^•••• \d{2}$/)
+    expect(pendant.enAttente).toEqual([
+      expect.objectContaining({ affectationId: String(affectations[0]), appNom: 'Marché Facile', etat: 'en_test', joursValides: 6, joursExiges: 14, montant: 500 }),
+    ])
+
+    await cloturerCampagne()
+    await traiter()
+    const enPaiement = await portefeuille(affectations[0])
+    expect(enPaiement.enAttente).toEqual([expect.objectContaining({ etat: 'en_paiement', joursValides: 14, prevuLe: null })])
+    expect(enPaiement.totalEnAttente).toBe(500)
+
+    const [v] = await versements()
+    await webhook({ reference: v.reference, statut: 'verse', referenceFournisseur: 'MP2611270001' })
+    const apres = await portefeuille(affectations[0])
+    expect(apres).toMatchObject({ totalEnAttente: 0, totalVerse: 500, totalVerseLisible: '500 FCFA', enAttente: [] })
+    expect(apres.historique).toEqual([
+      expect.objectContaining({ reference: v.reference, referenceTransaction: 'MP2611270001', appNom: 'Marché Facile', montant: 500 }),
+    ])
+  })
+
+  it('un testeur sans versement ni le droit au paiement ne voit rien en attente après la clôture', async () => {
+    await cloturerCampagne()
+    const p = await portefeuille(affectations[3])
+    expect(p).toMatchObject({ totalEnAttente: 0, totalVerse: 0, enAttente: [], historique: [] })
   })
 })

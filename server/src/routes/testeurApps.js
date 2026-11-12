@@ -19,6 +19,7 @@ import {
   versAffectationTesteur,
 } from '../services/testeurApps.js'
 import { TAILLE_MAX_PHOTO } from './testeurs.js'
+import { lirePortefeuille } from '../services/versements.js'
 
 // Capture d'écran « Vous êtes testeur » (5 Mo au plus), lue en mémoire.
 function lireCapture(req, res) {
@@ -52,6 +53,11 @@ export function routesTesteurApps({ pool, config, maintenant }) {
   // §2.1 US-17 : les apps à tester, avec l'état du jour.
   routeur.get('/apps', async (req, res) => {
     res.json({ apps: await listerAppsTesteur(pool, { testeurId: testeurId(req), maintenant: maintenant() }) })
+  })
+
+  // Sprint 4 §3 US-23 : gains en attente, total versé et historique des versements.
+  routeur.get('/portefeuille', async (req, res) => {
+    res.json({ portefeuille: await lirePortefeuille(pool, { testeurId: testeurId(req) }) })
   })
 
   // §2.2 US-17 et US-43 : inscription au test confirmée par une capture.

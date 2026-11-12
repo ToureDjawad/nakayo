@@ -73,3 +73,28 @@ Il confirme un versement resté `en_cours`. Le corps est signé comme pour les p
 
 - `GET /api/admin/versements?statut=echoue|a_verser|en_cours|verse|tous` (par défaut `echoue`) renvoie `{ versements: [versement] }`, 200 au plus. Chaque versement contient : `reference`, `campagneId`, `appNom`, `montant`, `devise`, `montantLisible`, `operateur`, `numeroMasque`, `statut`, `tentatives`, `prochaineTentativeLe`, `dernierMotif`, `creeLe`, `verseLe`, `testeur { id, nom, telephone, numeroMomo }`, `referenceFournisseur`, `alerteLe`.
 - `POST /api/admin/versements/:reference/relance` remet les tentatives à zéro avec le numéro MoMo **actuel** du testeur et tente tout de suite. Il renvoie `{ versement }`. `409` si le versement n'est pas en échec.
+
+## 3. Portefeuille du testeur (US-23)
+
+### 3.1 `GET /api/testeurs/moi/portefeuille`
+
+Réservé au testeur validé (jeton de l'app Android).
+
+```json
+{ "portefeuille": {
+  "devise": "XOF", "totalEnAttente": 1000, "totalEnAttenteLisible": "1 000 FCFA",
+  "totalVerse": 500, "totalVerseLisible": "500 FCFA",
+  "compte": { "operateur": "mtn", "numeroMasque": "•••• 42" },
+  "enAttente": [{ "affectationId": "31", "appNom": "Marché Facile", "etat": "en_test", "joursValides": 6, "joursExiges": 14,
+                  "montant": 500, "devise": "XOF", "montantLisible": "500 FCFA", "prevuLe": "2026-11-28T09:00:00.000Z" }],
+  "historique": [{ "reference": "VER-0A1B2C3D4E5F6071", "referenceTransaction": "MP2611120001", "appNom": "Zem Express",
+                   "montant": 500, "devise": "XOF", "montantLisible": "500 FCFA", "operateur": "mtn", "numeroMasque": "•••• 42",
+                   "verseLe": "2026-11-12T10:15:00.000Z" }]
+} }
+```
+
+- **`enAttente`** contient deux sortes d'apps :
+  - `en_test` : les apps des campagnes en cours, qui rapporteront 500 FCFA avec les 14 jours. `prevuLe` est la fin prévue de la campagne.
+  - `en_paiement` : les versements dus et pas encore arrivés, y compris ceux en échec que l'équipe reprend.
+- **`historique`** : les versements reçus, du plus récent au plus ancien. `referenceTransaction` est la référence de l'agrégateur ; si elle manque, l'app affiche la référence Nakayo.
+- **Numéro MoMo** : il n'est jamais renvoyé en entier ; seuls les 2 derniers chiffres apparaissent.

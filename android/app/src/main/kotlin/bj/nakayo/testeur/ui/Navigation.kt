@@ -14,6 +14,7 @@ import bj.nakayo.testeur.ui.connexion.EtapeConnexion
 import bj.nakayo.testeur.ui.connexion.ModeConnexion
 import bj.nakayo.testeur.ui.espace.EspaceModele
 import bj.nakayo.testeur.ui.inscription.InscriptionModele
+import bj.nakayo.testeur.ui.portefeuille.PortefeuilleModele
 import bj.nakayo.testeur.ui.profil.ProfilModele
 import bj.nakayo.testeur.ui.support.SupportModele
 import kotlinx.coroutines.CoroutineDispatcher
@@ -35,6 +36,7 @@ sealed interface Ecran {
     data class Support(val modele: SupportModele) : Ecran
     data class App(val modele: AppModele) : Ecran
     data class Rapport(val modele: RapportModele) : Ecran
+    data class Portefeuille(val modele: PortefeuilleModele) : Ecran
 }
 
 // Parcours de l'app. Chaque écran a sa portée, annulée quand on le quitte.
@@ -152,6 +154,7 @@ class Navigation(
         if (testeurValide) lancerMesure()
         when (val actuel = ecranInterne.value) {
             is Ecran.Espace -> actuel.modele.actualiser()
+            is Ecran.Portefeuille -> actuel.modele.actualiser()
             is Ecran.App -> {
                 signalerOuverture()
                 actuel.modele.actualiser()
@@ -185,6 +188,19 @@ class Navigation(
                 portee = it,
                 profil = profil,
                 surQuitter = { aJour -> allerEspace(aJour) },
+                surSessionExpiree = { message -> allerAccueil(message) },
+            ),
+        )
+    }
+
+    // US-23 : gains en attente et versements reçus.
+    fun allerPortefeuille(profil: ProfilTesteur?): Unit = changer {
+        Ecran.Portefeuille(
+            PortefeuilleModele(
+                service = service,
+                portee = it,
+                profil = profil,
+                surQuitter = { connu -> allerEspace(connu) },
                 surSessionExpiree = { message -> allerAccueil(message) },
             ),
         )
@@ -226,6 +242,10 @@ class Navigation(
             true
         }
         is Ecran.Rapport -> {
+            actuel.modele.retour()
+            true
+        }
+        is Ecran.Portefeuille -> {
             actuel.modele.retour()
             true
         }

@@ -130,6 +130,10 @@ class ApiNakayo(
     override suspend fun mesApps(): Resultat<List<AffectationTesteur>> =
         appeler(requete("api/testeurs/moi/apps").get(), ReponseApps.serializer()).map { it.apps }
 
+    // Sprint 4 §3 : portefeuille du testeur.
+    override suspend fun portefeuille(): Resultat<Portefeuille> =
+        appeler(requete("api/testeurs/moi/portefeuille").get(), ReponsePortefeuille.serializer()).map { it.portefeuille }
+
     // §2.2 Capture de la page « Vous êtes testeur » de Google Play.
     override suspend fun confirmerInscription(affectationId: String, capture: Photo): Resultat<AffectationTesteur> {
         val corps = MultipartBody.Builder()

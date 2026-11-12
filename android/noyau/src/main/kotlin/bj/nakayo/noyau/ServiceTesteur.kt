@@ -22,6 +22,9 @@ interface ServiceTesteur {
     suspend fun signaler(): Resultat<Unit>
     suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages>
 
+    // Sprint 4 : gains en attente et versements reçus (docs/api-sprint4.md §3).
+    suspend fun portefeuille(): Resultat<Portefeuille>
+
     // Un jeton de session est-il gardé sur le téléphone ? (sans appel réseau)
     suspend fun sessionOuverte(): Boolean
 }
