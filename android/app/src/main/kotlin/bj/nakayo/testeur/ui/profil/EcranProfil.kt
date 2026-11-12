@@ -179,7 +179,7 @@ private fun ChangementMomo(etat: EtatProfil, actions: ActionsProfil) {
 private fun ApercuProfil() {
     val profil = ProfilTesteur(
         id = "1", role = "testeur", statut = "en_attente", telephone = "+2290197000000", nom = "Afi Dossou", ville = "Cotonou",
-        gmail = "afi.dossou@gmail.com", numeroMomo = "+2290197000000", operateurMomo = "mtn", langues = listOf("fr", "fon"),
+        gmail = "afi.dossou@gmail.com", numeroMomo = "+2290197000000", operateurMomo = "mtn", langues = listOf("fr", "en"),
         appareil = Appareil("Tecno", "Spark 10", "13", 33),
         demandeChangementMomo = DemandeChangementMomo("3", "+2290196000000", "moov", "en_attente", "2026-11-11T10:00:00.000Z"),
         creeLe = "2026-11-10T14:07:01.512Z",

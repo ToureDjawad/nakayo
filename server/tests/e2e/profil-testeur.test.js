@@ -21,7 +21,7 @@ describe('profil testeur sur le serveur réel', () => {
   afterAll(() => serveur?.arreter())
 
   it('langues, demande de changement MoMo, puis profil à jour', async () => {
-    expect((await appel('PATCH', '/api/testeurs/moi', { langues: ['fr', 'fon', 'yo'] })).status).toBe(200)
+    expect((await appel('PATCH', '/api/testeurs/moi', { langues: ['fr', 'en'] })).status).toBe(200)
     const refus = await appel('PATCH', '/api/testeurs/moi', { numeroMomo: '+2290195000000' })
     expect((await refus.json()).erreur.champs).toEqual({ numeroMomo: 'non_modifiable' })
 
@@ -33,7 +33,7 @@ describe('profil testeur sur le serveur réel', () => {
     expect(demande.status).toBe(201)
 
     const profil = (await (await appel('GET', '/api/testeurs/moi')).json()).utilisateur
-    expect(profil.langues).toEqual(['fr', 'fon', 'yo'])
+    expect(profil.langues).toEqual(['fr', 'en'])
     expect(profil.numeroMomo).toBe('+2290196000000')
     expect(profil.demandeChangementMomo).toMatchObject({ numeroMomo: '+2290195000000', statut: 'en_attente' })
   })

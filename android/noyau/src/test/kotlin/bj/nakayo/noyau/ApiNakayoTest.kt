@@ -180,12 +180,12 @@ class ApiNakayoTest {
     fun `modification des langues en PATCH, sans champ vide`() = runTest {
         stockage.ecrire("jeton-secret")
         repondre(200, """{"utilisateur":$profil}""")
-        assertIs<Resultat.Succes<ProfilTesteur>>(api.modifierProfil(langues = listOf("fr", "fon")))
+        assertIs<Resultat.Succes<ProfilTesteur>>(api.modifierProfil(langues = listOf("fr", "en")))
         val requete = serveur.takeRequest()
         assertEquals("PATCH", requete.method)
         assertEquals("/api/testeurs/moi", requete.path)
         assertEquals("Bearer jeton-secret", requete.getHeader("Authorization"))
-        assertEquals("""{"langues":["fr","fon"]}""", requete.body.readUtf8())
+        assertEquals("""{"langues":["fr","en"]}""", requete.body.readUtf8())
     }
 
     @Test

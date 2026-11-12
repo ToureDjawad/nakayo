@@ -1,7 +1,8 @@
 // Règles propres aux testeurs (docs/api-sprint1.md §1.4 et §4).
 import { texte } from './validation.js'
 
-export const LANGUES = ['fr', 'en', 'fon', 'yo', 'guw', 'bba', 'dee', 'ajg', 'gej']
+// Les testeurs suivent les apps en français ou en anglais (décision produit du 2026-11-12).
+export const LANGUES = ['fr', 'en']
 export const OPERATEURS = ['mtn', 'moov']
 
 const RE_TELEPHONE_BENIN = /^\+22901\d{8}$/
@@ -93,12 +94,11 @@ export function typeImage(buffer) {
   return null
 }
 
-// Langues parlées (§4.4) : 1 à 10 codes connus, sans doublon. Renvoie { langues } ou { erreur }.
+// Langues parlées (§4.4) : au moins un code connu, sans doublon. Renvoie { langues } ou { erreur }.
 export function lireLangues(valeur) {
   if (!Array.isArray(valeur) || valeur.some((l) => typeof l !== 'string')) return { erreur: 'format_invalide' }
   const langues = [...new Set(valeur.map((l) => l.trim().toLowerCase()))]
   if (!langues.length) return { erreur: 'requis' }
-  if (langues.length > 10) return { erreur: 'trop_long' }
   if (langues.some((l) => !LANGUES.includes(l))) return { erreur: 'valeur_inconnue' }
   return { langues }
 }

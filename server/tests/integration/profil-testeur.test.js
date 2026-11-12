@@ -35,10 +35,10 @@ describe('profil testeur (§4.4)', () => {
   })
 
   it('enregistre les langues sans doublon', async () => {
-    const r = await modifier({ langues: ['fr', 'fon', 'FR'] })
+    const r = await modifier({ langues: ['fr', 'en', 'FR'] })
     expect(r.status).toBe(200)
-    expect(r.body.utilisateur.langues).toEqual(['fr', 'fon'])
-    expect((await moi()).body.utilisateur.langues).toEqual(['fr', 'fon'])
+    expect(r.body.utilisateur.langues).toEqual(['fr', 'en'])
+    expect((await moi()).body.utilisateur.langues).toEqual(['fr', 'en'])
   })
 
   it('met à jour l’appareil affiché quand le modèle ou la version change', async () => {
