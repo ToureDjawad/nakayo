@@ -61,3 +61,15 @@ Se connecter en admin sur `/connexion` (`admin@nakayo.test`), on arrive sur `/ad
 | `suspendu@exemple.com` | compte suspendu |
 | Mot de passe oublié | le lien de réinitialisation est écrit dans la console du navigateur |
 | `/reinitialiser-mot-de-passe?jeton=expire` | lien expiré |
+
+### Paiement de l'offre et factures (US-12, US-15)
+
+Se connecter avec `valide@exemple.com`, soumettre une app, puis « Payer l'offre » sur sa carte.
+
+| Action | Résultat |
+|---|---|
+| Payer par carte ou par Mobile Money | page de simulation qui remplace le prestataire |
+| « Confirmer le paiement » | app en vérification, facture `NKY-AAAA-00001`, reçu annoncé dans la console |
+| « Refuser le paiement » | l'app reste en brouillon, bouton « Réessayer le paiement » |
+| Numéro Mobile Money sans indicatif | erreur de format |
+| `/mon-compte/paiements` | historique, téléchargement de la facture (PDF minimal, le vrai est produit par le serveur) |

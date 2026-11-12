@@ -12,6 +12,9 @@ const STATUTS = {
   refusee: ['Refusée', 'bg-erreur-clair text-erreur'],
 }
 
+const lienBoutonPetit =
+  'inline-flex h-10 items-center justify-center rounded-champ bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-fonce'
+
 const lienBouton =
   'inline-flex h-11 items-center justify-center rounded-champ bg-accent px-[18px] text-[15px] font-semibold text-white hover:bg-accent-fonce'
 
@@ -68,15 +71,23 @@ export function MesApps() {
                     <p className="mt-0.5 font-mono text-sm [overflow-wrap:anywhere] text-texte">{app.package}</p>
                     {app.statut === 'brouillon' && (
                       <>
-                        <p className="mt-2 text-sm text-texte">Prochaine étape : le paiement de l’offre, bientôt disponible.</p>
-                        <Link
-                          to={`/mon-compte/apps/${app.id}/modifier`}
-                          aria-label={`Modifier ${app.nom}`}
-                          className="mt-2 inline-block text-sm font-semibold text-accent underline underline-offset-2"
-                        >
-                          Modifier
-                        </Link>
+                        <p className="mt-2 text-sm text-texte">Prochaine étape : le paiement de l’offre, puis la vérification par l’équipe.</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                          <Link to={`/mon-compte/apps/${app.id}/paiement`} aria-label={`Payer l’offre pour ${app.nom}`} className={lienBoutonPetit}>
+                            Payer l’offre
+                          </Link>
+                          <Link
+                            to={`/mon-compte/apps/${app.id}/modifier`}
+                            aria-label={`Modifier ${app.nom}`}
+                            className="text-sm font-semibold text-accent underline underline-offset-2"
+                          >
+                            Modifier
+                          </Link>
+                        </div>
                       </>
+                    )}
+                    {app.statut === 'en_verification' && (
+                      <p className="mt-2 text-sm text-texte">Offre payée. L’équipe vérifie votre app sous 24 h ouvrées avant de lancer la campagne.</p>
                     )}
                   </li>
                 )
@@ -86,6 +97,13 @@ export function MesApps() {
           <Link to="/mon-compte/apps/nouvelle" className={`mt-4 w-full sm:w-auto ${lienBouton}`}>
             Soumettre une app
           </Link>
+          {etat.apps.some((app) => app.statut !== 'brouillon') && (
+            <p className="mt-3 text-sm">
+              <Link to="/mon-compte/paiements" className="font-semibold text-accent underline underline-offset-2">
+                Vos paiements et factures
+              </Link>
+            </p>
+          )}
         </>
       )}
     </section>

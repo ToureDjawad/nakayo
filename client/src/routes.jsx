@@ -6,6 +6,10 @@ import MessagesSupport from './pages/admin/MessagesSupport.jsx'
 import EcrireAuSupport from './pages/support/EcrireAuSupport.jsx'
 import FormulaireApp from './pages/apps/FormulaireApp.jsx'
 import PreparationLancement from './pages/apps/PreparationLancement.jsx'
+import MesPaiements from './pages/paiements/MesPaiements.jsx'
+import PayerApp from './pages/paiements/PayerApp.jsx'
+import RetourPaiement from './pages/paiements/RetourPaiement.jsx'
+import SimulationPaiement from './pages/paiements/SimulationPaiement.jsx'
 import Connexion from './pages/connexion/Connexion.jsx'
 import MotDePasseOublie from './pages/connexion/MotDePasseOublie.jsx'
 import ReinitialiserMotDePasse from './pages/connexion/ReinitialiserMotDePasse.jsx'
@@ -28,6 +32,10 @@ export const routes = [
   { path: '/mon-compte/apps/nouvelle', element: <FormulaireApp /> },
   { path: '/mon-compte/apps/:id/modifier', element: <FormulaireApp /> },
   { path: '/mon-compte/apps/:id/preparation', element: <PreparationLancement /> },
+  { path: '/mon-compte/apps/:id/paiement', element: <PayerApp /> },
+  { path: '/mon-compte/paiements', element: <MesPaiements /> },
+  { path: '/mon-compte/paiements/:reference', element: <RetourPaiement /> },
+  { path: '/paiement/simulation/:reference', element: <SimulationPaiement /> },
   { path: '/connexion', element: <Connexion /> },
   { path: '/mot-de-passe-oublie', element: <MotDePasseOublie /> },
   { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
