@@ -44,3 +44,20 @@ export function publierWhatsapp() {
 export function retirerWhatsapp() {
   return requete('/admin/support/publication', { methode: 'DELETE' })
 }
+
+// Vérification des apps payées (docs/api-sprint2.md §4).
+export function listerAppsAVerifier({ statut = 'en_verification', page = 1 } = {}, { signal } = {}) {
+  const parametres = new URLSearchParams()
+  if (statut !== 'en_verification') parametres.set('statut', statut)
+  if (page > 1) parametres.set('page', String(page))
+  const requeteTexte = parametres.toString()
+  return requete(`/admin/apps${requeteTexte ? `?${requeteTexte}` : ''}`, { signal })
+}
+
+export function validerApp(id) {
+  return requete(`/admin/apps/${encodeURIComponent(id)}/validation`, { methode: 'POST' })
+}
+
+export function refuserApp(id, motif) {
+  return requete(`/admin/apps/${encodeURIComponent(id)}/refus`, { methode: 'POST', corps: { motif } })
+}
