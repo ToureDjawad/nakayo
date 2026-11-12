@@ -1,6 +1,8 @@
 package bj.nakayo.testeur.ui
 
 import bj.nakayo.noyau.Appareil
+import bj.nakayo.noyau.ProfilTesteur
+import java.net.URLEncoder
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -42,5 +44,15 @@ fun descriptionAppareil(appareil: Appareil): String {
     return "$nom · Android ${appareil.versionAndroid}"
 }
 
-// Lien WhatsApp du support : « https://wa.me/ » suivi des chiffres du numéro international.
-fun lienWhatsapp(numero: String): String = "https://wa.me/" + numero.filter(Char::isDigit)
+// Lien WhatsApp du support : « https://wa.me/ » suivi des chiffres du numéro international,
+// avec un premier message déjà écrit (le testeur peut le modifier avant l'envoi).
+fun lienWhatsapp(numero: String, message: String): String =
+    "https://wa.me/" + numero.filter(Char::isDigit) + "?text=" + URLEncoder.encode(message, "UTF-8").replace("+", "%20")
+
+// Message pré-rempli : le support retrouve le compte grâce au numéro de connexion.
+fun messageSupport(profil: ProfilTesteur?): String =
+    if (profil == null) {
+        "Bonjour, je suis testeur Nakayo et j'ai une question."
+    } else {
+        "Bonjour, je suis ${profil.nom}, testeur Nakayo (numéro ${afficher(profil.telephone)}). J'ai une question :"
+    }
