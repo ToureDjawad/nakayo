@@ -133,7 +133,7 @@ export function MesApps() {
                       <p className="mt-3 text-sm">
                         <Link
                           to={`/mon-compte/apps/${app.id}/montee-en-gamme`}
-                          aria-label={`Passer ${app.nom} à l’Offre Pro`}
+                          aria-label={`Passer à l’Offre Pro : ${app.nom}`}
                           className="font-semibold text-accent underline underline-offset-2"
                         >
                           Passer à l’Offre Pro
