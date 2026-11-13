@@ -50,7 +50,54 @@ Les bugs du testeur sur cette app, du plus récent au plus ancien, avec la déci
 
 ## 2. Développeur (US-34)
 
-À venir : liste des bugs d'une app, captures, décision (accepter ou refuser avec un motif) et export CSV.
+Cookie du site, compte développeur propriétaire de l'app. L'app d'un autre compte répond `404`.
+
+### 2.1 `GET /api/apps/:id/bugs`
+
+Filtres facultatifs : `?gravite=bloquante|genante|mineure` et `?statut=nouveau|accepte|refuse` (`422` pour une valeur inconnue). Les bugs de toutes les campagnes de l'app, les plus graves d'abord, puis du plus récent au plus ancien.
+
+```json
+{ "bugs": [{
+    "id": "8", "titre": "…", "etapes": "…", "resultatAttendu": "…", "resultatObtenu": "…",
+    "gravite": "bloquante", "versionApp": "1.0.3",
+    "captures": ["/api/apps/7/bugs/8/captures/1"],
+    "statut": "nouveau", "motifRefus": null, "signaleLe": "…", "decideLe": null,
+    "testeur": { "numero": 3, "modele": "Spark 20", "versionAndroid": "14" },
+    "decidable": true
+  }],
+  "resume": { "total": 2, "nouveaux": 2, "acceptes": 0, "refuses": 0, "bloquants": 1, "genants": 0, "mineurs": 1 },
+  "rapportsDeBugs": true }
+```
+
+- `testeur.numero` : même numérotation que l'avancement (`docs/api-sprint4.md` §1). Il vaut `null` si le testeur a été remplacé depuis. Ni nom ni téléphone.
+- `decidable` : le bug est à examiner et la campagne est en cours.
+
+### 2.2 `GET /api/apps/:id/bugs/:bugId/captures/:rang`
+
+La capture n° `rang` (à partir de 1), en `image/jpeg` ou `image/png`, avec `Cache-Control: private, no-store`. Elle répond `404` si elle n'existe pas.
+
+### 2.3 `POST /api/apps/:id/bugs/:bugId/decision`
+
+```json
+{ "decision": "refuse", "motif": "C'est le comportement voulu." }
+```
+
+- `decision` : `accepte` ou `refuse`. Le `motif` (5 à 500 caractères) n'est exigé que pour un refus, et le testeur le voit.
+- Réponse : `{ "bug": … }` (objet du §2.1). Accepter déclenche le bonus du testeur (§3).
+- `409 deja_decide` : une décision est définitive.
+- `409 campagne_terminee` : après la clôture, plus de décision, car le bonus est versé à la clôture.
+
+### 2.4 `GET /api/apps/:id/bugs.csv`
+
+Tous les bugs de l'app, pour un tableur ou un outil de suivi. Format : UTF-8 avec BOM, séparateur `;`, fin de ligne CRLF, en-tête en français. Une cellule qui commence par `=`, `+`, `-` ou `@` est préfixée d'une apostrophe : un tableur ne l'exécute pas comme une formule.
+
+### 2.5 Web
+
+- `/mon-compte/apps/:id/bugs` :
+  - résumé, filtre par gravité, case « Seulement les bugs à examiner » et export CSV ;
+  - chaque bug avec ses captures, puis « Accepter » ou « Refuser » (motif demandé).
+- Accès depuis le suivi de la campagne (section « Bugs signalés ») et depuis la carte de l'app (offres Pro et Lancement Afrique).
+- En Offre Standard, la page propose de passer à l'Offre Pro.
 
 ## 3. Bonus des bugs acceptés
 
