@@ -103,7 +103,7 @@ export function routesOffres({ config }) {
     // docs/fedapay.md §1 FedaPay encaisse en FCFA : la carte est alors débitée du prix Mobile Money.
     // Pro porte aussi le prix de la montée en gamme depuis Standard (§2), la différence de prix.
     const fedapay = config.paiementMode === 'fedapay'
-    const offres = Object.values(OFFRES).map(({ remuneration: _r, testeursConfirmes: _t, ...o }) => {
+    const offres = Object.values(OFFRES).map(({ remuneration: _r, testeursConfirmes: _t, rapportsDeBugs: _b, ...o }) => {
       const publique = fedapay ? { ...o, debitCarte: o.prix.mobile_money } : { ...o }
       if (o.code !== 'standard') {
         const prix = Object.fromEntries(MOYENS_PAIEMENT.map((m) => [m, prixMonteeEnGamme(m, o.code)]))

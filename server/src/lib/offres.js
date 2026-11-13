@@ -15,6 +15,7 @@ export const OFFRE_STANDARD = {
     'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
   remuneration: { montant: 500, devise: 'XOF' },
   testeursConfirmes: false,
+  rapportsDeBugs: false,
 }
 
 export const OFFRE_PRO = {
@@ -29,6 +30,8 @@ export const OFFRE_PRO = {
   garantie: OFFRE_STANDARD.garantie,
   remuneration: { montant: 800, devise: 'XOF' },
   testeursConfirmes: true,
+  // US-33 : les testeurs envoient des rapports de bugs avec captures.
+  rapportsDeBugs: true,
 }
 
 export const OFFRES = { standard: OFFRE_STANDARD, pro: OFFRE_PRO }
@@ -48,6 +51,9 @@ export function montantLisible(montant, devise) {
   if (devise === 'XOF') return `${new Intl.NumberFormat('fr-FR').format(montant).replace(/ /g, ' ')} FCFA`
   return `${(montant / 100).toFixed(2).replace('.', ',')} $ US`
 }
+
+// Bonus d'un testeur par bug accepté par le développeur (US-33), ajouté à son versement de clôture.
+export const BONUS_BUG = { montant: 200, devise: 'XOF' }
 
 // Rémunération d'un testeur (US-22) : selon l'offre de l'app, versée à la clôture de la campagne.
 export const REMUNERATION_TESTEUR = OFFRE_STANDARD.remuneration

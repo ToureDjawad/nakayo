@@ -276,6 +276,25 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `rapport de bug, champs et captures en multipart, puis la liste des bugs`() = runTest {
+        stockage.ecrire("jeton-secret")
+        repondre(201, """{"bug":{"id":"8","titre":"Le panier se vide","gravite":"genante","captures":2,"statut":"nouveau","motifRefus":null,"signaleLe":"2026-11-13T09:00:00.000Z","etapes":"…"}}""")
+        val bug = RapportBug("Le panier se vide", "1. Ajouter. 2. Quitter.", "Le riz reste.", "Panier vide.", "genante", "1.0.3")
+        val r = api.envoyerBug("31", bug, listOf(Photo(byteArrayOf(1)), Photo(byteArrayOf(2), "image/png")))
+        assertEquals(2, assertIs<Resultat.Succes<BugSignale>>(r).valeur.captures)
+        val envoi = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/apps/31/bugs", envoi.path)
+        val corps = envoi.body.readUtf8()
+        assertTrue("name=\"gravite\"" in corps && "genante" in corps)
+        assertTrue("name=\"captures\"; filename=\"capture-1.jpg\"" in corps)
+        assertTrue("name=\"captures\"; filename=\"capture-2.png\"" in corps)
+
+        repondre(200, """{"bugs":[]}""")
+        assertEquals(emptyList(), assertIs<Resultat.Succes<List<BugSignale>>>(api.mesBugs("31")).valeur)
+        assertEquals("/api/testeurs/moi/apps/31/bugs", serveur.takeRequest().path)
+    }
+
+    @Test
     fun `rapport déjà envoyé, signal et temps d'utilisation`() = runTest {
         stockage.ecrire("jeton-secret")
         repondre(409, """{"erreur":{"code":"rapport_deja_envoye","message":"Déjà envoyé."}}""")

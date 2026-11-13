@@ -178,6 +178,8 @@ data class AffectationTesteur(
     val retourDetailleAttendu: Boolean,
     val usageDuJourSecondes: Int = 0,
     val usageMinimumSecondes: Int = 120,
+    // US-33 : rapports de bugs avec captures (offres Pro et Lancement Afrique).
+    val rapportsDeBugs: Boolean = false,
 )
 
 // Position du téléphone : le serveur l'arrondit à 1 km environ.
@@ -196,6 +198,34 @@ data class RapportJour(
     val position: Position,
     val retourDetaille: String? = null,
 )
+
+// US-33 : rapport de bug (docs/api-bugs.md §1.1). Gravité : « mineure », « genante » ou « bloquante ».
+data class RapportBug(
+    val titre: String,
+    val etapes: String,
+    val resultatAttendu: String,
+    val resultatObtenu: String,
+    val gravite: String,
+    val versionApp: String,
+)
+
+// Un bug signalé, avec la décision du développeur : « nouveau », « accepte » ou « refuse ».
+@Serializable
+data class BugSignale(
+    val id: String,
+    val titre: String,
+    val gravite: String,
+    val captures: Int = 0,
+    val statut: String,
+    val motifRefus: String? = null,
+    val signaleLe: String,
+)
+
+@Serializable
+internal data class ReponseBug(val bug: BugSignale)
+
+@Serializable
+internal data class ReponseBugs(val bugs: List<BugSignale>)
 
 // Temps passé dans une app testée un jour donné (heure du Bénin, « AAAA-MM-JJ »).
 @Serializable

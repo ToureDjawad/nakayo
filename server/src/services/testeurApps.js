@@ -1,5 +1,6 @@
 import { JOURS_CAMPAGNE } from '../lib/affectation.js'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
+import { offre } from '../lib/offres.js'
 import { JOURS_RETOUR_DETAILLE, USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, jourBenin } from '../lib/temps.js'
 import { jourCampagne } from './campagnes.js'
@@ -7,7 +8,7 @@ import { manquesDuJour } from './verificationQuotidienne.js'
 
 // Affectations du testeur avec ce qu'il lui faut pour le jour en cours ($2 : jour du Bénin).
 const SELECT_AFFECTATION = `SELECT a.*, c.statut AS campagne_statut, c.demarree_le, c.jours_exiges,
-    ap.nom, ap.package, ap.lien_test_ferme, ap.instructions, ap.fonctionnalites, ap.connexion_requise, ap.identifiants_test,
+    ap.nom, ap.package, ap.offre, ap.lien_test_ferme, ap.instructions, ap.fonctionnalites, ap.connexion_requise, ap.identifiants_test,
     r.id AS rapport_id, uq.secondes AS usage_secondes,
     a.derniere_remise_jour::text AS derniere_remise_jour_texte, jr.connexion AS remise_connexion, jr.usage_secondes AS remise_usage, jr.rapport AS remise_rapport
   FROM affectations a
@@ -55,6 +56,8 @@ export function versAffectationTesteur(l, maintenant) {
     retourDetailleAttendu: !rapportDuJour && JOURS_RETOUR_DETAILLE.includes(jour),
     usageDuJourSecondes: l.usage_secondes ?? 0,
     usageMinimumSecondes: USAGE_MINIMUM_SECONDES,
+    // US-33 : rapports de bugs avec captures (offres Pro et Lancement Afrique).
+    rapportsDeBugs: offre(l.offre).rapportsDeBugs,
   }
 }
 

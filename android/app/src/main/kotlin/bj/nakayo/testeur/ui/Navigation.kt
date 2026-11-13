@@ -5,6 +5,7 @@ import bj.nakayo.noyau.Appareil
 import bj.nakayo.noyau.Resultat
 import bj.nakayo.testeur.campagne.OutilsApps
 import bj.nakayo.testeur.ui.apps.AppModele
+import bj.nakayo.testeur.ui.apps.BugModele
 import bj.nakayo.testeur.ui.apps.RapportModele
 import bj.nakayo.noyau.ProfilTesteur
 import bj.nakayo.noyau.ServiceTesteur
@@ -36,6 +37,7 @@ sealed interface Ecran {
     data class Support(val modele: SupportModele) : Ecran
     data class App(val modele: AppModele) : Ecran
     data class Rapport(val modele: RapportModele) : Ecran
+    data class Bug(val modele: BugModele) : Ecran
     data class Portefeuille(val modele: PortefeuilleModele) : Ecran
 }
 
@@ -127,6 +129,7 @@ class Navigation(
                 calcul = calcul,
                 information = information,
                 surRapport = { a -> allerRapport(a) },
+                surBug = { a -> allerBug(a) },
                 surQuitter = { allerEspace(profilEspace) },
                 surSessionExpiree = { message -> allerAccueil(message) },
             ),
@@ -142,6 +145,22 @@ class Navigation(
                 affectation = affectation,
                 outils = outils,
                 surEnvoye = { aJour -> allerApp(aJour, profilEspace, "Rapport envoyé. Merci, à demain !") },
+                surQuitter = { allerApp(affectation, profilEspace) },
+                surSessionExpiree = { message -> allerAccueil(message) },
+            ),
+        )
+    }
+
+    // US-33 : rapport de bug avec captures ; retour à l'app quand le testeur a fini.
+    fun allerBug(affectation: AffectationTesteur): Unit = changer {
+        Ecran.Bug(
+            BugModele(
+                service = service,
+                portee = it,
+                affectation = affectation,
+                outils = outils,
+                compresser = compresser,
+                calcul = calcul,
                 surQuitter = { allerApp(affectation, profilEspace) },
                 surSessionExpiree = { message -> allerAccueil(message) },
             ),
@@ -245,6 +264,10 @@ class Navigation(
             true
         }
         is Ecran.Rapport -> {
+            actuel.modele.retour()
+            true
+        }
+        is Ecran.Bug -> {
             actuel.modele.retour()
             true
         }

@@ -68,9 +68,10 @@ class ActionsApp(
     val afficherErreur: (String) -> Unit,
     val confirmerInstallation: () -> Unit,
     val ecrireRapport: () -> Unit,
+    val signalerBug: () -> Unit = {},
 )
 
-fun AppModele.actions() = ActionsApp(::retour, ::captureChoisie, ::afficherErreur, ::confirmerInstallation, ::ecrireRapport)
+fun AppModele.actions() = ActionsApp(::retour, ::captureChoisie, ::afficherErreur, ::confirmerInstallation, ::ecrireRapport, ::signalerBug)
 
 // Une app à tester (T08) : inscription au test, installation depuis le Play Store, test du jour.
 @Composable
@@ -118,7 +119,7 @@ fun EcranApp(etat: EtatApp, actions: ActionsApp, mesureAutorisee: Boolean = true
         }
         if (a.inscriptionConfirmee) EtapeInstallation(a, etat.verificationInstallation, { ouvrir(a.lienPlayStore) }, actions.confirmerInstallation)
         if (a.installationConfirmee) {
-            TestDuJour(a, actions.ecrireRapport) {
+            TestDuJour(a, actions.ecrireRapport, actions.signalerBug) {
                 val lancement = contexte.packageManager.getLaunchIntentForPackage(a.app.paquet)
                 if (lancement == null) {
                     actions.afficherErreur("${a.app.nom} n'est plus installée sur ce téléphone. Réinstallez-la depuis le Play Store.")
@@ -197,7 +198,7 @@ private fun EtapeInstallation(a: AffectationTesteur, enCours: Boolean, surPlaySt
 }
 
 @Composable
-private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surOuvrir: () -> Unit) {
+private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surBug: () -> Unit, surOuvrir: () -> Unit) {
     Carte {
         Surtitre("Test du jour")
         a.app.instructions?.takeIf { it.isNotBlank() }?.let { Paragraphe(it) }
@@ -224,6 +225,11 @@ private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surOuvrir:
         } else if (!a.joursAcquis) {
             if (a.retourDetailleAttendu) Note("Aujourd'hui, un avis détaillé sur l'app vous est aussi demandé.")
             Bouton("Écrire le rapport du jour", surRapport, icone = R.drawable.ic_message)
+        }
+        // US-33 : bugs avec captures, possibles à tout moment de la campagne.
+        if (a.rapportsDeBugs) {
+            Bouton("Signaler un bug", surBug, StyleBouton.Secondaire, icone = R.drawable.ic_alerte)
+            Note("Chaque bug accepté par le développeur vous rapporte 200 FCFA de plus.")
         }
     }
 }
@@ -271,7 +277,7 @@ fun IconeApp(paquet: String, nom: String, taille: Dp = 44.dp) {
 }
 
 // Copie l'image choisie dans le cache de l'app, pour la réduire avant l'envoi.
-private fun copier(contexte: Context, uri: Uri): File {
+internal fun copier(contexte: Context, uri: Uri): File {
     val dossier = File(contexte.cacheDir, "photos").apply { mkdirs() }
     val fichier = File.createTempFile("capture", ".img", dossier)
     contexte.contentResolver.openInputStream(uri).use { entree ->
