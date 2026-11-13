@@ -1,6 +1,7 @@
 import { introuvable } from '../lib/erreurs.js'
 import { ajouterJours, ecartJours, jourBenin } from '../lib/temps.js'
 import { jourCampagne } from './campagnes.js'
+import { estEntreeDeGamme } from '../lib/offres.js'
 
 // Nombre de testeurs que Google exige pendant 14 jours continus.
 export const TESTEURS_EXIGES_GOOGLE = 12
@@ -25,7 +26,7 @@ export async function lireAvancement(db, { appId, developpeurId, maintenant }) {
 
   const { rows: membres } = await db.query(
     `SELECT a.id, a.statut, a.jours_valides, a.inscription_confirmee_le, a.installation_confirmee_le,
-            p.ville, ap.modele, ap.version_android,
+            p.ville, ap.modele, ap.version_android, ap.ram_mo,
             (SELECT max(r.jour)::text FROM rapports r WHERE r.affectation_id = a.id) AS dernier_rapport,
             EXISTS (SELECT 1 FROM rapports r WHERE r.affectation_id = a.id AND r.jour IN ($2::date, $3::date))
               OR EXISTS (SELECT 1 FROM usages_quotidiens u WHERE u.affectation_id = a.id AND u.jour IN ($2::date, $3::date) AND u.secondes > 0)
@@ -33,7 +34,7 @@ export async function lireAvancement(db, { appId, developpeurId, maintenant }) {
        FROM affectations a
        JOIN profils_testeurs p ON p.utilisateur_id = a.testeur_id
        LEFT JOIN LATERAL (
-         SELECT modele, version_android FROM appareils WHERE utilisateur_id = a.testeur_id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
+         SELECT modele, version_android, ram_mo FROM appareils WHERE utilisateur_id = a.testeur_id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
        ) ap ON true
       WHERE a.campagne_id = $1
       ORDER BY a.id`,
@@ -49,6 +50,8 @@ export async function lireAvancement(db, { appId, developpeurId, maintenant }) {
     ville: m.ville,
     modele: m.modele ?? null,
     versionAndroid: m.version_android ?? null,
+    // US-35 : téléphone de 3 Go de RAM ou moins.
+    entreeDeGamme: estEntreeDeGamme(m.ram_mo),
     inscriptionConfirmee: Boolean(m.inscription_confirmee_le),
     installationConfirmee: Boolean(m.installation_confirmee_le),
     joursValides: m.jours_valides,
@@ -134,8 +137,9 @@ export async function lireAvancement(db, { appId, developpeurId, maintenant }) {
   const groupes = new Map()
   for (const t of testeurs) {
     const cle = `${t.modele ?? ''}\u0000${t.versionAndroid ?? ''}`
-    const g = groupes.get(cle) ?? { modele: t.modele, versionAndroid: t.versionAndroid, testeurs: 0 }
+    const g = groupes.get(cle) ?? { modele: t.modele, versionAndroid: t.versionAndroid, testeurs: 0, entreeDeGamme: false }
     g.testeurs++
+    g.entreeDeGamme ||= t.entreeDeGamme
     groupes.set(cle, g)
   }
   const appareils = [...groupes.values()].sort(
@@ -157,6 +161,7 @@ export async function lireAvancement(db, { appId, developpeurId, maintenant }) {
       rapports: notes.length,
       noteMoyenne: notes.length ? Math.round((notes.reduce((s, n) => s + n, 0) / notes.length) * 10) / 10 : null,
       bugs: lignesRapports.filter((r) => r.bug).length,
+      appareilsEntreeDeGamme: testeurs.filter((t) => t.entreeDeGamme).length,
     },
     testeurs,
     parJour,

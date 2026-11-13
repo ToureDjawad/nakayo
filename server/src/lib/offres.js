@@ -16,6 +16,7 @@ export const OFFRE_STANDARD = {
   remuneration: { montant: 500, devise: 'XOF' },
   testeursConfirmes: false,
   rapportsDeBugs: false,
+  telephonesEntreeDeGamme: 0,
 }
 
 export const OFFRE_PRO = {
@@ -32,6 +33,8 @@ export const OFFRE_PRO = {
   testeursConfirmes: true,
   // US-33 : les testeurs envoient des rapports de bugs avec captures.
   rapportsDeBugs: true,
+  // US-35 : au moins 5 testeurs sur des téléphones d'entrée de gamme.
+  telephonesEntreeDeGamme: 5,
 }
 
 export const OFFRES = { standard: OFFRE_STANDARD, pro: OFFRE_PRO }
@@ -51,6 +54,11 @@ export function montantLisible(montant, devise) {
   if (devise === 'XOF') return `${new Intl.NumberFormat('fr-FR').format(montant).replace(/ /g, ' ')} FCFA`
   return `${(montant / 100).toFixed(2).replace('.', ',')} $ US`
 }
+
+// US-35 : un téléphone d'entrée de gamme a 3 Go de mémoire vive ou moins. Android annonce un
+// peu moins que la capacité vendue (environ 2,8 Go pour 3 Go) : le seuil reste donc à 3 Go pile.
+export const RAM_ENTREE_DE_GAMME_MO = 3 * 1024
+export const estEntreeDeGamme = (ramMo) => ramMo != null && Number(ramMo) <= RAM_ENTREE_DE_GAMME_MO
 
 // Bonus d'un testeur par bug accepté par le développeur (US-33), ajouté à son versement de clôture.
 export const BONUS_BUG = { montant: 200, devise: 'XOF' }

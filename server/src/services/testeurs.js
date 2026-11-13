@@ -3,11 +3,12 @@
 export async function enregistrerAppareil(db, { utilisateurId, appareil, maintenant }) {
   await db.query(
     `INSERT INTO appareils (utilisateur_id, identifiant, fabricant, modele, version_android, niveau_api,
-                            premiere_vue_le, derniere_vue_le)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+                            premiere_vue_le, derniere_vue_le, ram_mo)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8)
      ON CONFLICT (utilisateur_id, identifiant) DO UPDATE
        SET fabricant = EXCLUDED.fabricant, modele = EXCLUDED.modele, version_android = EXCLUDED.version_android,
-           niveau_api = EXCLUDED.niveau_api, derniere_vue_le = EXCLUDED.derniere_vue_le`,
+           niveau_api = EXCLUDED.niveau_api, derniere_vue_le = EXCLUDED.derniere_vue_le,
+           ram_mo = COALESCE(EXCLUDED.ram_mo, appareils.ram_mo)`,
     [
       utilisateurId,
       appareil.identifiant,
@@ -16,6 +17,7 @@ export async function enregistrerAppareil(db, { utilisateurId, appareil, mainten
       appareil.versionAndroid,
       appareil.niveauApi,
       maintenant,
+      appareil.ramMo ?? null,
     ],
   )
 }

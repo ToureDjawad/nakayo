@@ -81,7 +81,7 @@ describe('avancement de la campagne (US-21)', () => {
       { jour: '2026-11-12', numero: 1, tempsSecondes: 210, testeursAvecUsage: 2, rapports: 2, testeursValides: 1 },
       { jour: '2026-11-13', numero: 2, tempsSecondes: 150, testeursAvecUsage: 1, rapports: 1, testeursValides: null },
     ])
-    expect(a.resume).toEqual({ testeursActifs: 2, installes: 2, tempsTotalSecondes: 360, rapports: 3, noteMoyenne: 3.7, bugs: 1 })
+    expect(a.resume).toEqual({ testeursActifs: 2, installes: 2, tempsTotalSecondes: 360, rapports: 3, noteMoyenne: 3.7, bugs: 1, appareilsEntreeDeGamme: 0 })
     expect(a.testeurs).toHaveLength(15)
     expect(a.testeurs[0]).toMatchObject({ numero: 1, joursValides: 1, installationConfirmee: true, actif: true, dernierRapport: '2026-11-13' })
     expect(a.testeurs[2]).toMatchObject({ numero: 3, installationConfirmee: false, actif: false, dernierRapport: null })
