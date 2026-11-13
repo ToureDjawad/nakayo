@@ -1,11 +1,13 @@
 package bj.nakayo.testeur
 
 import android.Manifest
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -76,7 +78,10 @@ class ParcoursTestQuotidienTest {
             toucher("Panier")
             compose.onNodeWithContentDescription("Votre avis détaillé").performScrollTo()
                 .performTextInput("L'app est rapide et claire. La recherche trouve vite les produits, mais le panier mériterait un bouton plus visible.")
-            compose.onNodeWithText("Envoyer le rapport").performClick()
+            // Clavier ouvert : le pied d'écran bouge pendant l'animation, un toucher simulé peut tomber à côté.
+            // On déclenche donc directement l'action du bouton.
+            compose.onNodeWithText("Envoyer le rapport").performSemanticsAction(SemanticsActions.OnClick)
+            compose.waitUntil(30_000) { service.dernierRapport != null }
 
             compose.attendreTexte("Rapport envoyé. Merci, à demain !")
             compose.onNodeWithText("Rapport du jour envoyé").performScrollTo().assertExists()
