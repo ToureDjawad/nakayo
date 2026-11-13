@@ -1,3 +1,5 @@
+import { creerMomoFedapay } from './fedapay.js'
+
 // Fournisseurs de versements Mobile Money (US-22). Un fournisseur est un objet
 // { nom, verser({ reference, numero, operateur, montant, devise }) } qui renvoie
 // { statut: 'verse' | 'en_cours' | 'echoue', referenceFournisseur?, motif? }.
@@ -17,9 +19,10 @@ export function creerMomoSimulation() {
   }
 }
 
-// Choix selon la configuration. En production, rien n'est versé tant que l'agrégateur
-// n'est pas branché : les versements attendent, aucun n'est perdu.
-export function creerMomo(config) {
+// Choix selon la configuration. Sans fournisseur branché (mode « aucun », ou FedaPay sans clé),
+// rien n'est versé : les versements attendent, aucun n'est perdu.
+export function creerMomo(config, { fedapay } = {}) {
   if (config.versementMode === 'simulation') return creerMomoSimulation()
+  if (config.versementMode === 'fedapay' && fedapay) return creerMomoFedapay(fedapay)
   return null
 }

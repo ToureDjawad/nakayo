@@ -8,6 +8,7 @@ import { Bouton } from '../../components/Bouton.jsx'
 import { Champ, ChoixRadio } from '../../components/Champ.jsx'
 import { montantLisible } from '../../lib/format.js'
 import { messageErreurGlobale } from '../../lib/messages.js'
+import { ouvrirPageFournisseur } from '../../lib/paiements.js'
 import { useFormulaire } from '../../lib/useFormulaire.js'
 import { normaliserWhatsapp, validerWhatsapp } from '../../lib/validation.js'
 import { useChargement } from '../../lib/useChargement.js'
@@ -27,7 +28,8 @@ function Formulaire({ app, offre }) {
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState(null)
   const alerte = useRef(null)
-  const prix = valeurs.moyen ? offre.prix[valeurs.moyen] : null
+  // Montant réellement débité : en FCFA pour la carte quand FedaPay encaisse.
+  const prix = valeurs.moyen === 'carte' && offre.debitCarte ? offre.debitCarte : valeurs.moyen ? offre.prix[valeurs.moyen] : null
 
   useEffect(() => {
     if (erreur) alerte.current?.focus()
@@ -37,7 +39,10 @@ function Formulaire({ app, offre }) {
     {
       valeur: 'carte',
       libelle: `Carte bancaire : ${montantLisible(offre.prix.carte.montant, offre.prix.carte.devise)}`,
-      detail: 'Visa ou Mastercard, débitée en dollars américains.',
+      // Avec FedaPay, la carte est débitée en FCFA (même valeur, 1 $ = 600 FCFA).
+      detail: offre.debitCarte
+        ? `Visa ou Mastercard, débitée en FCFA : ${montantLisible(offre.debitCarte.montant, offre.debitCarte.devise)}.`
+        : 'Visa ou Mastercard, débitée en dollars américains.',
     },
     {
       valeur: 'mobile_money',
@@ -56,7 +61,9 @@ function Formulaire({ app, offre }) {
         moyen: valeurs.moyen,
         numeroMomo: valeurs.moyen === 'mobile_money' ? normaliserWhatsapp(valeurs.numeroMomo) : undefined,
       })
-      navigate(redirection)
+      // Page du fournisseur (FedaPay) : adresse externe ; simulation : page du site.
+      if (/^https?:\/\//.test(redirection)) ouvrirPageFournisseur(redirection)
+      else navigate(redirection)
     } catch (err) {
       setEnvoi(false)
       if (err instanceof ErreurApi && err.champs) return formulaire.appliquerErreursServeur(err.champs)

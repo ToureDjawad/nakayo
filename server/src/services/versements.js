@@ -122,6 +122,12 @@ export function messageAlerteAdmin(v, { email, clientUrl }) {
   }
 }
 
+// Retrouve notre référence (VER-…) à partir de l'identifiant du payout chez le fournisseur.
+export async function referenceVersementDepuisFournisseur(db, referenceFournisseur) {
+  const { rows } = await db.query('SELECT reference FROM versements WHERE reference_fournisseur = $1', [referenceFournisseur])
+  return rows[0]?.reference ?? null
+}
+
 async function lireVersementParId(db, id) {
   const { rows } = await db.query(`${SELECT_VERSEMENT} WHERE v.id = $1`, [id])
   return rows[0]
@@ -193,7 +199,8 @@ export async function traiterVersements(deps) {
       `UPDATE versements SET tentatives = tentatives + 1, derniere_tentative_le = $1, prochaine_tentative_le = NULL
         WHERE id IN (SELECT id FROM versements WHERE statut = 'a_verser' AND prochaine_tentative_le <= $1
                       ORDER BY prochaine_tentative_le, id LIMIT $2 FOR UPDATE SKIP LOCKED)
-        RETURNING reference, numero_momo, operateur_momo, montant, devise`,
+        RETURNING reference, numero_momo, operateur_momo, montant, devise,
+                  (SELECT nom FROM utilisateurs WHERE id = versements.testeur_id) AS nom`,
       [maintenant(), PAR_PASSAGE],
     )
     return rows
@@ -203,7 +210,7 @@ export async function traiterVersements(deps) {
     bilan.tentes++
     let resultat
     try {
-      resultat = await momo.verser({ reference: v.reference, numero: v.numero_momo, operateur: v.operateur_momo, montant: v.montant, devise: v.devise })
+      resultat = await momo.verser({ reference: v.reference, numero: v.numero_momo, operateur: v.operateur_momo, montant: v.montant, devise: v.devise, nom: v.nom })
     } catch (erreur) {
       journal.error(erreur)
       resultat = { statut: 'echoue', motif: 'fournisseur_injoignable' }

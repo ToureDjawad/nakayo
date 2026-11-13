@@ -16,10 +16,15 @@ import { routesTesteurApps } from './routes/testeurApps.js'
 import { routesTesteurs } from './routes/testeurs.js'
 import { routesTickets } from './routes/tickets.js'
 import { routesVersements } from './routes/versements.js'
+import { routesFedapay } from './routes/fedapay.js'
 import { health } from './routes/health.js'
 import { creerLanceurControles } from './services/controles.js'
 import { creerMessagerieJournal } from './services/messagerie.js'
+import { creerClientFedapay } from './services/fedapay.js'
 import { creerMomo } from './services/momo.js'
+
+const creerFedapay = (config) =>
+  config.fedapay?.cleSecrete ? creerClientFedapay({ cleSecrete: config.fedapay.cleSecrete, environnement: config.fedapay.environnement }) : null
 
 // Construit l'application. Les dépendances (base, envoi d'emails et de SMS, horloge)
 // sont injectables pour les tests.
@@ -30,11 +35,13 @@ export function creerApp(dependances = {}) {
     pool: dependances.pool ?? poolParDefaut,
     emails: dependances.emails ?? creerMessagerieJournal({ canal: 'email' }),
     sms: dependances.sms ?? creerMessagerieJournal({ canal: 'sms' }),
-    // Fournisseur des versements aux testeurs (US-22) ; null tant qu'aucun n'est branché.
-    momo: dependances.momo !== undefined ? dependances.momo : creerMomo(config),
+    // Client FedaPay (encaissements et versements) ; null tant que la clé n'est pas configurée.
+    fedapay: dependances.fedapay !== undefined ? dependances.fedapay : creerFedapay(config),
     maintenant: dependances.maintenant ?? (() => new Date()),
     journal: dependances.journal ?? console,
   }
+  // Fournisseur des versements aux testeurs (US-22) ; null tant qu'aucun n'est branché.
+  deps.momo = dependances.momo !== undefined ? dependances.momo : creerMomo(config, { fedapay: deps.fedapay })
   deps.limites = dependances.limites ?? creerLimitesApi(deps.maintenant)
   deps.controles = creerLanceurControles({ ...deps, fetch: dependances.fetch })
   deps.apresInscription = (utilisateurId) => deps.controles.lancer(utilisateurId)
@@ -63,6 +70,7 @@ export function creerApp(dependances = {}) {
   app.use('/api/paiements', routesPaiements(deps))
   app.use('/api/factures', routesFactures(deps))
   app.use('/api/versements', routesVersements(deps))
+  app.use('/api/fedapay', routesFedapay(deps))
 
   app.use((_req, _res, next) => next(introuvable('Route introuvable')))
   app.use(gestionnaireErreurs(deps.journal))

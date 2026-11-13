@@ -5,9 +5,9 @@ import { corps, exigerChamps } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
 import { creerApp, enregistrerPreparation, lireAppDeveloppeur, listerAppsDeveloppeur, modifierApp, supprimerApp, versAppApi } from '../services/apps.js'
 import { normaliserWhatsapp, validerWhatsapp } from '../services/support.js'
-import { MOYENS_PAIEMENT } from '../lib/offres.js'
+import { MOYENS_PAIEMENT, OFFRE_STANDARD } from '../lib/offres.js'
 import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
-import { creerPaiement, versPaiementApi } from '../services/paiements.js'
+import { creerPaiement, enregistrerReferenceFournisseur, marquerPaiementEchoue, versPaiementApi } from '../services/paiements.js'
 import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, telephonesTesteurs } from '../services/campagnes.js'
 import { lireAvancement } from '../services/avancement.js'
 import { enregistrerDecision, lireRapportFinal, rapportPdf } from '../services/rapportFinal.js'
@@ -42,7 +42,8 @@ function lireCorps(req) {
 }
 
 // docs/api-sprint2.md §1 : apps du développeur connecté (cookie du site).
-export function routesApps({ pool, limites, maintenant, config, sms, emails, journal }) {
+export function routesApps(deps) {
+  const { pool, limites, maintenant, config, sms, emails, journal } = deps
   const routeur = Router()
   routeur.use(exigerRole('developpeur'))
   const developpeurId = (req) => req.session.utilisateur.id
@@ -72,7 +73,8 @@ export function routesApps({ pool, limites, maintenant, config, sms, emails, jou
   // le fournisseur (ou sur la page de simulation en développement).
   routeur.post('/:id/paiements', exigerCompteValide, async (req, res) => {
     const id = idApp(req)
-    if (config.paiementMode !== 'simulation') {
+    const fedapay = config.paiementMode === 'fedapay' ? deps.fedapay : null
+    if (config.paiementMode !== 'simulation' && !fedapay) {
       throw new ErreurHttp(503, 'paiement_indisponible', { message: 'Le paiement en ligne n’est pas encore ouvert.' })
     }
     const { moyen, numeroMomo } = corps(req)
@@ -89,9 +91,31 @@ export function routesApps({ pool, limites, maintenant, config, sms, emails, jou
       moyen,
       numeroMomo: numero,
       fournisseur: config.paiementMode,
+      // FedaPay encaisse en FCFA : la carte est facturée au prix Mobile Money (même valeur, 1 $ = 600 FCFA).
+      prix: fedapay ? OFFRE_STANDARD.prix.mobile_money : undefined,
       maintenant: maintenant(),
     })
-    res.status(201).json({ paiement: versPaiementApi(paiement), redirection: `/paiement/simulation/${paiement.reference}` })
+    if (!fedapay) {
+      return res.status(201).json({ paiement: versPaiementApi(paiement), redirection: `/paiement/simulation/${paiement.reference}` })
+    }
+    // docs/fedapay.md §1 Page de paiement FedaPay ; le développeur revient ensuite sur « Mes paiements ».
+    let lien
+    try {
+      lien = await fedapay.creerTransaction({
+        reference: paiement.reference,
+        montant: paiement.montant,
+        devise: paiement.devise,
+        description: `Nakayo · ${OFFRE_STANDARD.nom} · ${app.nom}`,
+        urlRetour: `${config.clientUrl}/mon-compte/paiements/${paiement.reference}`,
+        client: { nom: req.session.utilisateur.nom, email: req.session.utilisateur.email, numero },
+      })
+    } catch (erreur) {
+      deps.journal.error(erreur)
+      await marquerPaiementEchoue(pool, { reference: paiement.reference, maintenant: maintenant() })
+      throw new ErreurHttp(502, 'fournisseur_indisponible', { message: 'Le service de paiement ne répond pas. Réessayez dans quelques minutes.' })
+    }
+    await enregistrerReferenceFournisseur(pool, { reference: paiement.reference, referenceFournisseur: lien.id })
+    res.status(201).json({ paiement: versPaiementApi(paiement), redirection: lien.url })
   })
 
   // §6 Préparation du lancement (US-42) : la liste des points et le groupe des testeurs (US-13).
