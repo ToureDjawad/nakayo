@@ -93,3 +93,12 @@ export async function telechargerBugsCsv(id) {
   if (!reponse.ok) throw new ErreurApi({ statut: reponse.status, code: 'erreur_inconnue' })
   return reponse.blob()
 }
+
+// Devis de l'offre Lancement Afrique (docs/api-offres.md §4, US-37).
+export function lireDevis(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/devis`, { signal })
+}
+
+export function demanderDevis(id, { pays, langues, profils, scenarios }) {
+  return requete(`/apps/${encodeURIComponent(id)}/devis`, { methode: 'PUT', corps: { pays, langues, profils, scenarios } })
+}

@@ -127,8 +127,7 @@ const VERIFICATIONS = [
   { icone: 'bouclier', titre: 'Installation depuis le Play Store', detail: 'Pas d’APK, pas d’émulateur, pas de téléphone rooté.' },
 ]
 
-// Offres du modèle économique (§3). Standard et Pro sont ouvertes ; Lancement Afrique arrive
-// avec le devis (US-37).
+// Offres du modèle économique (§3), toutes ouvertes. Lancement Afrique se commande sur devis (US-37).
 const OFFRES = [
   {
     code: 'standard',
@@ -143,7 +142,6 @@ const OFFRES = [
       'Brouillon du formulaire Google et rapport PDF',
       'Nouvelle campagne offerte si refus pour engagement',
     ],
-    disponible: true,
   },
   {
     code: 'pro',
@@ -159,7 +157,6 @@ const OFFRES = [
       'Export CSV des bugs',
     ],
     misEnAvant: true,
-    disponible: true,
   },
   {
     code: 'afrique',
@@ -175,6 +172,7 @@ const OFFRES = [
       'Scénarios sur mesure et devis validé',
       'Rapport sur la compréhension et l’usage réel',
     ],
+    action: 'Demander un devis',
   },
 ]
 
@@ -256,16 +254,9 @@ function Offre({ offre }) {
       aria-labelledby={`offre-${offre.code}`}
       className={`flex flex-col rounded-carte border p-6 ${fonce ? 'border-accent-fonce bg-accent-fonce text-white' : 'border-trait bg-white'}`}
     >
-      <div className="flex items-center justify-between gap-3">
-        <h3 id={`offre-${offre.code}`} className={`text-lg font-semibold ${fonce ? 'text-white' : 'text-encre'}`}>
-          {offre.nom}
-        </h3>
-        {!offre.disponible && (
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${fonce ? 'bg-argile-clair text-argile-fonce' : 'bg-fond-doux text-alerte'}`}>
-            Bientôt disponible
-          </span>
-        )}
-      </div>
+      <h3 id={`offre-${offre.code}`} className={`text-lg font-semibold ${fonce ? 'text-white' : 'text-encre'}`}>
+        {offre.nom}
+      </h3>
       <p className={`mt-4 font-titre text-4xl font-semibold ${fonce ? 'text-white' : 'text-encre'}`}>
         {offre.aPartirDe && 'dès '}
         {offre.prix} <span className={`font-sans text-sm font-normal ${fonce ? 'text-sur-fonce' : 'text-discret'}`}>par app</span>
@@ -280,13 +271,9 @@ function Offre({ offre }) {
           </li>
         ))}
       </ul>
-      {offre.disponible ? (
-        <Link to="/inscription" className={`mt-6 ${classeBoutonSecondaire}`}>
-          Choisir {offre.nom}
-        </Link>
-      ) : (
-        <p className={`mt-6 text-center text-sm ${fonce ? 'text-sur-fonce' : 'text-discret'}`}>Ouverture après les premières campagnes Standard.</p>
-      )}
+      <Link to="/inscription" className={`mt-6 ${classeBoutonSecondaire}`}>
+        {offre.action ?? `Choisir ${offre.nom}`}
+      </Link>
     </li>
   )
 }

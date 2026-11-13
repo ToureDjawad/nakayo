@@ -110,6 +110,7 @@ const LIENS_ADMIN = [
   { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
   { to: '/admin/apps', libelle: 'Apps à vérifier', icone: 'app' },
   { to: '/admin/campagnes', libelle: 'Campagnes', icone: 'campagne' },
+  { to: '/admin/devis', libelle: 'Devis Afrique', icone: 'devis' },
   { to: '/admin/messages', libelle: 'Messages reçus', icone: 'boite' },
   { to: '/admin/support', libelle: 'Contact du support', icone: 'message' },
 ]
@@ -144,6 +145,14 @@ function IconeAdmin({ nom }) {
       <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" />
         <path d="M16 2v4M8 2v4M3 10h18M8 15l2 2 4-4" />
+      </svg>
+    )
+  }
+  if (nom === 'devis') {
+    return (
+      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+        <path d="M14 2v6h6M8 13h8M8 17h5" />
       </svg>
     )
   }

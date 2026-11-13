@@ -13,6 +13,16 @@ const STATUTS = {
   refusee: ['Refusée', 'bg-erreur-clair text-erreur'],
 }
 
+const NOMS_OFFRES = { standard: 'Offre Standard', pro: 'Offre Pro', afrique: 'Offre Lancement Afrique' }
+
+// Lien vers le devis Lancement Afrique (US-37), selon où il en est.
+const LIENS_DEVIS = {
+  aucun: 'Devis Lancement Afrique',
+  demande: 'Devis Lancement Afrique à l’étude',
+  propose: 'Devis Lancement Afrique reçu',
+  refuse: 'Réponse au devis Lancement Afrique',
+}
+
 const lienBoutonPetit =
   'inline-flex h-10 items-center justify-center rounded-champ bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-fonce'
 
@@ -76,7 +86,7 @@ export function MesApps() {
                     </div>
                     <p className="mt-0.5 font-mono text-sm [overflow-wrap:anywhere] text-texte">{app.package}</p>
                     {app.statut !== 'brouillon' && (
-                      <p className="mt-0.5 text-sm text-texte">{app.offre === 'pro' ? 'Offre Pro' : 'Offre Standard'}</p>
+                      <p className="mt-0.5 text-sm text-texte">{NOMS_OFFRES[app.offre] ?? NOMS_OFFRES.standard}</p>
                     )}
                     {app.statut === 'brouillon' && (
                       <>
@@ -91,6 +101,13 @@ export function MesApps() {
                             className="text-sm font-semibold text-accent underline underline-offset-2"
                           >
                             Modifier
+                          </Link>
+                          <Link
+                            to={`/mon-compte/apps/${app.id}/devis`}
+                            aria-label={`${LIENS_DEVIS[app.devis?.statut ?? 'aucun']} : ${app.nom}`}
+                            className="text-sm font-semibold text-accent underline underline-offset-2"
+                          >
+                            {LIENS_DEVIS[app.devis?.statut ?? 'aucun']}
                           </Link>
                         </div>
                       </>

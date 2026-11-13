@@ -129,6 +129,7 @@ function versApp(a) {
     motifRefus: a.motifRefus ?? null,
     preparation: a.preparation ?? { elements: [], complete: false, completeLe: null },
     campagne: null,
+    devis: devisDeLApp(a.id) ? { statut: devisDeLApp(a.id).statut } : null,
   }
   const campagne = campagneDeLApp(a.id)
   if (campagne) copie.campagne = { id: campagne.id, statut: campagne.statut, demarreeLe: campagne.demarreeLe }
@@ -188,7 +189,7 @@ function versCampagne(c, vue = 'developpeur') {
     jour,
     joursCampagne: JOURS_CAMPAGNE,
     joursExiges: 14,
-    testeursVises: 15,
+    testeursVises: c.testeursVises ?? 15,
     groupeGoogle: 'testeurs@nakayo.test',
     demarreeLe: c.demarreeLe,
     finPrevueLe: new Date(new Date(c.demarreeLe).getTime() + JOURS_CAMPAGNE * 24 * 3600 * 1000).toISOString(),
@@ -348,7 +349,71 @@ const OFFRE_PRO = {
   garantie: OFFRE.garantie,
   monteeEnGamme: { prix: { carte: { montant: 3000, devise: 'USD' }, mobile_money: { montant: 18000, devise: 'XOF' } } },
 }
-const OFFRES = { standard: OFFRE, pro: OFFRE_PRO }
+// Lancement Afrique (docs/api-offres.md §4) : sur devis, à partir de 99 $.
+const OFFRE_AFRIQUE = {
+  code: 'afrique',
+  nom: 'Offre Lancement Afrique',
+  description:
+    'Tout Pro, avec 20 testeurs dans plusieurs villes et sur plusieurs réseaux, des scénarios sur mesure et un rapport sur l’usage réel : réseau lent, petits téléphones, compréhension de la langue.',
+  prix: { carte: { montant: 9900, devise: 'USD' }, mobile_money: { montant: 59400, devise: 'XOF' } },
+  surDevis: true,
+  testeurs: 20,
+  garantie: OFFRE.garantie,
+}
+const OFFRES = { standard: OFFRE, pro: OFFRE_PRO, afrique: OFFRE_AFRIQUE }
+
+// Devis Lancement Afrique (docs/api-offres.md §4) : un par app, gardé dans la base simulée.
+function devisListe() {
+  const b = base()
+  b.devis ??= []
+  return b.devis
+}
+const devisDeLApp = (appId) => devisListe().find((d) => d.appId === appId) ?? null
+const lisible = (montant, devise) =>
+  devise === 'XOF' ? `${new Intl.NumberFormat('fr-FR').format(montant).replace(/\s/g, ' ')} FCFA` : `${(montant / 100).toFixed(2).replace('.', ',')} $ US`
+function versDevis(d, vue = 'developpeur') {
+  const { appId, developpeurId, prixCarte, prixMobileMoney, ...reste } = d
+  const devis = {
+    ...reste,
+    appId,
+    prix:
+      d.statut === 'propose'
+        ? {
+            carte: { montant: prixCarte, devise: 'USD', montantLisible: lisible(prixCarte, 'USD') },
+            mobile_money: { montant: prixMobileMoney, devise: 'XOF', montantLisible: lisible(prixMobileMoney, 'XOF') },
+          }
+        : null,
+  }
+  if (vue !== 'admin') return devis
+  const app = apps().find((a) => a.id === appId)
+  const dev = base().utilisateurs.find((u) => u.id === developpeurId)
+  return {
+    ...devis,
+    app: { id: app.id, nom: app.nom, package: app.package, statut: app.statut },
+    developpeur: { id: dev.id, nom: dev.nom, email: dev.email, pays: dev.pays ?? null },
+  }
+}
+const PAYS_DEVIS = ['BJ', 'TG', 'CI', 'SN', 'BF', 'NG', 'NE', 'ML', 'GH']
+const LANGUES_DEVIS = ['fr', 'en', 'fon', 'yo']
+function lireBesoin(corps) {
+  const liste = (v, connus, max) => {
+    if (!Array.isArray(v) || !v.length) return 'requis'
+    if (v.length > max) return 'trop_nombreux'
+    return v.every((c) => connus.includes(c)) ? null : 'valeur_inconnue'
+  }
+  const texte = (v, [min, max]) => {
+    const t = (v ?? '').trim()
+    return !t ? 'requis' : t.length < min ? 'trop_court' : t.length > max ? 'trop_long' : null
+  }
+  return Object.fromEntries(
+    Object.entries({
+      pays: liste(corps.pays, PAYS_DEVIS, 6),
+      langues: liste(corps.langues, LANGUES_DEVIS, 4),
+      profils: texte(corps.profils, [10, 1000]),
+      scenarios: texte(corps.scenarios, [10, 2000]),
+    }).filter(([, c]) => c),
+  )
+}
 
 function paiements() {
   const b = base()
@@ -389,7 +454,7 @@ function lancerPaiement(id, corps = {}, nature) {
   const numero = moyen === 'mobile_money' ? normaliserWhatsapp(corps.numeroMomo) : null
   const champs = Object.fromEntries(
     Object.entries({
-      offre: OFFRES[code] && (nature === 'offre' || code !== 'standard') ? null : 'valeur_inconnue',
+      offre: OFFRES[code] && (nature === 'offre' || code === 'pro') ? null : 'valeur_inconnue',
       moyen: !moyen ? 'requis' : OFFRE.prix[moyen] ? null : 'valeur_inconnue',
       numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
     }).filter(([, c]) => c),
@@ -400,10 +465,19 @@ function lancerPaiement(id, corps = {}, nature) {
   if (nature === 'offre' && app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
   if (nature === 'montee_en_gamme') {
     if (['brouillon', 'refusee'].includes(app.statut)) return erreur(409, 'statut_incompatible', { statut: app.statut })
-    if ((app.offre ?? 'standard') === code) return erreur(409, 'deja_dans_cette_offre')
+    if ((app.offre ?? 'standard') !== 'standard') return erreur(409, 'deja_dans_cette_offre')
     if (campagneDeLApp(app.id)?.statut === 'terminee') return erreur(409, 'campagne_terminee')
   }
-  const prix = nature === 'offre' ? OFFRES[code].prix[moyen] : OFFRES[code].monteeEnGamme.prix[moyen]
+  // Lancement Afrique : le prix du devis proposé (§4.3).
+  const devis = devisDeLApp(app.id)
+  if (OFFRES[code].surDevis && devis?.statut !== 'propose') return erreur(409, 'devis_requis')
+  const prix = OFFRES[code].surDevis
+    ? moyen === 'carte'
+      ? { montant: devis.prixCarte, devise: 'USD' }
+      : { montant: devis.prixMobileMoney, devise: 'XOF' }
+    : nature === 'offre'
+      ? OFFRES[code].prix[moyen]
+      : OFFRES[code].monteeEnGamme.prix[moyen]
   const reference = `PAY-${Array.from({ length: 16 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('')}`
   const paiement = {
     reference,
@@ -1037,13 +1111,14 @@ export const routes = [
         developpeurId: utilisateur.id,
         statut: 'en_cours',
         demarreeLe: maintenant,
-        testeurs: Array.from({ length: 15 }, (_, i) => testeurSimule(campagnes().length * 15 + i + 1, maintenant)),
+        testeursVises: OFFRES[app.offre ?? 'standard'].testeurs ?? 15,
+        testeurs: Array.from({ length: OFFRES[app.offre ?? 'standard'].testeurs ?? 15 }, (_, i) => testeurSimule(campagnes().length * 20 + i + 1, maintenant)),
       }
       campagnes().push(campagne)
       // Offre Pro : deux testeurs simulés signalent un bug, pour voir la liste côté développeur (US-34).
       if ((app.offre ?? 'standard') !== 'standard') bugsSimules(app, campagne, maintenant)
       sauver()
-      console.info(`[mocks] SMS envoyés aux 15 testeurs de « ${app.nom} »`)
+      console.info(`[mocks] SMS envoyés aux ${campagne.testeurs.length} testeurs de « ${app.nom} »`)
       return ok({ campagne: versCampagne(campagne) }, 201)
     },
   },
@@ -1086,6 +1161,49 @@ export const routes = [
     chemin: '/api/offres',
     traiter() {
       return ok({ offres: Object.values(OFFRES) })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/apps/:id/devis',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      const devis = devisDeLApp(app.id)
+      return ok({ devis: devis ? versDevis(devis) : null })
+    },
+  },
+  {
+    methode: 'PUT',
+    chemin: '/api/apps/:id/devis',
+    traiter({ params, corps }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      if (utilisateur.statut !== 'valide') return erreur(403, 'compte_non_valide')
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      const champs = lireBesoin(corps)
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      if (app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
+      const existant = devisDeLApp(app.id)
+      const besoin = {
+        pays: [...new Set(corps.pays)],
+        langues: [...new Set(corps.langues)],
+        profils: corps.profils.trim(),
+        scenarios: corps.scenarios.trim(),
+        statut: 'demande',
+        prixCarte: null,
+        prixMobileMoney: null,
+        message: null,
+        demandeLe: horodatage(),
+        reponduLe: null,
+      }
+      if (existant) Object.assign(existant, besoin)
+      else devisListe().push({ id: nouvelId(), appId: app.id, developpeurId: utilisateur.id, ...besoin })
+      sauver()
+      return ok({ devis: versDevis(devisDeLApp(app.id)) })
     },
   },
   {
@@ -1306,6 +1424,63 @@ export const routes = [
       sauver()
       console.info(`[mocks] SMS envoyé au remplaçant de ${sortant.nom}`)
       return ok({ campagne: versCampagne(campagne, 'admin') })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/admin/devis',
+    traiter({ query }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const statut = query.get('statut') || 'demande'
+      if (!['demande', 'propose', 'refuse'].includes(statut)) return erreur(422, 'validation', { champs: { statut: 'valeur_inconnue' } })
+      const liste = devisListe()
+        .filter((d) => d.statut === statut)
+        .sort((a, b) => (statut === 'demande' ? a.demandeLe.localeCompare(b.demandeLe) : b.reponduLe.localeCompare(a.reponduLe)))
+      return ok({ devis: liste.map((d) => versDevis(d, 'admin')) })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/devis/:id/proposition',
+    traiter({ params, corps }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const devis = devisListe().find((d) => d.id === params.id)
+      if (!devis) return erreur(404, 'introuvable')
+      const prix = (v, min) => (v == null ? 'requis' : !Number.isInteger(v) ? 'format_invalide' : v < min ? 'trop_petit' : null)
+      const champs = Object.fromEntries(
+        Object.entries({ prixCarte: prix(corps.prixCarte, 9900), prixMobileMoney: prix(corps.prixMobileMoney, 59400) }).filter(([, c]) => c),
+      )
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      if (devis.statut !== 'demande') return erreur(409, 'deja_repondu')
+      Object.assign(devis, {
+        statut: 'propose',
+        prixCarte: corps.prixCarte,
+        prixMobileMoney: corps.prixMobileMoney,
+        message: corps.message?.trim() || null,
+        reponduLe: horodatage(),
+      })
+      sauver()
+      console.info('[mocks] Email envoyé au développeur : devis Lancement Afrique proposé')
+      return ok({ devis: versDevis(devis, 'admin') })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/devis/:id/refus',
+    traiter({ params, corps }) {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const devis = devisListe().find((d) => d.id === params.id)
+      if (!devis) return erreur(404, 'introuvable')
+      const message = (corps.message ?? '').trim()
+      if (!message) return erreur(422, 'validation', { champs: { message: 'requis' } })
+      if (devis.statut !== 'demande') return erreur(409, 'deja_repondu')
+      Object.assign(devis, { statut: 'refuse', message, reponduLe: horodatage() })
+      sauver()
+      console.info('[mocks] Email envoyé au développeur : devis Lancement Afrique refusé')
+      return ok({ devis: versDevis(devis, 'admin') })
     },
   },
   {
