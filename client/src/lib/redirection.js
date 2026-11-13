@@ -11,5 +11,5 @@ export function destinationApresConnexion(utilisateur, suite) {
   const sure = suiteSure(suite)
   const admin = utilisateur?.role === 'admin'
   if (sure && (admin || !sure.startsWith('/admin'))) return sure
-  return admin ? '/admin/comptes' : '/mon-compte'
+  return admin ? '/admin/tableau-de-bord' : '/mon-compte'
 }

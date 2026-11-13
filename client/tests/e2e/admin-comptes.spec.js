@@ -17,8 +17,7 @@ test.describe('Back-office : comptes en attente (US-08)', () => {
 
   test('liste, pagination et filtres', async ({ page }) => {
     await connecterAdmin(page)
-    await page.goto('/admin')
-    await expect(page).toHaveURL('/admin/comptes')
+    await page.goto('/admin/comptes')
     await expect(page.getByRole('heading', { name: '23 comptes en attente' })).toBeVisible()
     await expect(page.getByRole('article')).toHaveCount(20)
 

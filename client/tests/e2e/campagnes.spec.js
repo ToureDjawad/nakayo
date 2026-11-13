@@ -42,7 +42,7 @@ test.describe('Campagnes de test (US-13, US-16, US-43, US-21)', () => {
     await deconnecter(page)
 
     await seConnecter(page, 'admin@nakayo.test')
-    await page.waitForURL('/admin/comptes')
+    await page.waitForURL('/admin/tableau-de-bord')
     await page.getByRole('link', { name: 'Apps à vérifier' }).click()
     await page.getByRole('button', { name: 'Valider Marché Facile' }).click()
     await expect(page.getByText('« Marché Facile » est validée.', { exact: false })).toBeVisible()
@@ -68,7 +68,7 @@ test.describe('Campagnes de test (US-13, US-16, US-43, US-21)', () => {
     await deconnecter(page)
 
     await seConnecter(page, 'admin@nakayo.test')
-    await page.waitForURL('/admin/comptes')
+    await page.waitForURL('/admin/tableau-de-bord')
     await page.getByRole('link', { name: 'Campagnes' }).click()
     await expect(page.getByRole('heading', { name: '1 campagne en cours' })).toBeVisible()
     await page.getByRole('button', { name: 'Voir les testeurs' }).click()

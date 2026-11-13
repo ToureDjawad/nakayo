@@ -61,7 +61,7 @@ export async function seConnecter(page, email, motDePasse = COMPTES[email]) {
 
 export async function connecterAdmin(page, email = 'admin@nakayo.test') {
   await seConnecter(page, email)
-  await page.waitForURL(email === 'admin@nakayo.test' ? '/admin/comptes' : '/mon-compte')
+  await page.waitForURL(email === 'admin@nakayo.test' ? '/admin/tableau-de-bord' : '/mon-compte')
 }
 
 // L'API simulée écrit le lien de réinitialisation dans la console du navigateur.

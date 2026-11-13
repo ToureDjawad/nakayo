@@ -16,6 +16,7 @@ import {
 import { deciderApp, lireAppAdmin, listerAppsAdmin, messageDecisionApp, STATUTS_FILE } from '../services/verificationApps.js'
 import { lireCampagne, listerCampagnesAdmin, messageNouvelleApp, remplacerTesteur, telephonesTesteurs } from '../services/campagnes.js'
 import { listerVersementsAdmin, relancerVersement, traiterVersements } from '../services/versements.js'
+import { lireTableauDeBord } from '../services/tableauDeBord.js'
 import { transaction } from './auth.js'
 
 const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
@@ -278,6 +279,11 @@ export function routesAdmin(deps) {
       journal.error(erreur)
     }
     res.json({ campagne })
+  })
+
+  // Sprint 4 §5 Tableau de bord global (US-24).
+  routeur.get('/tableau-de-bord', async (_req, res) => {
+    res.json({ tableauDeBord: await lireTableauDeBord(pool, { maintenant: maintenant() }) })
   })
 
   // Sprint 4 §2.4 Versements aux testeurs : liste (par défaut ceux en échec) et relance.

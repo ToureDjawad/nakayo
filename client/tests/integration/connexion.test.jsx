@@ -49,13 +49,13 @@ describe('Connexion (US-09 web)', () => {
     simulerApi({
       'POST /api/auth/connexion': { corps: { utilisateur: ADMIN } },
       'GET /api/auth/moi': { corps: { utilisateur: ADMIN } },
-      'GET /api/admin/comptes': LISTE_VIDE,
+      'GET /api/admin/tableau-de-bord': 'reseau',
     })
     const user = userEvent.setup()
     const { routeur } = rendreA('/connexion')
     await seConnecter(user, 'Admin@Nakayo.test')
-    expect(await screen.findByRole('heading', { name: 'Aucun compte en attente' })).toBeInTheDocument()
-    expect(routeur.state.location.pathname).toBe('/admin/comptes')
+    expect(await screen.findByRole('heading', { name: 'Tableau de bord', level: 1 })).toBeInTheDocument()
+    expect(routeur.state.location.pathname).toBe('/admin/tableau-de-bord')
   })
 
   it('envoie un développeur vers son compte et ignore une suite vers un autre site', async () => {

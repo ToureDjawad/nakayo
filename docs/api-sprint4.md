@@ -111,3 +111,31 @@ Réservé au testeur validé (jeton de l'app Android).
   - La table `rappels_sms` (testeur, jour) évite les doublons.
   - Un serveur redémarré entre 22 h et minuit envoie aussitôt les rappels du soir.
   - `RAPPELS_SMS=false` coupe ces SMS.
+
+## 5. Tableau de bord admin (US-24)
+
+### 5.1 `GET /api/admin/tableau-de-bord`
+
+Réservé aux admins. Il renvoie `{ tableauDeBord }` :
+
+- **`campagnes`** : `enCours`, `terminees`, `annulees`, `enRetard` et `retards[]` (`campagneId`, `appNom`, `jour`, `testeursEnBonneVoie`). Une campagne en cours est **en retard** quand moins de 12 testeurs ayant installé l'app peuvent encore atteindre 14 jours avant la clôture, même sans manquer aucun jour : jours validés + jours restants (le jour en cours compris) ≥ 14.
+- **`testeurs`** :
+  - `valides` : nombre de testeurs validés ;
+  - `actifs` : testeurs dont l'app est installée dans une campagne en cours ;
+  - `affectations` et `remplaces` ;
+  - `tauxAbandon` : remplacés / affectations, de 0 à 1 ;
+  - `avecRemise` : affectations dont le compteur a été remis à zéro au moins une fois.
+- **`finances`** : montants en FCFA. Les paiements par carte sont convertis à `tauxUsdFcfa` (600, le taux du modèle économique).
+  - `chiffreAffaires` : tous les paiements réussis ;
+  - `versesTesteurs` et `dusTesteurs` ;
+  - `marge` : chiffre d'affaires moins ce qui est versé ou dû aux testeurs, hors frais des fournisseurs ;
+  - chaque montant a sa version `…Lisible` ;
+  - `parApp[]` (une ligne par campagne) : `encaisse`, `versesTesteurs`, `dusTesteurs`, `marge`, `margeDefinitive`. Pour une campagne en cours, la marge est estimée au pire cas : les testeurs visés sont tous payés.
+- **`versementsEchoues`** : la liste du §2.4 avec le statut `echoue`, plus `nombreVersementsEchoues`.
+
+### 5.2 Site
+
+- La page `/admin/tableau-de-bord` est la première entrée du menu.
+- `/admin` y redirige.
+- Un admin y arrive après sa connexion.
+- Chaque versement échoué a un bouton « Relancer » (§2.4).
