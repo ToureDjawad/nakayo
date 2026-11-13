@@ -36,6 +36,8 @@ class AppModele(
     private val calcul: CoroutineDispatcher,
     information: String? = null,
     private val surRapport: (AffectationTesteur) -> Unit,
+    // US-33 : rapport de bug (offres Pro et Lancement Afrique).
+    private val surBug: (AffectationTesteur) -> Unit = {},
     private val surQuitter: () -> Unit,
     private val surSessionExpiree: (message: String) -> Unit,
 ) {
@@ -118,6 +120,11 @@ class AppModele(
     fun ecrireRapport() {
         val a = etatInterne.value.affectation
         if (etape(a) == Etape.Rapport) surRapport(a)
+    }
+
+    fun signalerBug() {
+        val a = etatInterne.value.affectation
+        if (a.rapportsDeBugs && a.installationConfirmee) surBug(a)
     }
 
     fun retour() = surQuitter()

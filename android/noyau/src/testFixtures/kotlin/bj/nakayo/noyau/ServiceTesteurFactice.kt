@@ -45,6 +45,12 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     var reponseUsages: suspend (List<UsageJour>) -> Resultat<BilanUsages> = { Resultat.Succes(BilanUsages(it.size, 0)) }
     // Sprint 4 : une app en test et un versement reçu.
     var reponsePortefeuille: suspend () -> Resultat<Portefeuille> = { Resultat.Succes(portefeuilleExemple()) }
+    // US-33 : le bug envoyé est renvoyé « nouveau » ; aucun bug signalé au départ.
+    var reponseBug: suspend (String, RapportBug, List<Photo>) -> Resultat<BugSignale> = { _, bug, captures ->
+        Resultat.Succes(BugSignale("8", bug.titre, bug.gravite, captures.size, "nouveau", signaleLe = "2026-11-13T09:00:00.000Z"))
+    }
+    var reponseMesBugs: suspend (String) -> Resultat<List<BugSignale>> = { Resultat.Succes(emptyList()) }
+    var dernierBug: Pair<RapportBug, List<Photo>>? = null
     var dernierRapport: RapportJour? = null
     var dernieresUsages: List<UsageJour>? = null
 
@@ -133,6 +139,14 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     }
 
     override suspend fun portefeuille() = reponsePortefeuille().also { appels += "portefeuille" }
+
+    override suspend fun envoyerBug(affectationId: String, bug: RapportBug, captures: List<Photo>): Resultat<BugSignale> {
+        appels += "bug:$affectationId:${captures.size}"
+        dernierBug = bug to captures
+        return reponseBug(affectationId, bug, captures)
+    }
+
+    override suspend fun mesBugs(affectationId: String) = reponseMesBugs(affectationId).also { appels += "bugs:$affectationId" }
 
     companion object {
         fun portefeuilleExemple() = Portefeuille(

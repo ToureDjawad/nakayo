@@ -17,9 +17,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import bj.nakayo.testeur.ui.apps.EcranApp
+import bj.nakayo.testeur.ui.apps.EcranBug
 import bj.nakayo.testeur.ui.apps.EcranRapport
 import bj.nakayo.testeur.ui.apps.actions as actionsApp
 import bj.nakayo.testeur.ui.apps.actions as actionsRapport
+import bj.nakayo.testeur.ui.apps.actions as actionsBug
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -46,7 +48,7 @@ fun AppNakayo(navigation: Navigation) {
     val mesureAutorisee by navigation.mesureAutorisee.collectAsStateWithLifecycle()
     BackHandler(
         enabled = ecran is Ecran.Connexion || ecran is Ecran.Inscription || ecran is Ecran.Profil || ecran is Ecran.Support ||
-            ecran is Ecran.App || ecran is Ecran.Rapport || ecran is Ecran.Portefeuille,
+            ecran is Ecran.App || ecran is Ecran.Rapport || ecran is Ecran.Bug || ecran is Ecran.Portefeuille,
     ) { navigation.retour() }
 
     // Retour dans l'app (depuis le Play Store, l'app testée ou le lendemain) : l'écran est relu.
@@ -136,6 +138,10 @@ fun AppNakayo(navigation: Navigation) {
         is Ecran.Rapport -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()
             EcranRapport(etat, actuel.modele.affectation, actuel.modele.actionsRapport())
+        }
+        is Ecran.Bug -> {
+            val etat by actuel.modele.etat.collectAsStateWithLifecycle()
+            EcranBug(etat, actuel.modele.affectation.app.nom, actuel.modele.actionsBug())
         }
         is Ecran.Portefeuille -> {
             val etat by actuel.modele.etat.collectAsStateWithLifecycle()

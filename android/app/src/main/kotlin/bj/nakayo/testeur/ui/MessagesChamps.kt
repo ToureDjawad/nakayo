@@ -81,6 +81,41 @@ object MessagesChamps {
     }
 
     // Rapport du jour (§2.4).
+    // US-33 : rapport de bug (docs/api-bugs.md §1.1).
+    fun bug(champ: String, code: String): String = when (champ) {
+        "titre" -> when (code) {
+            "requis" -> "Donnez un titre court au bug."
+            "trop_court" -> "Le titre doit faire 5 caractères au moins."
+            "trop_long" -> "120 caractères au plus."
+            else -> "Ce titre n'est pas valide."
+        }
+        "etapes" -> when (code) {
+            "requis" -> "Indiquez les étapes pour reproduire le bug."
+            "trop_court" -> "Décrivez les étapes (10 caractères au moins)."
+            "trop_long" -> "2000 caractères au plus."
+            else -> "Ces étapes ne sont pas valides."
+        }
+        "resultatAttendu" -> when (code) {
+            "requis" -> "Dites ce qui aurait dû se passer."
+            "trop_court" -> "5 caractères au moins."
+            "trop_long" -> "1000 caractères au plus."
+            else -> "Cette réponse n'est pas valide."
+        }
+        "resultatObtenu" -> when (code) {
+            "requis" -> "Dites ce qui s'est passé à la place."
+            "trop_court" -> "5 caractères au moins."
+            "trop_long" -> "1000 caractères au plus."
+            else -> "Cette réponse n'est pas valide."
+        }
+        "gravite" -> "Choisissez la gravité du bug."
+        "captures" -> when (code) {
+            "trop_nombreuses" -> "5 captures au plus."
+            "fichier_trop_lourd" -> "Une capture est trop lourde. Choisissez une autre image."
+            else -> "Une capture est illisible. Choisissez des images JPEG ou PNG."
+        }
+        else -> "Cette réponse n'est pas valide."
+    }
+
     fun rapport(champ: String, code: String): String = when (champ) {
         "actions" -> when (code) {
             "requis" -> "Dites ce que vous avez fait dans l'app aujourd'hui."

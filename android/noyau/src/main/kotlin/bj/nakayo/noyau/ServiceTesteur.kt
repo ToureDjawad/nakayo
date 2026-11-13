@@ -22,6 +22,10 @@ interface ServiceTesteur {
     suspend fun signaler(): Resultat<Unit>
     suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages>
 
+    // US-33 : rapports de bugs avec captures (docs/api-bugs.md §1).
+    suspend fun envoyerBug(affectationId: String, bug: RapportBug, captures: List<Photo>): Resultat<BugSignale>
+    suspend fun mesBugs(affectationId: String): Resultat<List<BugSignale>>
+
     // Sprint 4 : gains en attente et versements reçus (docs/api-sprint4.md §3).
     suspend fun portefeuille(): Resultat<Portefeuille>
 

@@ -156,6 +156,24 @@ class ApiNakayo(
         appeler(requete(cheminApp(affectationId, "rapports")).post(json(RapportJour.serializer(), rapport)), ReponseApp.serializer())
             .map { it.app }
 
+    // docs/api-bugs.md §1.1 Rapport de bug : champs texte et jusqu'à 5 captures.
+    override suspend fun envoyerBug(affectationId: String, bug: RapportBug, captures: List<Photo>): Resultat<BugSignale> {
+        val corps = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("titre", bug.titre)
+            .addFormDataPart("etapes", bug.etapes)
+            .addFormDataPart("resultatAttendu", bug.resultatAttendu)
+            .addFormDataPart("resultatObtenu", bug.resultatObtenu)
+            .addFormDataPart("gravite", bug.gravite)
+            .addFormDataPart("versionApp", bug.versionApp)
+        captures.forEachIndexed { i, capture -> corps.addFormDataPart("captures", nomFichier("capture-${i + 1}", capture), photo(capture)) }
+        return appeler(requete(cheminApp(affectationId, "bugs")).post(corps.build()), ReponseBug.serializer()).map { it.bug }
+    }
+
+    // docs/api-bugs.md §1.2 Bugs déjà signalés sur cette app.
+    override suspend fun mesBugs(affectationId: String): Resultat<List<BugSignale>> =
+        appeler(requete(cheminApp(affectationId, "bugs")).get(), ReponseBugs.serializer()).map { it.bugs }
+
     // §2.5 Ouverture de l'app compagnon, horodatée par le serveur.
     override suspend fun signaler(): Resultat<Unit> =
         appeler(requete("api/testeurs/moi/signal").post(ByteArray(0).toRequestBody(null)), null)
