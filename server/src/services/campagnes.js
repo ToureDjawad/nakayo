@@ -1,3 +1,4 @@
+import { offre } from '../lib/offres.js'
 import {
   choisirTesteurs,
   JOURS_CAMPAGNE,
@@ -35,6 +36,12 @@ async function lireCandidats(db, appId) {
     [appId],
   )
   return rows.map((r) => ({ ...r, id: String(r.id) }))
+}
+
+// Offre Pro (US-32) : les testeurs les mieux notés d'abord.
+async function testeursConfirmesExiges(db, appId) {
+  const { rows } = await db.query('SELECT offre FROM apps WHERE id = $1', [appId])
+  return offre(rows[0]?.offre).testeursConfirmes
 }
 
 async function lireMembres(db, campagneId) {
@@ -142,7 +149,10 @@ export async function demarrerCampagne(client, { appId, developpeurId, groupeGoo
   if (existantes.length) throw new ErreurHttp(409, 'campagne_existante', { message: 'La campagne de cette app a déjà démarré.' })
 
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
-  const testeurs = choisirTesteurs(await lireCandidats(client, appId), { nombre: TESTEURS_PAR_CAMPAGNE })
+  const testeurs = choisirTesteurs(await lireCandidats(client, appId), {
+    nombre: TESTEURS_PAR_CAMPAGNE,
+    confirmes: await testeursConfirmesExiges(client, appId),
+  })
   if (testeurs.length < TESTEURS_PAR_CAMPAGNE) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', {
       message: 'Pas assez de testeurs disponibles pour le moment. Notre équipe est prévenue et revient vers vous.',
@@ -212,7 +222,11 @@ export async function remplacerTesteur(client, { campagneId, affectationId, moti
 
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
   const restants = membres.filter((m) => m.statut === 'active' && m.id !== sortant.id)
-  const [remplacant] = choisirTesteurs(await lireCandidats(client, campagne.app_id), { nombre: 1, deja: restants })
+  const [remplacant] = choisirTesteurs(await lireCandidats(client, campagne.app_id), {
+    nombre: 1,
+    deja: restants,
+    confirmes: await testeursConfirmesExiges(client, campagne.app_id),
+  })
   if (!remplacant) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', { message: 'Aucun testeur disponible pour ce remplacement.', disponibles: 0 })
   }

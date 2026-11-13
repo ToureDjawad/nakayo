@@ -31,6 +31,15 @@ describe('choix des testeurs (US-16)', () => {
     expect(choisis.map((c) => c.id)).toEqual(['2', '1', '3'])
   })
 
+  it('offre Pro (US-32) : les testeurs qui ont déjà mené une campagne au bout passent avant les nouveaux', () => {
+    // Le nouveau (score 0,5) devance un confirmé moins assidu (score 0,4) en Standard, pas en Pro.
+    const liste = [candidat(1), candidat(2, { terminees: 1, remises: 2 }), candidat(3, { terminees: 2 })]
+    expect(choisirTesteurs(liste, { nombre: 2 }).map((c) => c.id)).toEqual(['3', '1'])
+    expect(choisirTesteurs(liste, { nombre: 2, confirmes: true }).map((c) => c.id)).toEqual(['3', '2'])
+    // S'il manque des confirmés, les nouveaux complètent la campagne.
+    expect(choisirTesteurs(liste, { nombre: 3, confirmes: true }).map((c) => c.id)).toEqual(['3', '2', '1'])
+  })
+
   it('écarte un testeur qui suit déjà 15 apps', () => {
     expect(choisirTesteurs([candidat(1, { actives: 15 }), candidat(2)], { nombre: 2 }).map((c) => c.id)).toEqual(['2'])
   })

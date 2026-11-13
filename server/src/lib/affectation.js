@@ -23,11 +23,14 @@ const normaliser = (valeur) => (valeur ?? '').trim().toLowerCase()
 // Règles souples (premier passage seulement) : une ville ne dépasse pas la moitié de la campagne,
 // un opérateur pas les deux tiers. `deja` : testeurs déjà dans la campagne (remplacement).
 // candidat : { id, ville, operateur, modele, actives, terminees, remplacees, remises }
-export function choisirTesteurs(candidats, { nombre, deja = [] }) {
+// `confirmes` (offre Pro, US-32) : les testeurs qui ont déjà mené une campagne au bout passent
+// avant les nouveaux, quel que soit leur score ; les nouveaux ne complètent que s'il en manque.
+export function choisirTesteurs(candidats, { nombre, deja = [], confirmes = false }) {
+  const confirme = (c) => (confirmes && c.terminees > 0 ? 1 : 0)
   const tries = candidats
     .filter((c) => c.actives < APPS_MAX_PAR_TESTEUR)
     .map((c) => ({ ...c, score: assiduite(c) }))
-    .sort((a, b) => b.score - a.score || a.actives - b.actives || Number(a.id) - Number(b.id))
+    .sort((a, b) => confirme(b) - confirme(a) || b.score - a.score || a.actives - b.actives || Number(a.id) - Number(b.id))
   const total = deja.length + nombre
   const plafondVille = Math.ceil(total / 2)
   const plafondOperateur = Math.ceil((total * 2) / 3)

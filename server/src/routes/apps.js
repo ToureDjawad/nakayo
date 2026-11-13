@@ -5,7 +5,7 @@ import { corps, exigerChamps } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
 import { creerApp, enregistrerPreparation, lireAppDeveloppeur, listerAppsDeveloppeur, modifierApp, supprimerApp, versAppApi } from '../services/apps.js'
 import { normaliserWhatsapp, validerWhatsapp } from '../services/support.js'
-import { MOYENS_PAIEMENT, OFFRE_STANDARD } from '../lib/offres.js'
+import { CODES_OFFRES, MOYENS_PAIEMENT, offre as lireOffre } from '../lib/offres.js'
 import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
 import { creerPaiement, enregistrerReferenceFournisseur, marquerPaiementEchoue, versPaiementApi } from '../services/paiements.js'
 import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, telephonesTesteurs } from '../services/campagnes.js'
@@ -69,30 +69,34 @@ export function routesApps(deps) {
     res.json({ app: await modifierApp(pool, { id, developpeurId: developpeurId(req), valeurs, maintenant: maintenant() }) })
   })
 
-  // §2.2 Paiement de l'offre pour une app en brouillon. Le développeur est ensuite envoyé chez
-  // le fournisseur (ou sur la page de simulation en développement).
-  routeur.post('/:id/paiements', exigerCompteValide, async (req, res) => {
+  // Paiement commun à l'achat de l'offre (§2.2) et à la montée en gamme (docs/api-offres.md §2).
+  // Le développeur est ensuite envoyé chez le fournisseur (ou sur la page de simulation).
+  async function lancerPaiement(req, res, { nature, verifier }) {
     const id = idApp(req)
     const fedapay = config.paiementMode === 'fedapay' ? deps.fedapay : null
     if (config.paiementMode !== 'simulation' && !fedapay) {
       throw new ErreurHttp(503, 'paiement_indisponible', { message: 'Le paiement en ligne n’est pas encore ouvert.' })
     }
-    const { moyen, numeroMomo } = corps(req)
+    const { moyen, numeroMomo, offre = nature === 'offre' ? 'standard' : 'pro' } = corps(req)
     const numero = moyen === 'mobile_money' ? normaliserWhatsapp(numeroMomo) : null
     exigerChamps({
+      offre: CODES_OFFRES.includes(offre) && (nature === 'offre' || offre !== 'standard') ? null : 'valeur_inconnue',
       moyen: !moyen ? 'requis' : MOYENS_PAIEMENT.includes(moyen) ? null : 'valeur_inconnue',
       numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
     })
     const app = await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
+    verifier?.(app, offre)
     limites.paiements.consommer(String(developpeurId(req)))
     const paiement = await creerPaiement(pool, {
       app,
       developpeurId: developpeurId(req),
+      offre,
+      nature,
       moyen,
       numeroMomo: numero,
       fournisseur: config.paiementMode,
       // FedaPay encaisse en FCFA : la carte est facturée au prix Mobile Money (même valeur, 1 $ = 600 FCFA).
-      prix: fedapay ? OFFRE_STANDARD.prix.mobile_money : undefined,
+      fcfa: Boolean(fedapay),
       maintenant: maintenant(),
     })
     if (!fedapay) {
@@ -105,7 +109,7 @@ export function routesApps(deps) {
         reference: paiement.reference,
         montant: paiement.montant,
         devise: paiement.devise,
-        description: `Nakayo · ${OFFRE_STANDARD.nom} · ${app.nom}`,
+        description: nature === 'montee_en_gamme' ? `Nakayo · Passage à l’${lireOffre(offre).nom} · ${app.nom}` : `Nakayo · ${lireOffre(offre).nom} · ${app.nom}`,
         urlRetour: `${config.clientUrl}/mon-compte/paiements/${paiement.reference}`,
         client: { nom: req.session.utilisateur.nom, email: req.session.utilisateur.email, numero },
       })
@@ -116,7 +120,27 @@ export function routesApps(deps) {
     }
     await enregistrerReferenceFournisseur(pool, { reference: paiement.reference, referenceFournisseur: lien.id })
     res.status(201).json({ paiement: versPaiementApi(paiement), redirection: lien.url })
-  })
+  }
+
+  // §2.2 Paiement de l'offre (Standard ou Pro) pour une app en brouillon.
+  routeur.post('/:id/paiements', exigerCompteValide, (req, res) => lancerPaiement(req, res, { nature: 'offre' }))
+
+  // docs/api-offres.md §2 : passage de Standard à Pro d'une app déjà payée, même pendant la
+  // campagne. Le développeur paie la différence de prix.
+  routeur.post('/:id/montee-en-gamme', exigerCompteValide, (req, res) =>
+    lancerPaiement(req, res, {
+      nature: 'montee_en_gamme',
+      verifier(app, offre) {
+        if (app.statut === 'brouillon' || app.statut === 'refusee') {
+          throw new ErreurHttp(409, 'statut_incompatible', { message: 'Choisissez l’offre au moment du paiement.', statut: app.statut })
+        }
+        if (app.offre === offre) throw new ErreurHttp(409, 'deja_dans_cette_offre', { message: 'Cette app est déjà dans cette offre.' })
+        if (app.campagne_statut && app.campagne_statut !== 'en_cours') {
+          throw new ErreurHttp(409, 'campagne_terminee', { message: 'La campagne de test est terminée.' })
+        }
+      },
+    }),
+  )
 
   // §6 Préparation du lancement (US-42) : la liste des points et le groupe des testeurs (US-13).
   routeur.get('/:id/preparation', async (req, res) => {

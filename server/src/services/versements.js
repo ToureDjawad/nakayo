@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
-import { montantLisible, REMUNERATION_TESTEUR } from '../lib/offres.js'
+import { montantLisible, remuneration } from '../lib/offres.js'
 import { transaction } from '../routes/auth.js'
 
 // Versements Mobile Money aux testeurs (US-22, docs/api-sprint4.md §2). À la clôture d'une
@@ -21,7 +21,8 @@ export const nouvelleReferenceVersement = () => `VER-${randomBytes(8).toString('
 export async function creerVersementsCampagnes(client, { campagneIds, maintenant }) {
   if (!campagneIds.length) return 0
   const { rows } = await client.query(
-    `SELECT a.id, a.campagne_id, a.testeur_id, p.numero_momo, p.operateur_momo
+    `SELECT a.id, a.campagne_id, a.testeur_id, p.numero_momo, p.operateur_momo,
+            (SELECT offre FROM apps WHERE id = a.app_id) AS offre
        FROM affectations a
        JOIN campagnes c ON c.id = a.campagne_id
        JOIN profils_testeurs p ON p.utilisateur_id = a.testeur_id
@@ -41,8 +42,8 @@ export async function creerVersementsCampagnes(client, { campagneIds, maintenant
         ligne.id,
         ligne.campagne_id,
         ligne.testeur_id,
-        REMUNERATION_TESTEUR.montant,
-        REMUNERATION_TESTEUR.devise,
+        remuneration(ligne.offre).montant,
+        remuneration(ligne.offre).devise,
         ligne.numero_momo,
         ligne.operateur_momo,
         maintenant,
@@ -263,27 +264,29 @@ export async function listerVersementsAdmin(db, { statut, reference }) {
 export async function lirePortefeuille(db, { testeurId }) {
   const { rows: profil } = await db.query('SELECT numero_momo, operateur_momo FROM profils_testeurs WHERE utilisateur_id = $1', [testeurId])
   const { rows: enTest } = await db.query(
-    `SELECT a.id, ap.nom AS app_nom, a.jours_valides, c.jours_exiges, c.fin_prevue_le
+    `SELECT a.id, ap.nom AS app_nom, ap.offre, a.jours_valides, c.jours_exiges, c.fin_prevue_le
        FROM affectations a JOIN campagnes c ON c.id = a.campagne_id JOIN apps ap ON ap.id = a.app_id
       WHERE a.testeur_id = $1 AND a.statut = 'active' AND c.statut = 'en_cours'
       ORDER BY a.affecte_le, a.id`,
     [testeurId],
   )
   const { rows: verses } = await db.query(`${SELECT_VERSEMENT} WHERE v.testeur_id = $1 ORDER BY v.cree_le DESC, v.id DESC`, [testeurId])
-  const { montant, devise } = REMUNERATION_TESTEUR
-
   const enAttente = [
-    ...enTest.map((l) => ({
-      affectationId: String(l.id),
-      appNom: l.app_nom,
-      etat: 'en_test',
-      joursValides: Math.min(l.jours_valides, l.jours_exiges),
-      joursExiges: l.jours_exiges,
-      montant,
-      devise,
-      montantLisible: montantLisible(montant, devise),
-      prevuLe: l.fin_prevue_le.toISOString(),
-    })),
+    // Gain prévu selon l'offre de l'app (500 FCFA en Standard, 800 FCFA en Pro).
+    ...enTest.map((l) => {
+      const { montant, devise } = remuneration(l.offre)
+      return {
+        affectationId: String(l.id),
+        appNom: l.app_nom,
+        etat: 'en_test',
+        joursValides: Math.min(l.jours_valides, l.jours_exiges),
+        joursExiges: l.jours_exiges,
+        montant,
+        devise,
+        montantLisible: montantLisible(montant, devise),
+        prevuLe: l.fin_prevue_le.toISOString(),
+      }
+    }),
     ...verses
       .filter((v) => v.statut !== 'verse')
       .map((v) => ({
@@ -313,6 +316,8 @@ export async function lirePortefeuille(db, { testeurId }) {
       verseLe: v.verse_le.toISOString(),
     }))
   const somme = (liste) => liste.reduce((total, l) => total + l.montant, 0)
+  // Tous les gains des testeurs sont en FCFA, quelle que soit l'offre.
+  const { devise } = remuneration('standard')
   return {
     devise,
     totalEnAttente: somme(enAttente),

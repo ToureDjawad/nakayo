@@ -28,6 +28,7 @@ describe('soumission d’une app (§1.3)', () => {
       identifiantsTest: null,
       testObligatoire: true,
       statut: 'brouillon',
+      offre: 'standard',
       motifRefus: null,
       preparation: { elements: [], complete: false, completeLe: null },
       campagne: null,
