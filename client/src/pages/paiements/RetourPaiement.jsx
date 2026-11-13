@@ -99,11 +99,14 @@ function Suivi({ reference, utilisateur, initial }) {
     )
   }
 
+  const montee = paiement.nature === 'montee_en_gamme'
   if (paiement.statut === 'reussi') {
     return (
       <PagePaiement titre="Paiement reçu, merci" utilisateur={utilisateur}>
         <Alerte ton="succes" titre={`${montant} payés pour « ${paiement.appNom} »`}>
-          Le reçu vient de partir par email. L’équipe vérifie votre app sous 24 h ouvrées, puis lance la campagne de test.
+          {montee
+            ? 'Le reçu vient de partir par email. Votre app passe à l’Offre Pro : les testeurs sont payés 800 FCFA et les remplaçants viennent des testeurs confirmés.'
+            : 'Le reçu vient de partir par email. L’équipe vérifie votre app sous 24 h ouvrées, puis lance la campagne de test.'}
         </Alerte>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link to="/mon-compte" className={LIEN_BOUTON}>
@@ -119,11 +122,15 @@ function Suivi({ reference, utilisateur, initial }) {
     return (
       <PagePaiement titre="Le paiement n’a pas abouti" utilisateur={utilisateur}>
         <Alerte ton="erreur">
-          Aucun montant n’a été prélevé. Votre app « {paiement.appNom} » reste en brouillon : vous pouvez réessayer, avec le même moyen de
-          paiement ou un autre.
+          {montee
+            ? `Aucun montant n’a été prélevé. Votre app « ${paiement.appNom} » reste en Offre Standard : vous pouvez réessayer, avec le même moyen de paiement ou un autre.`
+            : `Aucun montant n’a été prélevé. Votre app « ${paiement.appNom} » reste en brouillon : vous pouvez réessayer, avec le même moyen de paiement ou un autre.`}
         </Alerte>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link to={`/mon-compte/apps/${paiement.appId}/paiement`} className={LIEN_BOUTON}>
+          <Link
+            to={montee ? `/mon-compte/apps/${paiement.appId}/montee-en-gamme` : `/mon-compte/apps/${paiement.appId}/paiement?offre=${paiement.offre ?? 'standard'}`}
+            className={LIEN_BOUTON}
+          >
             Réessayer le paiement
           </Link>
         </div>
@@ -136,7 +143,7 @@ function Suivi({ reference, utilisateur, initial }) {
     <PagePaiement titre={TITRE} utilisateur={utilisateur}>
       <Alerte ton="info">
         {paiement.statut === 'doublon'
-          ? `L’offre de « ${paiement.appNom} » était déjà payée. Ce second paiement de ${montant} vous sera remboursé : inutile de nous écrire.`
+          ? `${montee ? `« ${paiement.appNom} » était déjà en Offre Pro.` : `L’offre de « ${paiement.appNom} » était déjà payée.`} Ce second paiement de ${montant} vous sera remboursé : inutile de nous écrire.`
           : `Ce paiement de ${montant} a été remboursé.`}
       </Alerte>
       <RetourCompte />

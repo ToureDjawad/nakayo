@@ -87,7 +87,7 @@ describe('Payer l’offre d’une app (US-12)', () => {
     await user.click(screen.getByRole('button', { name: bouton(CARTE) }))
 
     await waitFor(() => expect(routeur.state.location.pathname).toBe('/paiement/simulation/PAY-0123456789ABCDEF'))
-    expect(serveur.appelsVers('POST', '/api/apps/7/paiements')[0].corps).toEqual({ moyen: 'carte' })
+    expect(serveur.appelsVers('POST', '/api/apps/7/paiements')[0].corps).toEqual({ offre: 'standard', moyen: 'carte' })
     expect(await screen.findByText('Environnement de test')).toBeInTheDocument()
   })
 
@@ -126,7 +126,7 @@ describe('Payer l’offre d’une app (US-12)', () => {
     await user.type(screen.getByLabelText('Numéro Mobile Money'), '+229 01 97 00 00 00')
     await user.click(screen.getByRole('button', { name: bouton(MOMO) }))
     await waitFor(() => expect(serveur.appelsVers('POST', '/api/apps/7/paiements')).toHaveLength(1))
-    expect(serveur.appelsVers('POST', '/api/apps/7/paiements')[0].corps).toEqual({ moyen: 'mobile_money', numeroMomo: '+2290197000000' })
+    expect(serveur.appelsVers('POST', '/api/apps/7/paiements')[0].corps).toEqual({ offre: 'standard', moyen: 'mobile_money', numeroMomo: '+2290197000000' })
   })
 
   it('paiement fermé (503) : message clair, le développeur reste sur la page', async () => {
@@ -177,7 +177,7 @@ describe('Simulation et retour de paiement (US-12)', () => {
     rendreA('/paiement/simulation/PAY-0123456789ABCDEF')
     await user.click(await screen.findByRole('button', { name: 'Refuser le paiement' }))
     expect(await screen.findByRole('heading', { name: 'Le paiement n’a pas abouti' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Réessayer le paiement' })).toHaveAttribute('href', '/mon-compte/apps/7/paiement')
+    expect(screen.getByRole('link', { name: 'Réessayer le paiement' })).toHaveAttribute('href', '/mon-compte/apps/7/paiement?offre=standard')
   })
 
   it('au retour du prestataire, la page attend la confirmation puis affiche le succès', async () => {

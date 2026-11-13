@@ -5,8 +5,13 @@ export function lireOffres({ signal } = {}) {
   return requete('/offres', { signal })
 }
 
-export function payerApp(appId, { moyen, numeroMomo }) {
-  return requete(`/apps/${encodeURIComponent(appId)}/paiements`, { methode: 'POST', corps: { moyen, numeroMomo } })
+export function payerApp(appId, { offre, moyen, numeroMomo }) {
+  return requete(`/apps/${encodeURIComponent(appId)}/paiements`, { methode: 'POST', corps: { offre, moyen, numeroMomo } })
+}
+
+// Passage de Standard à Pro d'une app déjà payée (docs/api-offres.md §2).
+export function monterEnGamme(appId, { offre = 'pro', moyen, numeroMomo }) {
+  return requete(`/apps/${encodeURIComponent(appId)}/montee-en-gamme`, { methode: 'POST', corps: { offre, moyen, numeroMomo } })
 }
 
 export function listerMesPaiements({ signal } = {}) {
