@@ -18,6 +18,9 @@ import { lireCampagne, listerCampagnesAdmin, messageNouvelleApp, remplacerTesteu
 import { listerVersementsAdmin, relancerVersement, traiterVersements } from '../services/versements.js'
 import { lireTableauDeBord } from '../services/tableauDeBord.js'
 import { transaction } from './auth.js'
+import { validerMessage, validerPrix } from '../lib/devis.js'
+import { OFFRE_AFRIQUE } from '../lib/offres.js'
+import { lireDevisAdmin, listerDevisAdmin, messageDevis, repondreDevis, STATUTS_DEVIS, versDevisApi } from '../services/devis.js'
 
 const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
 const STATUTS_VERSEMENT = ['a_verser', 'en_cours', 'verse', 'echoue']
@@ -236,6 +239,55 @@ export function routesAdmin(deps) {
     const motif = texte(corps(req).motif)
     exigerChamps({ motif: validerMotifRefus(motif) })
     await deciderSurApp(req, res, 'refusee', motif)
+  })
+
+  // docs/api-offres.md §4.2 : devis de l'offre Lancement Afrique (US-37).
+  const idDevis = (req) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Devis introuvable.')
+    return req.params.id
+  }
+
+  routeur.get('/devis', async (req, res) => {
+    const statut = texte(req.query.statut) || 'demande'
+    exigerChamps({ statut: STATUTS_DEVIS.includes(statut) ? null : 'valeur_inconnue' })
+    res.json({ devis: await listerDevisAdmin(pool, { statut }) })
+  })
+
+  routeur.get('/devis/:id', async (req, res) => {
+    res.json({ devis: versDevisApi(await lireDevisAdmin(pool, idDevis(req)), 'admin') })
+  })
+
+  async function repondre(req, res, decision, { prix = null, message }) {
+    const id = idDevis(req)
+    const ligne = await transaction(pool, (client) =>
+      repondreDevis(client, { id, adminId: req.session.utilisateur.id, decision, prix, message, maintenant: maintenant() }),
+    )
+    try {
+      await deps.emails.envoyer(messageDevis(ligne, { clientUrl: config.clientUrl }))
+    } catch (erreur) {
+      // La réponse est enregistrée ; l'envoi raté est journalisé pour être refait à la main.
+      journal.error(erreur)
+    }
+    res.json({ devis: versDevisApi(ligne, 'admin') })
+  }
+
+  // Prix en plus petite unité : centimes de dollar pour la carte, francs pour Mobile Money.
+  routeur.post('/devis/:id/proposition', async (req, res) => {
+    const { prixCarte, prixMobileMoney } = corps(req)
+    const message = texte(corps(req).message)
+    const depart = OFFRE_AFRIQUE.prix
+    exigerChamps({
+      prixCarte: validerPrix(prixCarte, depart.carte.montant, 1000000),
+      prixMobileMoney: validerPrix(prixMobileMoney, depart.mobile_money.montant, 600000000),
+      message: validerMessage(message, false),
+    })
+    await repondre(req, res, 'propose', { prix: { carte: prixCarte, mobileMoney: prixMobileMoney }, message })
+  })
+
+  routeur.post('/devis/:id/refus', async (req, res) => {
+    const message = texte(corps(req).message)
+    exigerChamps({ message: validerMessage(message, true) })
+    await repondre(req, res, 'refuse', { message })
   })
 
   // docs/api-sprint3.md §1.4 : suivi des campagnes et remplacement manuel (US-43).

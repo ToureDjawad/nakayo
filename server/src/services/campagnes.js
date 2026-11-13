@@ -5,7 +5,6 @@ import {
   JOURS_EXIGES,
   JOURS_REMPLACEMENT_MANUEL,
   SEUIL_ALERTE_INSCRITS,
-  TESTEURS_PAR_CAMPAGNE,
 } from '../lib/affectation.js'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
 import { ecartJours, jourBenin, JOUR_MS } from '../lib/temps.js'
@@ -42,7 +41,7 @@ async function lireCandidats(db, appId) {
 async function exigencesOffre(db, appId) {
   const { rows } = await db.query('SELECT offre FROM apps WHERE id = $1', [appId])
   const o = offre(rows[0]?.offre)
-  return { confirmes: o.testeursConfirmes, entreeDeGamme: o.telephonesEntreeDeGamme }
+  return { nombre: o.testeurs, confirmes: o.testeursConfirmes, entreeDeGamme: o.telephonesEntreeDeGamme }
 }
 
 async function lireMembres(db, campagneId) {
@@ -137,7 +136,8 @@ async function insererAffectations(client, { campagneId, appId, testeurs, mainte
 }
 
 // US-13 et US-16 : le développeur confirme que les testeurs sont ajoutés à son test fermé, ce qui
-// démarre la campagne et affecte 15 testeurs. À appeler dans une transaction.
+// démarre la campagne et affecte les testeurs de l'offre (15, ou 20 en Lancement Afrique). À appeler
+// dans une transaction.
 export async function demarrerCampagne(client, { appId, developpeurId, groupeGoogle, maintenant }) {
   const { rows: apps } = await client.query('SELECT * FROM apps WHERE id = $1 AND developpeur_id = $2 FOR UPDATE', [appId, developpeurId])
   const app = apps[0]
@@ -150,11 +150,9 @@ export async function demarrerCampagne(client, { appId, developpeurId, groupeGoo
   if (existantes.length) throw new ErreurHttp(409, 'campagne_existante', { message: 'La campagne de cette app a déjà démarré.' })
 
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
-  const testeurs = choisirTesteurs(await lireCandidats(client, appId), {
-    nombre: TESTEURS_PAR_CAMPAGNE,
-    ...(await exigencesOffre(client, appId)),
-  })
-  if (testeurs.length < TESTEURS_PAR_CAMPAGNE) {
+  const exigences = await exigencesOffre(client, appId)
+  const testeurs = choisirTesteurs(await lireCandidats(client, appId), exigences)
+  if (testeurs.length < exigences.nombre) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', {
       message: 'Pas assez de testeurs disponibles pour le moment. Notre équipe est prévenue et revient vers vous.',
       disponibles: testeurs.length,
@@ -164,7 +162,7 @@ export async function demarrerCampagne(client, { appId, developpeurId, groupeGoo
   const { rows } = await client.query(
     `INSERT INTO campagnes (app_id, developpeur_id, testeurs_vises, jours_exiges, groupe_google, demarree_le, fin_prevue_le, cree_le)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $6) RETURNING id`,
-    [appId, developpeurId, TESTEURS_PAR_CAMPAGNE, JOURS_EXIGES, groupeGoogle, maintenant, new Date(maintenant.getTime() + JOURS_CAMPAGNE * JOUR_MS)],
+    [appId, developpeurId, exigences.nombre, JOURS_EXIGES, groupeGoogle, maintenant, new Date(maintenant.getTime() + JOURS_CAMPAGNE * JOUR_MS)],
   )
   await insererAffectations(client, { campagneId: rows[0].id, appId, testeurs, maintenant })
   return rows[0].id
@@ -224,9 +222,9 @@ export async function remplacerTesteur(client, { campagneId, affectationId, moti
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
   const restants = membres.filter((m) => m.statut === 'active' && m.id !== sortant.id)
   const [remplacant] = choisirTesteurs(await lireCandidats(client, campagne.app_id), {
+    ...(await exigencesOffre(client, campagne.app_id)),
     nombre: 1,
     deja: restants,
-    ...(await exigencesOffre(client, campagne.app_id)),
   })
   if (!remplacant) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', { message: 'Aucun testeur disponible pour ce remplacement.', disponibles: 0 })

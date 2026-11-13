@@ -44,16 +44,18 @@ const SELECT_PAIEMENT = `SELECT p.*, a.nom AS app_nom, f.numero AS facture_numer
 
 // Prix à payer : l'offre entière pour une app en brouillon, la différence pour une montée en gamme.
 // `fcfa` : le fournisseur n'encaisse qu'en FCFA (FedaPay) ; la carte est alors débitée du prix Mobile Money.
-export function prixAPayer({ offre, nature, moyen, fcfa }) {
+// `prix` : prix d'un devis (Lancement Afrique, US-37), à la place de celui de l'offre.
+export function prixAPayer({ offre, nature, moyen, fcfa, prix = null }) {
   const moyenPrix = fcfa ? 'mobile_money' : moyen
+  if (prix) return prix[moyenPrix]
   return nature === 'montee_en_gamme' ? prixMonteeEnGamme(moyenPrix, offre) : lireOffre(offre).prix[moyenPrix]
 }
 
-export async function creerPaiement(db, { app, developpeurId, offre = 'standard', nature = 'offre', moyen, numeroMomo, fournisseur, fcfa, maintenant }) {
+export async function creerPaiement(db, { app, developpeurId, offre = 'standard', nature = 'offre', moyen, numeroMomo, prix, fournisseur, fcfa, maintenant }) {
   if (nature === 'offre' && app.statut !== 'brouillon') {
     throw new ErreurHttp(409, 'statut_incompatible', { message: 'Cette app est déjà payée.', statut: app.statut })
   }
-  const { montant, devise } = prixAPayer({ offre, nature, moyen, fcfa })
+  const { montant, devise } = prixAPayer({ offre, nature, moyen, fcfa, prix })
   const { rows } = await db.query(
     `INSERT INTO paiements (reference, app_id, developpeur_id, offre, nature, moyen, montant, devise, fournisseur, numero_momo, cree_le)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,

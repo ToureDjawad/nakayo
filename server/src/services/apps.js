@@ -22,8 +22,10 @@ export function versAppApi(l) {
     // Seuls les comptes personnels récents sont soumis aux 12 testeurs pendant 14 jours.
     testObligatoire: l.compte_play === 'personnel_recent',
     statut: l.statut,
-    // Offre payée (US-32) : « standard » ou « pro ».
+    // Offre payée (US-32, US-37) : « standard », « pro » ou « afrique ».
     offre: l.offre,
+    // Devis de l'offre Lancement Afrique (US-37) : « demande », « propose » ou « refuse », ou null.
+    devis: l.devis_statut ? { statut: l.devis_statut } : null,
     // Motif donné par l'équipe quand l'app est refusée (US-14).
     motifRefus: l.motif_refus ?? null,
     // Liste de vérification avant le lancement (US-42).
@@ -42,11 +44,13 @@ export function versAppApi(l) {
 }
 
 // Apps avec leur dernière campagne.
-const SELECT_APP = `SELECT a.*, c.id AS campagne_id, c.statut AS campagne_statut, c.demarree_le AS campagne_demarree_le
+const SELECT_APP = `SELECT a.*, c.id AS campagne_id, c.statut AS campagne_statut, c.demarree_le AS campagne_demarree_le,
+    dv.statut AS devis_statut
   FROM apps a
   LEFT JOIN LATERAL (
     SELECT id, statut, demarree_le FROM campagnes WHERE app_id = a.id ORDER BY demarree_le DESC, id DESC LIMIT 1
-  ) c ON true`
+  ) c ON true
+  LEFT JOIN devis dv ON dv.app_id = a.id`
 
 const COLONNES = ['nom', 'package', 'lien_test_ferme', 'description', 'instructions', 'fonctionnalites', 'connexion_requise', 'identifiants_test', 'compte_play']
 const parametres = (v) => [v.nom, v.package, v.lienTestFerme, v.description, v.instructions, v.fonctionnalites, v.connexionRequise, v.identifiantsTest, v.comptePlay]

@@ -14,9 +14,11 @@ export const OFFRE_STANDARD = {
   garantie:
     'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
   remuneration: { montant: 500, devise: 'XOF' },
+  testeurs: 15,
   testeursConfirmes: false,
   rapportsDeBugs: false,
   telephonesEntreeDeGamme: 0,
+  questionnaireTerrain: false,
 }
 
 export const OFFRE_PRO = {
@@ -30,18 +32,47 @@ export const OFFRE_PRO = {
   },
   garantie: OFFRE_STANDARD.garantie,
   remuneration: { montant: 800, devise: 'XOF' },
+  testeurs: 15,
   testeursConfirmes: true,
   // US-33 : les testeurs envoient des rapports de bugs avec captures.
   rapportsDeBugs: true,
   // US-35 : au moins 5 testeurs sur des téléphones d'entrée de gamme.
   telephonesEntreeDeGamme: 5,
+  questionnaireTerrain: false,
 }
 
-export const OFFRES = { standard: OFFRE_STANDARD, pro: OFFRE_PRO }
+// Lancement Afrique (US-37) : sur devis. Le développeur décrit son besoin, l'équipe propose un prix
+// (au moins le prix de départ ci-dessous), puis le développeur paie ce prix. 20 testeurs, payés
+// 1 500 FCFA, qui répondent en plus à un questionnaire terrain (réseau, téléphone, langue).
+export const OFFRE_AFRIQUE = {
+  code: 'afrique',
+  nom: 'Offre Lancement Afrique',
+  description:
+    'Tout Pro, avec 20 testeurs dans plusieurs villes et sur plusieurs réseaux, des scénarios sur mesure et un rapport sur l’usage réel : réseau lent, petits téléphones, compréhension de la langue.',
+  prix: {
+    carte: { montant: 9900, devise: 'USD' },
+    mobile_money: { montant: 59400, devise: 'XOF' },
+  },
+  surDevis: true,
+  garantie: OFFRE_STANDARD.garantie,
+  remuneration: { montant: 1500, devise: 'XOF' },
+  testeurs: 20,
+  testeursConfirmes: true,
+  rapportsDeBugs: true,
+  telephonesEntreeDeGamme: 5,
+  questionnaireTerrain: true,
+}
+
+export const OFFRES = { standard: OFFRE_STANDARD, pro: OFFRE_PRO, afrique: OFFRE_AFRIQUE }
 export const CODES_OFFRES = Object.keys(OFFRES)
 export const offre = (code) => OFFRES[code] ?? OFFRE_STANDARD
 
 export const MOYENS_PAIEMENT = Object.keys(OFFRE_STANDARD.prix)
+
+// Règles internes, retirées de la réponse publique de GET /api/offres.
+export function offrePublique({ remuneration: _r, testeursConfirmes: _t, rapportsDeBugs: _b, telephonesEntreeDeGamme: _e, questionnaireTerrain: _q, ...o }) {
+  return o
+}
 
 // Montée en gamme d'une app Standard déjà payée : la différence de prix, dans le même moyen.
 export function prixMonteeEnGamme(moyen, vers = 'pro') {
