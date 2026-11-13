@@ -5,6 +5,7 @@ import { creerAppTest, pool, viderBase } from '../outils.js'
 import { signer } from '../../src/services/paiements.js'
 import { verifierJour } from '../../src/services/verificationQuotidienne.js'
 import { traiterVersements } from '../../src/services/versements.js'
+import { signerWebhookFedapay } from '../../src/services/fedapay.js'
 
 const TOUT = ['testeurs_ajoutes', 'fiche_complete', 'version_publiee', 'pays_coches', 'pas_de_test_interne', 'mises_a_jour_prevues']
 const SECRET = 'secret-webhook-developpement'
@@ -67,7 +68,7 @@ async function cloturerCampagne() {
 async function preparer(reponses) {
   await viderBase()
   momo = creerMomoTest(reponses)
-  test = creerAppTest({ maintenant: '2026-11-12T09:00:00Z', config: { groupeTesteurs: 'testeurs@nakayo.test' }, momo })
+  test = creerAppTest({ maintenant: '2026-11-12T09:00:00Z', config: { groupeTesteurs: 'testeurs@nakayo.test', fedapay: { secretWebhook: 'wh_test' } }, momo })
   await creerUtilisateur({ email: 'awa@studio.bj', statut: 'valide' })
   await creerUtilisateur({ email: 'admin@nakayo.bj', role: 'admin', statut: 'valide' })
   const dev = await connecter('awa@studio.bj')
@@ -110,6 +111,8 @@ describe('versements à la clôture (US-22)', () => {
       operateur: premier.operateur_momo,
       montant: 500,
       devise: 'XOF',
+      // Nom du testeur, exigé par FedaPay.
+      nom: expect.any(String),
     })
     expect((await versements())[0]).toMatchObject({ statut: 'verse', tentatives: 1, reference_fournisseur: 'AGR-1' })
 
@@ -271,5 +274,54 @@ describe('portefeuille du testeur (US-23)', () => {
     await cloturerCampagne()
     const p = await portefeuille(affectations[3])
     expect(p).toMatchObject({ totalEnAttente: 0, totalVerse: 0, enAttente: [], historique: [] })
+  })
+})
+
+describe('webhook FedaPay des versements (docs/fedapay.md §3)', () => {
+  beforeEach(() => preparer([{ statut: 'en_cours' }]))
+
+  function webhookFedapay(evenement) {
+    const brut = JSON.stringify(evenement)
+    const t = Math.floor(deps().maintenant().getTime() / 1000)
+    return request(test.app)
+      .post('/api/fedapay/webhook')
+      .set('Content-Type', 'application/json')
+      .set('X-FEDAPAY-SIGNATURE', signerWebhookFedapay(brut, 'wh_test', t))
+      .send(brut)
+  }
+
+  it('payout.sent confirme le versement retrouvé par l’identifiant FedaPay, et le testeur reçoit son SMS', async () => {
+    await cloturerCampagne()
+    await traiter()
+    const [v] = await versements()
+    expect(v).toMatchObject({ statut: 'en_cours', reference_fournisseur: 'AGR-1' })
+    // Le nom du testeur est transmis au fournisseur (FedaPay l'exige).
+    expect(momo.appels[0].nom).toEqual(expect.any(String))
+
+    const r = await webhookFedapay({ name: 'payout.sent', entity: { id: 'AGR-1', status: 'sent' } })
+    expect(r.status).toBe(200)
+    expect(r.body).toEqual({ recu: true, statut: 'verse' })
+    expect((await versements())[0].statut).toBe('verse')
+    expect(test.sms.envoyes).toHaveLength(1)
+
+    // Évènement renvoyé par FedaPay : rien ne change, pas de second SMS.
+    await webhookFedapay({ name: 'payout.sent', entity: { id: 'AGR-1', status: 'sent' } })
+    expect(test.sms.envoyes).toHaveLength(1)
+  })
+
+  it('payout.failed programme une nouvelle tentative avec le motif de FedaPay ; une signature fausse est refusée', async () => {
+    await cloturerCampagne()
+    await traiter()
+    const [v] = await versements()
+    const r = await webhookFedapay({ name: 'payout.failed', entity: { id: 'AGR-1', status: 'failed', merchant_reference: v.reference, last_error_code: 'INVALID_ACCOUNT' } })
+    expect(r.body.statut).toBe('a_verser')
+    expect((await versements())[0]).toMatchObject({ statut: 'a_verser', dernier_motif: 'invalid_account' })
+
+    const faux = await request(test.app)
+      .post('/api/fedapay/webhook')
+      .set('Content-Type', 'application/json')
+      .set('X-FEDAPAY-SIGNATURE', 't=1,s=abc')
+      .send(JSON.stringify({ name: 'payout.sent', entity: { id: 'AGR-1', status: 'sent' } }))
+    expect(faux.status).toBe(401)
   })
 })

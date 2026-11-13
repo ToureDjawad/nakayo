@@ -40,17 +40,37 @@ export function versPaiementApi(l) {
 const SELECT_PAIEMENT = `SELECT p.*, a.nom AS app_nom, f.numero AS facture_numero
   FROM paiements p JOIN apps a ON a.id = p.app_id LEFT JOIN factures f ON f.paiement_id = p.id`
 
-export async function creerPaiement(db, { app, developpeurId, moyen, numeroMomo, fournisseur, maintenant }) {
+// `prix` remplace le prix du moyen choisi quand le fournisseur n'encaisse qu'une devise (FedaPay : XOF).
+export async function creerPaiement(db, { app, developpeurId, moyen, numeroMomo, fournisseur, prix, maintenant }) {
   if (app.statut !== 'brouillon') {
     throw new ErreurHttp(409, 'statut_incompatible', { message: 'Cette app est déjà payée.', statut: app.statut })
   }
-  const { montant, devise } = OFFRE_STANDARD.prix[moyen]
+  const { montant, devise } = prix ?? OFFRE_STANDARD.prix[moyen]
   const { rows } = await db.query(
     `INSERT INTO paiements (reference, app_id, developpeur_id, offre, moyen, montant, devise, fournisseur, numero_momo, cree_le)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
     [nouvelleReference(), app.id, developpeurId, OFFRE_STANDARD.code, moyen, montant, devise, fournisseur, numeroMomo ?? null, maintenant],
   )
   return lirePaiementParId(db, rows[0].id)
+}
+
+// Identifiant de la transaction chez le fournisseur, pour relire son statut et rapprocher ses webhooks.
+export async function enregistrerReferenceFournisseur(db, { reference, referenceFournisseur }) {
+  await db.query('UPDATE paiements SET reference_fournisseur = $2 WHERE reference = $1', [reference, referenceFournisseur])
+}
+
+// Fournisseur injoignable à la création : le paiement n'a jamais commencé.
+export async function marquerPaiementEchoue(db, { reference, maintenant }) {
+  await db.query(`UPDATE paiements SET statut = 'echoue', confirme_le = $2 WHERE reference = $1 AND statut = 'en_attente'`, [reference, maintenant])
+}
+
+// Retrouve notre référence (PAY-…) à partir de celle du fournisseur (webhook sans métadonnées).
+export async function referenceDepuisFournisseur(db, { fournisseur, referenceFournisseur }) {
+  const { rows } = await db.query('SELECT reference FROM paiements WHERE fournisseur = $1 AND reference_fournisseur = $2', [
+    fournisseur,
+    referenceFournisseur,
+  ])
+  return rows[0]?.reference ?? null
 }
 
 async function lirePaiementParId(db, id) {
