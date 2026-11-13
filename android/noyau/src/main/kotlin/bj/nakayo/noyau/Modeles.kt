@@ -32,6 +32,8 @@ data class Appareil(
     val niveauApi: Int,
     // Identifiant propre à l'app (pas l'IMEI), absent dans les réponses du serveur.
     val identifiant: String? = null,
+    // US-35 : mémoire vive totale en Mo (entrée de gamme : 3 Go ou moins).
+    val ramMo: Int? = null,
 )
 
 @Serializable

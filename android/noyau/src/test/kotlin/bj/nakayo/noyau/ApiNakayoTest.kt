@@ -62,6 +62,16 @@ class ApiNakayoTest {
         val corps = Json.parseToJsonElement(serveur.takeRequest().body.readUtf8()).jsonObject
         assertEquals("482913", corps["code"]!!.jsonPrimitive.content)
         assertEquals(34, corps["appareil"]!!.jsonObject["niveauApi"]!!.jsonPrimitive.int)
+        // Mémoire inconnue : le champ n'est pas envoyé.
+        assertEquals(null, corps["appareil"]!!.jsonObject["ramMo"])
+    }
+
+    @Test
+    fun `la mémoire vive part avec l'appareil (US-35)`() = runTest {
+        repondre(200, """{"resultat":"connecte","jeton":"jeton-secret","utilisateur":$profil}""")
+        api.verifierCode("+2290197000000", "482913", appareil.copy(ramMo = 2816))
+        val corps = Json.parseToJsonElement(serveur.takeRequest().body.readUtf8()).jsonObject
+        assertEquals(2816, corps["appareil"]!!.jsonObject["ramMo"]!!.jsonPrimitive.int)
     }
 
     @Test
