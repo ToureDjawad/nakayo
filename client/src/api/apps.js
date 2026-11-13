@@ -72,3 +72,24 @@ export async function telechargerRapportFinal(id) {
   }
   return reponse.blob()
 }
+
+// Bugs signalés par les testeurs (docs/api-bugs.md §2, US-34).
+export function listerBugs(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/bugs`, { signal })
+}
+
+export function deciderBug(id, bugId, { decision, motif }) {
+  return requete(`/apps/${encodeURIComponent(id)}/bugs/${encodeURIComponent(bugId)}/decision`, { methode: 'POST', corps: { decision, motif } })
+}
+
+// Export CSV des bugs, récupéré en Blob avec la session du site.
+export async function telechargerBugsCsv(id) {
+  let reponse
+  try {
+    reponse = await fetch(`/api/apps/${encodeURIComponent(id)}/bugs.csv`, { credentials: 'same-origin' })
+  } catch {
+    throw new ErreurReseau()
+  }
+  if (!reponse.ok) throw new ErreurApi({ statut: reponse.status, code: 'erreur_inconnue' })
+  return reponse.blob()
+}

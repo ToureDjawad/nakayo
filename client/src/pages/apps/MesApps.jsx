@@ -106,6 +106,15 @@ export function MesApps() {
                         <Link to={`/mon-compte/apps/${app.id}/campagne`} aria-label={`Suivre la campagne de ${app.nom}`} className={lienBoutonPetit}>
                           {app.campagne.statut === 'en_cours' ? 'Suivre la campagne' : 'Voir la campagne'}
                         </Link>
+                        {app.offre && app.offre !== 'standard' && (
+                          <Link
+                            to={`/mon-compte/apps/${app.id}/bugs`}
+                            aria-label={`Bugs signalés pour ${app.nom}`}
+                            className="text-sm font-semibold text-accent underline underline-offset-2"
+                          >
+                            Bugs signalés
+                          </Link>
+                        )}
                         <span className="text-sm text-texte">
                           {app.campagne.statut === 'en_cours'
                             ? `Campagne en cours depuis le ${dateCourte(app.campagne.demarreeLe)}.`

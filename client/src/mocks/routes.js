@@ -182,7 +182,7 @@ function versCampagne(c, vue = 'developpeur') {
   const dev = admin ? base().utilisateurs.find((u) => u.id === c.developpeurId) : null
   return {
     id: c.id,
-    app: { id: app.id, nom: app.nom, package: app.package },
+    app: { id: app.id, nom: app.nom, package: app.package, offre: app.offre ?? 'standard' },
     ...(admin ? { developpeur: { id: dev.id, nom: dev.nom, email: dev.email } } : {}),
     statut: c.statut,
     jour,
@@ -216,6 +216,75 @@ function campagneDeLApp(appId) {
   return campagnes()
     .filter((c) => c.appId === appId)
     .at(-1)
+}
+
+// Bugs signalés (docs/api-bugs.md §2). Les testeurs simulés n'envoient pas de captures.
+function bugs() {
+  const b = base()
+  b.bugs ??= []
+  return b.bugs
+}
+
+function bugsSimules(app, campagne, maintenant) {
+  const [t1, t2] = campagne.testeurs
+  bugs().push(
+    {
+      id: nouvelId(),
+      appId: app.id,
+      campagneId: campagne.id,
+      numero: 1,
+      titre: 'L’app se ferme à l’ouverture du panier',
+      etapes: '1. Ajouter un article. 2. Toucher l’icône du panier.',
+      resultatAttendu: 'Le panier s’affiche.',
+      resultatObtenu: 'L’app se ferme.',
+      gravite: 'bloquante',
+      versionApp: '1.0.0',
+      modele: t1?.modele ?? null,
+      versionAndroid: '13',
+      statut: 'nouveau',
+      motifRefus: null,
+      signaleLe: maintenant,
+      decideLe: null,
+    },
+    {
+      id: nouvelId(),
+      appId: app.id,
+      campagneId: campagne.id,
+      numero: 2,
+      titre: 'Texte coupé sur l’écran d’accueil',
+      etapes: '1. Ouvrir l’app sur un petit écran.',
+      resultatAttendu: 'Le titre tient sur une ligne.',
+      resultatObtenu: 'Le titre est coupé.',
+      gravite: 'mineure',
+      versionApp: '1.0.0',
+      modele: t2?.modele ?? null,
+      versionAndroid: '12',
+      statut: 'nouveau',
+      motifRefus: null,
+      signaleLe: maintenant,
+      decideLe: null,
+    },
+  )
+}
+
+function versBug(b) {
+  const campagne = campagnes().find((c) => c.id === b.campagneId)
+  return {
+    id: b.id,
+    titre: b.titre,
+    etapes: b.etapes,
+    resultatAttendu: b.resultatAttendu,
+    resultatObtenu: b.resultatObtenu,
+    gravite: b.gravite,
+    versionApp: b.versionApp,
+    captures: [],
+    statut: b.statut,
+    motifRefus: b.motifRefus,
+    signaleLe: b.signaleLe,
+    decideLe: b.decideLe,
+    testeur: { numero: b.numero, modele: b.modele, versionAndroid: b.versionAndroid },
+    decidable: b.statut === 'nouveau' && campagne?.statut === 'en_cours',
+  }
 }
 
 function exigerDeveloppeur() {
@@ -831,6 +900,62 @@ export const routes = [
     },
   },
   {
+    methode: 'GET',
+    chemin: '/api/apps/:id/bugs',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      const ordre = { bloquante: 0, genante: 1, mineure: 2 }
+      const liste = bugs()
+        .filter((b) => b.appId === app.id)
+        .sort((a, b) => ordre[a.gravite] - ordre[b.gravite] || b.signaleLe.localeCompare(a.signaleLe))
+        .map(versBug)
+      return ok({ bugs: liste, rapportsDeBugs: (app.offre ?? 'standard') !== 'standard' })
+    },
+  },
+  {
+    methode: 'GET',
+    chemin: '/api/apps/:id/bugs.csv',
+    traiter({ params }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      const lignes = bugs()
+        .filter((b) => b.appId === app.id)
+        .map((b) => [b.titre, b.gravite, b.statut].join(';'))
+      const csv = `\uFEFFTitre;Gravité;Statut\r\n${lignes.join('\r\n')}\r\n`
+      return { statut: 200, corps: null, brut: new Blob([csv], { type: 'text/csv' }), entetes: { 'Content-Type': 'text/csv; charset=utf-8' } }
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/apps/:id/bugs/:bugId/decision',
+    traiter({ params, corps = {} }) {
+      const { refus, utilisateur } = exigerDeveloppeur()
+      if (refus) return refus
+      const app = appDuDeveloppeur(params.id, utilisateur)
+      if (!app) return erreur(404, 'introuvable')
+      const bug = bugs().find((b) => b.id === params.bugId && b.appId === app.id)
+      if (!bug) return erreur(404, 'introuvable')
+      const motif = typeof corps.motif === 'string' ? corps.motif.trim() : ''
+      const champs = Object.fromEntries(
+        Object.entries({
+          decision: ['accepte', 'refuse'].includes(corps.decision) ? null : corps.decision ? 'valeur_inconnue' : 'requis',
+          motif: corps.decision !== 'refuse' ? null : !motif ? 'requis' : motif.length < 5 ? 'trop_court' : motif.length > 500 ? 'trop_long' : null,
+        }).filter(([, c]) => c),
+      )
+      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+      if (bug.statut !== 'nouveau') return erreur(409, 'deja_decide')
+      if (campagnes().find((c) => c.id === bug.campagneId)?.statut !== 'en_cours') return erreur(409, 'campagne_terminee')
+      Object.assign(bug, { statut: corps.decision, motifRefus: corps.decision === 'refuse' ? motif : null, decideLe: horodatage() })
+      sauver()
+      return ok({ bug: versBug(bug) })
+    },
+  },
+  {
     // US-21 : les testeurs simulés n'avancent pas ; l'avancement reste à zéro, jour par jour.
     methode: 'GET',
     chemin: '/api/apps/:id/campagne/avancement',
@@ -915,6 +1040,8 @@ export const routes = [
         testeurs: Array.from({ length: 15 }, (_, i) => testeurSimule(campagnes().length * 15 + i + 1, maintenant)),
       }
       campagnes().push(campagne)
+      // Offre Pro : deux testeurs simulés signalent un bug, pour voir la liste côté développeur (US-34).
+      if ((app.offre ?? 'standard') !== 'standard') bugsSimules(app, campagne, maintenant)
       sauver()
       console.info(`[mocks] SMS envoyés aux 15 testeurs de « ${app.nom} »`)
       return ok({ campagne: versCampagne(campagne) }, 201)
