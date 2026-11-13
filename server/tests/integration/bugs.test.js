@@ -162,3 +162,93 @@ describe('bonus des bugs acceptés (§3)', () => {
     expect(rows.filter((v) => v.a !== affectation).every((v) => v.montant === 800)).toBe(true)
   })
 })
+
+describe('côté développeur (US-34, §2)', () => {
+  beforeEach(() => campagne('pro'))
+
+  const bugsDev = (requete = '') => request(test.app).get(`/api/apps/${appId()}/bugs${requete}`).set('Cookie', dev)
+  const decider = (id, corps) => request(test.app).post(`/api/apps/${appId()}/bugs/${id}/decision`).set('Cookie', dev).send(corps)
+  let idApp
+  const appId = () => idApp
+
+  beforeEach(async () => {
+    idApp = String((await pool.query('SELECT id FROM apps LIMIT 1')).rows[0].id)
+    await signaler({ ...BUG, titre: 'Bug mineur ici', gravite: 'mineure' }, [])
+    test.avancer(60_000)
+    await signaler({ ...BUG, titre: 'Bug bloquant ici', gravite: 'bloquante' }, [JPEG, PNG])
+  })
+
+  it('liste les bugs, les plus graves d’abord, avec le testeur anonymisé et les captures', async () => {
+    const r = await bugsDev()
+    expect(r.status).toBe(200)
+    expect(r.body.rapportsDeBugs).toBe(true)
+    expect(r.body.resume).toMatchObject({ total: 2, nouveaux: 2, bloquants: 1, mineurs: 1 })
+    expect(r.body.bugs.map((b) => b.titre)).toEqual(['Bug bloquant ici', 'Bug mineur ici'])
+    const [bloquant] = r.body.bugs
+    expect(bloquant).toMatchObject({ statut: 'nouveau', decidable: true, testeur: { numero: 1 } })
+    expect(bloquant.testeur).not.toHaveProperty('nom')
+    expect(bloquant.captures).toEqual([`/api/apps/${idApp}/bugs/${bloquant.id}/captures/1`, `/api/apps/${idApp}/bugs/${bloquant.id}/captures/2`])
+
+    const capture = await request(test.app).get(bloquant.captures[1]).set('Cookie', dev)
+    expect(capture.status).toBe(200)
+    expect(capture.headers['content-type']).toBe('image/png')
+    expect(capture.headers['cache-control']).toBe('private, no-store')
+    expect((await request(test.app).get(`${bloquant.captures[0].slice(0, -1)}3`).set('Cookie', dev)).status).toBe(404)
+  })
+
+  it('filtre par gravité et par statut', async () => {
+    expect((await bugsDev('?gravite=mineure')).body.bugs.map((b) => b.titre)).toEqual(['Bug mineur ici'])
+    expect((await bugsDev('?statut=accepte')).body.bugs).toEqual([])
+    expect((await bugsDev('?gravite=grave')).status).toBe(422)
+  })
+
+  it('un autre développeur ne voit ni les bugs ni les captures', async () => {
+    await creerUtilisateur({ email: 'autre@studio.bj', statut: 'valide' })
+    const autre = await connecter('autre@studio.bj')
+    const [bug] = (await bugsDev()).body.bugs
+    expect((await request(test.app).get(`/api/apps/${idApp}/bugs`).set('Cookie', autre)).status).toBe(404)
+    expect((await request(test.app).get(bug.captures[0]).set('Cookie', autre)).status).toBe(404)
+    expect((await request(test.app).post(`/api/apps/${idApp}/bugs/${bug.id}/decision`).set('Cookie', autre).send({ decision: 'accepte' })).status).toBe(404)
+  })
+
+  it('accepter déclenche le bonus ; refuser exige un motif ; une décision est définitive', async () => {
+    const [bloquant, mineur] = (await bugsDev()).body.bugs
+    const ok = await decider(bloquant.id, { decision: 'accepte' })
+    expect(ok.status).toBe(200)
+    expect(ok.body.bug).toMatchObject({ statut: 'accepte', decidable: false, decideLe: '2026-11-13T09:01:00.000Z', motifRefus: null })
+    const portefeuille = (await request(test.app).get('/api/testeurs/moi/portefeuille').set(bearer(testeur))).body.portefeuille
+    expect(portefeuille.enAttente[0].montant).toBe(1000)
+
+    expect((await decider(mineur.id, { decision: 'refuse' })).body.erreur.champs).toEqual({ motif: 'requis' })
+    const refus = await decider(mineur.id, { decision: 'refuse', motif: 'C’est le comportement voulu.' })
+    expect(refus.body.bug).toMatchObject({ statut: 'refuse', motifRefus: 'C’est le comportement voulu.' })
+    expect((await decider(mineur.id, { decision: 'accepte' })).body.erreur.code).toBe('deja_decide')
+
+    // Le testeur voit la décision.
+    const vus = (await request(test.app).get(`/api/testeurs/moi/apps/${affectation}/bugs`).set(bearer(testeur))).body.bugs
+    expect(vus.map((b) => b.statut).sort()).toEqual(['accepte', 'refuse'])
+  })
+
+  it('campagne terminée : plus de décision', async () => {
+    const [bug] = (await bugsDev()).body.bugs
+    await pool.query(`UPDATE campagnes SET statut = 'terminee'`)
+    expect((await bugsDev()).body.bugs[0].decidable).toBe(false)
+    const r = await decider(bug.id, { decision: 'accepte' })
+    expect(r.status).toBe(409)
+    expect(r.body.erreur.code).toBe('campagne_terminee')
+  })
+
+  it('export CSV pour un tableur, sans formule exécutable', async () => {
+    await signaler({ ...BUG, titre: '=HYPERLINK("x") bug', etapes: 'Étape 1; puis "Étape 2"\nfin' }, [])
+    const r = await request(test.app).get(`/api/apps/${idApp}/bugs.csv`).set('Cookie', dev)
+    expect(r.status).toBe(200)
+    expect(r.headers['content-type']).toBe('text/csv; charset=utf-8')
+    expect(r.headers['content-disposition']).toBe('attachment; filename="bugs-bj.studioawa.marche.csv"')
+    const texte = r.text
+    expect(texte.startsWith('﻿Titre;Gravité;Statut;')).toBe(true)
+    expect(texte).toContain('"\'=HYPERLINK(""x"") bug"')
+    expect(texte).toContain('"Étape 1; puis ""Étape 2""\nfin"')
+    expect(texte).toContain('Bug bloquant ici;Bloquante;À examiner;')
+    expect(texte.trim().split('\r\n')).toHaveLength(4)
+  })
+})
