@@ -2,6 +2,7 @@ import { once } from 'node:events'
 import { Router } from 'express'
 import multer from 'multer'
 import { ErreurHttp } from '../lib/erreurs.js'
+import { CAPTURES_MAX, lireBug } from '../lib/bugs.js'
 import { lireRapport, lireUsages, SOURCE_PLAY_STORE } from '../lib/rapports.js'
 import { typeImage } from '../lib/testeurs.js'
 import { corps, exigerChamps, texte } from '../lib/validation.js'
@@ -20,6 +21,7 @@ import {
 } from '../services/testeurApps.js'
 import { TAILLE_MAX_PHOTO } from './testeurs.js'
 import { lirePortefeuille } from '../services/versements.js'
+import { enregistrerBug, exigerRapportsDeBugs, listerBugsTesteur, versBugTesteur } from '../services/bugs.js'
 
 // Capture d'écran « Vous êtes testeur » (5 Mo au plus), lue en mémoire.
 function lireCapture(req, res) {
@@ -32,6 +34,29 @@ function lireCapture(req, res) {
       }
       if (erreur instanceof multer.MulterError) {
         return rejeter(new ErreurHttp(422, 'validation', { message: 'Formulaire invalide.', champs: { capture: 'format_invalide' } }))
+      }
+      rejeter(erreur)
+    })
+  })
+}
+
+// Captures d'un rapport de bug (US-33) : 5 images de 5 Mo au plus, avec les champs texte.
+function lireFormulaireBug(req, res) {
+  const televersement = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: TAILLE_MAX_PHOTO, files: CAPTURES_MAX, fields: 10, fieldSize: 4096 },
+  }).array('captures', CAPTURES_MAX)
+  return new Promise((resoudre, rejeter) => {
+    televersement(req, res, (erreur) => {
+      if (!erreur) return resoudre(req.files ?? [])
+      if (erreur.code === 'LIMIT_FILE_SIZE') {
+        return rejeter(new ErreurHttp(413, 'fichier_trop_lourd', { message: 'Capture trop lourde (5 Mo maximum).', champs: { captures: 'fichier_trop_lourd' } }))
+      }
+      if (['LIMIT_FILE_COUNT', 'LIMIT_UNEXPECTED_FILE'].includes(erreur.code)) {
+        return rejeter(new ErreurHttp(422, 'validation', { message: `${CAPTURES_MAX} captures au plus.`, champs: { captures: 'trop_nombreuses' } }))
+      }
+      if (erreur instanceof multer.MulterError) {
+        return rejeter(new ErreurHttp(422, 'validation', { message: 'Formulaire invalide.', champs: { captures: 'format_invalide' } }))
       }
       rejeter(erreur)
     })
@@ -102,6 +127,49 @@ export function routesTesteurApps({ pool, config, maintenant }) {
     await enregistrerRapport(pool, { affectation, testeurId: testeurId(req), valeurs, maintenant: instant })
     const ligne = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: instant })
     res.status(201).json({ app: versAffectationTesteur(ligne, instant) })
+  })
+
+  // docs/api-bugs.md §1 US-33 : rapport de bug avec captures (offres Pro et Lancement Afrique).
+  routeur.post('/apps/:id/bugs', async (req, res) => {
+    const instant = maintenant()
+    const affectation = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: instant })
+    exigerRapportsDeBugs(affectation)
+    if (!req.is('multipart/form-data')) {
+      req.resume()
+      if (!req.readableEnded) await once(req, 'end')
+      throw new ErreurHttp(422, 'validation', { message: 'Formulaire multipart attendu.', champs: { titre: 'requis' } })
+    }
+    const fichiers = await lireFormulaireBug(req, res)
+    const { valeurs, erreurs } = lireBug(req.body ?? {})
+    const types = fichiers.map((f) => typeImage(f.buffer))
+    erreurs.captures = types.some((t) => !t) ? 'type_fichier_invalide' : null
+    exigerChamps(erreurs)
+
+    const captures = []
+    try {
+      for (const [i, fichier] of fichiers.entries()) {
+        captures.push(
+          await ecrireDocument(config.dossierDocuments, {
+            utilisateurId: testeurId(req),
+            type: `bug-${affectation.id}`,
+            typeMime: types[i],
+            contenu: fichier.buffer,
+          }),
+        )
+      }
+      const bug = await enregistrerBug(pool, { affectation, valeurs, captures, maintenant: instant })
+      res.status(201).json({ bug: versBugTesteur(bug) })
+    } catch (erreur) {
+      await supprimerDocuments(config.dossierDocuments, captures)
+      throw erreur
+    }
+  })
+
+  // docs/api-bugs.md §1.2 : les bugs que le testeur a signalés sur cette app, avec la décision du développeur.
+  routeur.get('/apps/:id/bugs', async (req, res) => {
+    const affectation = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: maintenant() })
+    exigerRapportsDeBugs(affectation)
+    res.json({ bugs: await listerBugsTesteur(pool, { affectation }) })
   })
 
   // §2.5 US-18 : ouverture de l'app compagnon.

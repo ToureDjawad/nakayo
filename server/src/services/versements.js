@@ -1,11 +1,12 @@
 import { randomBytes } from 'node:crypto'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
-import { montantLisible, remuneration } from '../lib/offres.js'
+import { BONUS_BUG, montantLisible, remuneration } from '../lib/offres.js'
 import { transaction } from '../routes/auth.js'
 
 // Versements Mobile Money aux testeurs (US-22, docs/api-sprint4.md §2). À la clôture d'une
 // campagne (J16), chaque testeur qui a ses 14 jours validés et qui est resté inscrit au test
-// reçoit 500 FCFA. En cas d'échec, 3 nouvelles tentatives sont faites, puis l'admin est alerté.
+// reçoit la paie de l'offre (500 FCFA en Standard, 800 FCFA en Pro), plus 200 FCFA par bug
+// accepté par le développeur (US-33). En cas d'échec, 3 nouvelles tentatives sont faites, puis l'admin est alerté.
 
 export const TENTATIVES_MAX = 4
 // Attente avant chaque nouvelle tentative (après la 1re, la 2e puis la 3e).
@@ -16,13 +17,17 @@ export const OPERATEURS_LISIBLES = { mtn: 'MTN MoMo', moov: 'Moov Money' }
 
 export const nouvelleReferenceVersement = () => `VER-${randomBytes(8).toString('hex').toUpperCase()}`
 
+// Paie de l'offre, plus le bonus des bugs acceptés (US-33).
+export const montantVersement = (codeOffre, bugsAcceptes = 0) => remuneration(codeOffre).montant + bugsAcceptes * BONUS_BUG.montant
+
 // Crée les versements des campagnes qui viennent de se terminer (dans la transaction de la
 // clôture). Rejouable : une affectation n'a jamais deux versements.
 export async function creerVersementsCampagnes(client, { campagneIds, maintenant }) {
   if (!campagneIds.length) return 0
   const { rows } = await client.query(
     `SELECT a.id, a.campagne_id, a.testeur_id, p.numero_momo, p.operateur_momo,
-            (SELECT offre FROM apps WHERE id = a.app_id) AS offre
+            (SELECT offre FROM apps WHERE id = a.app_id) AS offre,
+            (SELECT count(*)::int FROM bugs b WHERE b.affectation_id = a.id AND b.statut = 'accepte') AS bugs_acceptes
        FROM affectations a
        JOIN campagnes c ON c.id = a.campagne_id
        JOIN profils_testeurs p ON p.utilisateur_id = a.testeur_id
@@ -42,7 +47,7 @@ export async function creerVersementsCampagnes(client, { campagneIds, maintenant
         ligne.id,
         ligne.campagne_id,
         ligne.testeur_id,
-        remuneration(ligne.offre).montant,
+        montantVersement(ligne.offre, ligne.bugs_acceptes),
         remuneration(ligne.offre).devise,
         ligne.numero_momo,
         ligne.operateur_momo,
@@ -264,7 +269,8 @@ export async function listerVersementsAdmin(db, { statut, reference }) {
 export async function lirePortefeuille(db, { testeurId }) {
   const { rows: profil } = await db.query('SELECT numero_momo, operateur_momo FROM profils_testeurs WHERE utilisateur_id = $1', [testeurId])
   const { rows: enTest } = await db.query(
-    `SELECT a.id, ap.nom AS app_nom, ap.offre, a.jours_valides, c.jours_exiges, c.fin_prevue_le
+    `SELECT a.id, ap.nom AS app_nom, ap.offre, a.jours_valides, c.jours_exiges, c.fin_prevue_le,
+            (SELECT count(*)::int FROM bugs b WHERE b.affectation_id = a.id AND b.statut = 'accepte') AS bugs_acceptes
        FROM affectations a JOIN campagnes c ON c.id = a.campagne_id JOIN apps ap ON ap.id = a.app_id
       WHERE a.testeur_id = $1 AND a.statut = 'active' AND c.statut = 'en_cours'
       ORDER BY a.affecte_le, a.id`,
@@ -272,9 +278,10 @@ export async function lirePortefeuille(db, { testeurId }) {
   )
   const { rows: verses } = await db.query(`${SELECT_VERSEMENT} WHERE v.testeur_id = $1 ORDER BY v.cree_le DESC, v.id DESC`, [testeurId])
   const enAttente = [
-    // Gain prévu selon l'offre de l'app (500 FCFA en Standard, 800 FCFA en Pro).
+    // Gain prévu selon l'offre de l'app (500 FCFA en Standard, 800 FCFA en Pro), bonus des bugs acceptés compris.
     ...enTest.map((l) => {
-      const { montant, devise } = remuneration(l.offre)
+      const { devise } = remuneration(l.offre)
+      const montant = montantVersement(l.offre, l.bugs_acceptes)
       return {
         affectationId: String(l.id),
         appNom: l.app_nom,
