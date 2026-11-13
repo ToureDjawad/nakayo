@@ -22,6 +22,8 @@ export function versAppApi(l) {
     // Seuls les comptes personnels récents sont soumis aux 12 testeurs pendant 14 jours.
     testObligatoire: l.compte_play === 'personnel_recent',
     statut: l.statut,
+    // Offre payée (US-32) : « standard » ou « pro ».
+    offre: l.offre,
     // Motif donné par l'équipe quand l'app est refusée (US-14).
     motifRefus: l.motif_refus ?? null,
     // Liste de vérification avant le lancement (US-42).

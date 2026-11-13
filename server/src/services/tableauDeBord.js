@@ -1,5 +1,5 @@
 import { JOURS_CAMPAGNE } from '../lib/affectation.js'
-import { montantLisible, REMUNERATION_TESTEUR, TAUX_USD_FCFA } from '../lib/offres.js'
+import { montantLisible, remuneration, TAUX_USD_FCFA } from '../lib/offres.js'
 import { jourBenin } from '../lib/temps.js'
 import { TESTEURS_EXIGES_GOOGLE } from './avancement.js'
 import { jourCampagne } from './campagnes.js'
@@ -58,7 +58,7 @@ export async function lireTableauDeBord(db, { maintenant }) {
 
   // Par campagne : ce que le développeur a payé, ce qui est versé et dû aux testeurs.
   const { rows: apps } = await db.query(
-    `SELECT c.id, c.statut, c.testeurs_vises, c.demarree_le, ap.nom AS app_nom, u.nom AS dev_nom,
+    `SELECT c.id, c.statut, c.testeurs_vises, c.demarree_le, ap.nom AS app_nom, ap.offre, u.nom AS dev_nom,
             (SELECT json_agg(json_build_object('montant', p.montant, 'devise', p.devise)) FROM paiements p
               WHERE p.app_id = c.app_id AND p.statut = 'reussi') AS paiements,
             COALESCE((SELECT sum(v.montant) FROM versements v WHERE v.campagne_id = c.id AND v.statut = 'verse'), 0)::int AS verses,
@@ -70,10 +70,11 @@ export async function lireTableauDeBord(db, { maintenant }) {
     const encaisse = (a.paiements ?? []).reduce((s, p) => s + enFcfa(p.montant, p.devise), 0)
     // Campagne en cours : on compte le pire cas (tous les testeurs visés payés).
     const definitive = a.statut !== 'en_cours'
-    const coutTesteurs = definitive ? a.verses + a.dus : a.testeurs_vises * REMUNERATION_TESTEUR.montant
+    const coutTesteurs = definitive ? a.verses + a.dus : a.testeurs_vises * remuneration(a.offre).montant
     return {
       campagneId: String(a.id),
       appNom: a.app_nom,
+      offre: a.offre,
       developpeur: a.dev_nom,
       statut: a.statut,
       demarreeLe: a.demarree_le.toISOString(),

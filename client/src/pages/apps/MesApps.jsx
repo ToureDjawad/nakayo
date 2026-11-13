@@ -63,6 +63,11 @@ export function MesApps() {
             <ul className="mt-3 space-y-3">
               {etat.apps.map((app) => {
                 const [libelle, couleurs] = STATUTS[app.statut] ?? [app.statut, 'bg-fond-doux text-encre']
+                // Montée en gamme (US-32) : une app payée en Standard, tant que sa campagne n'est pas terminée.
+                const peutMonter =
+                  (app.offre ?? 'standard') === 'standard' &&
+                  ['en_verification', 'validee'].includes(app.statut) &&
+                  app.campagne?.statut !== 'terminee'
                 return (
                   <li key={app.id} className="rounded-carte border border-trait bg-white p-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -70,6 +75,9 @@ export function MesApps() {
                       <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${couleurs}`}>{libelle}</span>
                     </div>
                     <p className="mt-0.5 font-mono text-sm [overflow-wrap:anywhere] text-texte">{app.package}</p>
+                    {app.statut !== 'brouillon' && (
+                      <p className="mt-0.5 text-sm text-texte">{app.offre === 'pro' ? 'Offre Pro' : 'Offre Standard'}</p>
+                    )}
                     {app.statut === 'brouillon' && (
                       <>
                         <p className="mt-2 text-sm text-texte">Prochaine étape : le paiement de l’offre, puis la vérification par l’équipe.</p>
@@ -120,6 +128,18 @@ export function MesApps() {
                             : `${app.preparation?.elements.length ?? 0} sur 6 points vérifiés.`}
                         </span>
                       </div>
+                    )}
+                    {peutMonter && (
+                      <p className="mt-3 text-sm">
+                        <Link
+                          to={`/mon-compte/apps/${app.id}/montee-en-gamme`}
+                          aria-label={`Passer à l’Offre Pro : ${app.nom}`}
+                          className="font-semibold text-accent underline underline-offset-2"
+                        >
+                          Passer à l’Offre Pro
+                        </Link>
+                        <span className="text-texte"> : testeurs confirmés et mieux payés, vous ne réglez que la différence.</span>
+                      </p>
                     )}
                     {app.statut === 'refusee' && (
                       <div className="mt-2 text-sm text-texte">

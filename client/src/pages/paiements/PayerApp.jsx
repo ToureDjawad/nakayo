@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { lireApp } from '../../api/apps.js'
 import { ErreurApi } from '../../api/client.js'
-import { lireOffres, payerApp } from '../../api/paiements.js'
+import { lireOffres, monterEnGamme, payerApp } from '../../api/paiements.js'
 import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton } from '../../components/Bouton.jsx'
 import { Champ, ChoixRadio } from '../../components/Champ.jsx'
@@ -14,39 +14,61 @@ import { normaliserWhatsapp, validerWhatsapp } from '../../lib/validation.js'
 import { useChargement } from '../../lib/useChargement.js'
 import { Chargement, EspaceDeveloppeur, PagePaiement, RetourCompte } from './commun.jsx'
 
-const TITRE = 'Payer l’offre Standard'
+const TITRE = 'Payer l’offre de votre app'
+const TITRE_MONTEE = 'Passer à l’Offre Pro'
 
 const VALIDATEURS = {
+  offre: (v) => (v ? null : 'requis'),
   moyen: (v) => (v ? null : 'requis'),
   numeroMomo: (v, valeurs) => (valeurs.moyen === 'mobile_money' ? validerWhatsapp(v) : null),
 }
 
-function Formulaire({ app, offre }) {
+const MESSAGES_ERREUR = {
+  paiement_indisponible: 'Le paiement en ligne n’est pas encore ouvert. Votre app est conservée : nous vous prévenons par email dès l’ouverture.',
+  compte_non_valide: 'Votre compte doit être validé par l’équipe avant de payer une offre.',
+  deja_dans_cette_offre: 'Votre app est déjà en Offre Pro.',
+  campagne_terminee: 'La campagne de cette app est terminée : elle ne peut plus changer d’offre.',
+  fournisseur_indisponible: 'Le service de paiement ne répond pas pour le moment. Aucun montant n’a été prélevé : réessayez dans quelques minutes.',
+}
+
+// Prix affichés : l'offre entière, ou la différence de prix pour une montée en gamme.
+const tarifs = (offre, montee) => (montee ? offre.monteeEnGamme : offre)
+
+// `offres` : les offres proposées ; une seule pour la montée en gamme (Pro).
+function Formulaire({ app, offres, offreInitiale, montee = false }) {
   const navigate = useNavigate()
-  const formulaire = useFormulaire({ moyen: '', numeroMomo: '' }, VALIDATEURS)
+  const formulaire = useFormulaire({ offre: offreInitiale, moyen: '', numeroMomo: '' }, VALIDATEURS)
   const { valeurs, lier } = formulaire
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState(null)
   const alerte = useRef(null)
+  const offre = offres.find((o) => o.code === valeurs.offre) ?? offres[0]
+  const tarif = tarifs(offre, montee)
   // Montant réellement débité : en FCFA pour la carte quand FedaPay encaisse.
-  const prix = valeurs.moyen === 'carte' && offre.debitCarte ? offre.debitCarte : valeurs.moyen ? offre.prix[valeurs.moyen] : null
+  const prix = valeurs.moyen === 'carte' && tarif.debitCarte ? tarif.debitCarte : valeurs.moyen ? tarif.prix[valeurs.moyen] : null
 
   useEffect(() => {
     if (erreur) alerte.current?.focus()
   }, [erreur])
 
-  const options = [
+  const choixOffres = offres.map((o) => ({
+    valeur: o.code,
+    libelle: `${o.nom} : ${montantLisible(o.prix.mobile_money.montant, o.prix.mobile_money.devise)} ou ${montantLisible(o.prix.carte.montant, o.prix.carte.devise)}`,
+    detail: o.description,
+  }))
+
+  const moyens = [
     {
       valeur: 'carte',
-      libelle: `Carte bancaire : ${montantLisible(offre.prix.carte.montant, offre.prix.carte.devise)}`,
+      libelle: `Carte bancaire : ${montantLisible(tarif.prix.carte.montant, tarif.prix.carte.devise)}`,
       // Avec FedaPay, la carte est débitée en FCFA (même valeur, 1 $ = 600 FCFA).
-      detail: offre.debitCarte
-        ? `Visa ou Mastercard, débitée en FCFA : ${montantLisible(offre.debitCarte.montant, offre.debitCarte.devise)}.`
+      detail: tarif.debitCarte
+        ? `Visa ou Mastercard, débitée en FCFA : ${montantLisible(tarif.debitCarte.montant, tarif.debitCarte.devise)}.`
         : 'Visa ou Mastercard, débitée en dollars américains.',
     },
     {
       valeur: 'mobile_money',
-      libelle: `Mobile Money : ${montantLisible(offre.prix.mobile_money.montant, offre.prix.mobile_money.devise)}`,
+      libelle: `Mobile Money : ${montantLisible(tarif.prix.mobile_money.montant, tarif.prix.mobile_money.devise)}`,
       detail: 'MTN ou Moov. Vous validez le paiement sur votre téléphone.',
     },
   ]
@@ -57,21 +79,22 @@ function Formulaire({ app, offre }) {
     if (!formulaire.validerTout()) return
     setEnvoi(true)
     try {
-      const { redirection } = await payerApp(app.id, {
+      const demande = {
+        offre: offre.code,
         moyen: valeurs.moyen,
         numeroMomo: valeurs.moyen === 'mobile_money' ? normaliserWhatsapp(valeurs.numeroMomo) : undefined,
-      })
+      }
+      const { redirection } = await (montee ? monterEnGamme(app.id, demande) : payerApp(app.id, demande))
       // Page du fournisseur (FedaPay) : adresse externe ; simulation : page du site.
       if (/^https?:\/\//.test(redirection)) ouvrirPageFournisseur(redirection)
       else navigate(redirection)
     } catch (err) {
       setEnvoi(false)
       if (err instanceof ErreurApi && err.champs) return formulaire.appliquerErreursServeur(err.champs)
-      if (err instanceof ErreurApi && err.code === 'paiement_indisponible') {
-        return setErreur('Le paiement en ligne n’est pas encore ouvert. Votre brouillon est conservé : nous vous prévenons par email dès l’ouverture.')
+      if (err instanceof ErreurApi && MESSAGES_ERREUR[err.code]) return setErreur(MESSAGES_ERREUR[err.code])
+      if (err instanceof ErreurApi && err.code === 'statut_incompatible') {
+        return setErreur(montee ? 'Cette app ne peut pas changer d’offre dans son état actuel.' : 'Cette app n’est plus en brouillon : son offre est déjà payée.')
       }
-      if (err instanceof ErreurApi && err.code === 'statut_incompatible') return setErreur('Cette app n’est plus en brouillon : son offre est déjà payée.')
-      if (err instanceof ErreurApi && err.code === 'compte_non_valide') return setErreur('Votre compte doit être validé par l’équipe avant de payer une offre.')
       if (err instanceof ErreurApi && err.statut === 404) return setErreur('Cette app n’existe plus. Elle a peut-être été supprimée.')
       setErreur(messageErreurGlobale(err))
     }
@@ -89,6 +112,11 @@ function Formulaire({ app, offre }) {
           </p>
         </div>
         <p className="mt-1 text-texte">{offre.description}</p>
+        {montee && (
+          <p className="mt-2 text-sm text-texte">
+            Vous avez déjà payé l’Offre Standard : vous ne réglez que la différence de prix.
+          </p>
+        )}
         <div className="mt-4 rounded-champ bg-succes-clair p-3 text-sm text-[#14522F]">
           <p className="font-semibold">Notre garantie</p>
           <p className="mt-0.5">{offre.garantie}</p>
@@ -102,7 +130,8 @@ function Formulaire({ app, offre }) {
       )}
 
       <form onSubmit={soumettre} noValidate className="mt-6 space-y-5">
-        <ChoixRadio {...lier('moyen')} libelle="Moyen de paiement" options={options} />
+        {offres.length > 1 && <ChoixRadio {...lier('offre')} libelle="Offre" options={choixOffres} />}
+        <ChoixRadio {...lier('moyen')} libelle="Moyen de paiement" options={moyens} />
         {valeurs.moyen === 'mobile_money' && (
           <Champ
             {...lier('numeroMomo')}
@@ -134,32 +163,40 @@ function Formulaire({ app, offre }) {
   )
 }
 
-function Paiement({ id, utilisateur }) {
-  const { chargement, donnees, erreur, reessayer } = useChargement(
+function useAppEtOffres(id) {
+  return useChargement(
     async (signal) => {
       const [{ app }, { offres }] = await Promise.all([lireApp(id, { signal }), lireOffres({ signal })])
-      return { app, offre: offres.find((o) => o.code === 'standard') ?? offres[0] }
+      return { app, offres }
     },
     id,
   )
+}
+
+function ErreurChargement({ titre, utilisateur, erreur, reessayer }) {
+  const absente = erreur instanceof ErreurApi && erreur.statut === 404
+  return (
+    <PagePaiement titre={titre} utilisateur={utilisateur}>
+      <Alerte ton="erreur">{absente ? 'Cette app est introuvable. Elle a peut-être été supprimée.' : messageErreurGlobale(erreur)}</Alerte>
+      {!absente && (
+        <Bouton type="button" variante="secondaire" className="mt-4" onClick={reessayer}>
+          Réessayer
+        </Bouton>
+      )}
+      <RetourCompte />
+    </PagePaiement>
+  )
+}
+
+function Paiement({ id, utilisateur }) {
+  const [parametres] = useSearchParams()
+  const { chargement, donnees, erreur, reessayer } = useAppEtOffres(id)
 
   if (chargement) return <Chargement titre={TITRE} />
-  if (erreur) {
-    const absente = erreur instanceof ErreurApi && erreur.statut === 404
-    return (
-      <PagePaiement titre={TITRE} utilisateur={utilisateur}>
-        <Alerte ton="erreur">{absente ? 'Cette app est introuvable. Elle a peut-être été supprimée.' : messageErreurGlobale(erreur)}</Alerte>
-        {!absente && (
-          <Bouton type="button" variante="secondaire" className="mt-4" onClick={reessayer}>
-            Réessayer
-          </Bouton>
-        )}
-        <RetourCompte />
-      </PagePaiement>
-    )
-  }
-  const { app, offre } = donnees
+  if (erreur) return <ErreurChargement titre={TITRE} utilisateur={utilisateur} erreur={erreur} reessayer={reessayer} />
+  const { app, offres } = donnees
   if (app.statut !== 'brouillon') {
+    const peutMonter = (app.offre ?? 'standard') === 'standard' && app.statut !== 'refusee' && offres.some((o) => o.monteeEnGamme)
     return (
       <PagePaiement titre={app.nom} utilisateur={utilisateur}>
         <Alerte ton="info">L’offre de cette app est déjà payée.</Alerte>
@@ -168,40 +205,122 @@ function Paiement({ id, utilisateur }) {
             Voir vos paiements et factures
           </Link>
         </p>
+        {peutMonter && (
+          <p className="mt-3 text-texte">
+            <Link to={`/mon-compte/apps/${app.id}/montee-en-gamme`} className="font-medium text-accent underline underline-offset-2">
+              Passer à l’Offre Pro
+            </Link>
+          </p>
+        )}
         <RetourCompte className="mt-3" />
+      </PagePaiement>
+    )
+  }
+  const demandee = parametres.get('offre')
+  const offreInitiale = offres.some((o) => o.code === demandee) ? demandee : (offres.find((o) => o.code === 'standard') ?? offres[0]).code
+  return (
+    <PagePaiement
+      titre={TITRE}
+      utilisateur={utilisateur}
+      intro={<p>Une fois l’offre payée, l’app passe en vérification et ne peut plus être modifiée.</p>}
+    >
+      <Formulaire app={app} offres={offres} offreInitiale={offreInitiale} />
+    </PagePaiement>
+  )
+}
+
+function Montee({ id, utilisateur }) {
+  const { chargement, donnees, erreur, reessayer } = useAppEtOffres(id)
+
+  if (chargement) return <Chargement titre={TITRE_MONTEE} />
+  if (erreur) return <ErreurChargement titre={TITRE_MONTEE} utilisateur={utilisateur} erreur={erreur} reessayer={reessayer} />
+  const { app, offres } = donnees
+  const pro = offres.find((o) => o.code === 'pro' && o.monteeEnGamme)
+  let blocage = null
+  if (!pro) blocage = 'L’Offre Pro n’est pas encore ouverte.'
+  else if (app.offre === 'pro') blocage = 'Votre app est déjà en Offre Pro.'
+  else if (app.statut === 'refusee') blocage = 'Cette app a été refusée : elle ne peut pas changer d’offre.'
+  else if (app.campagne?.statut === 'terminee') blocage = 'La campagne de cette app est terminée : elle ne peut plus changer d’offre.'
+
+  if (app.statut === 'brouillon' && pro) {
+    return (
+      <PagePaiement titre={TITRE_MONTEE} utilisateur={utilisateur}>
+        <Alerte ton="info">Cette app n’est pas encore payée : choisissez directement l’Offre Pro au paiement.</Alerte>
+        <p className="mt-6">
+          <Link to={`/mon-compte/apps/${app.id}/paiement?offre=pro`} className="font-medium text-accent underline underline-offset-2">
+            Payer l’Offre Pro
+          </Link>
+        </p>
+        <RetourCompte className="mt-3" />
+      </PagePaiement>
+    )
+  }
+  if (blocage) {
+    return (
+      <PagePaiement titre={TITRE_MONTEE} utilisateur={utilisateur}>
+        <Alerte ton="info">{blocage}</Alerte>
+        <RetourCompte />
       </PagePaiement>
     )
   }
   return (
     <PagePaiement
-      titre={TITRE}
+      titre={TITRE_MONTEE}
       utilisateur={utilisateur}
-     
-      intro={<p>Une fois l’offre payée, l’app passe en vérification et ne peut plus être modifiée.</p>}
+      intro={
+        <p>
+          Le passage vaut pour toute la campagne, même déjà lancée : chaque testeur qui va au bout est payé 800 FCFA, et les remplaçants
+          viennent en priorité des testeurs confirmés.
+        </p>
+      }
     >
-      <Formulaire app={app} offre={offre} />
+      <Formulaire app={app} offres={[pro]} offreInitiale="pro" montee />
     </PagePaiement>
   )
 }
 
-// /mon-compte/apps/:id/paiement (US-12).
-export default function PayerApp() {
-  const { id } = useParams()
+function Garde({ titre, suite, raison, rendu }) {
   return (
     <EspaceDeveloppeur
-      titre={TITRE}
-      suite={`/mon-compte/apps/${id}/paiement`}
-      raison="pour payer l’offre de votre app."
+      titre={titre}
+      suite={suite}
+      raison={raison}
       contenu={(utilisateur) =>
         utilisateur.statut === 'valide' ? (
-          <Paiement id={id} utilisateur={utilisateur} />
+          rendu(utilisateur)
         ) : (
-          <PagePaiement titre={TITRE} utilisateur={utilisateur}>
+          <PagePaiement titre={titre} utilisateur={utilisateur}>
             <Alerte ton="alerte">Votre compte doit être validé par l’équipe avant de payer une offre.</Alerte>
             <RetourCompte />
           </PagePaiement>
         )
       }
+    />
+  )
+}
+
+// /mon-compte/apps/:id/paiement (US-12, US-32) : choix de l'offre et paiement.
+export default function PayerApp() {
+  const { id } = useParams()
+  return (
+    <Garde
+      titre={TITRE}
+      suite={`/mon-compte/apps/${id}/paiement`}
+      raison="pour payer l’offre de votre app."
+      rendu={(utilisateur) => <Paiement id={id} utilisateur={utilisateur} />}
+    />
+  )
+}
+
+// /mon-compte/apps/:id/montee-en-gamme (US-32) : passage de Standard à Pro.
+export function MonteeEnGamme() {
+  const { id } = useParams()
+  return (
+    <Garde
+      titre={TITRE_MONTEE}
+      suite={`/mon-compte/apps/${id}/montee-en-gamme`}
+      raison="pour passer votre app à l’Offre Pro."
+      rendu={(utilisateur) => <Montee id={id} utilisateur={utilisateur} />}
     />
   )
 }

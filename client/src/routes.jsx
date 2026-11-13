@@ -10,7 +10,7 @@ import FormulaireApp from './pages/apps/FormulaireApp.jsx'
 import PreparationLancement from './pages/apps/PreparationLancement.jsx'
 import SuiviCampagne from './pages/apps/SuiviCampagne.jsx'
 import MesPaiements from './pages/paiements/MesPaiements.jsx'
-import PayerApp from './pages/paiements/PayerApp.jsx'
+import PayerApp, { MonteeEnGamme } from './pages/paiements/PayerApp.jsx'
 import RetourPaiement from './pages/paiements/RetourPaiement.jsx'
 import SimulationPaiement from './pages/paiements/SimulationPaiement.jsx'
 import Connexion from './pages/connexion/Connexion.jsx'
@@ -37,6 +37,7 @@ export const routes = [
   { path: '/mon-compte/apps/:id/preparation', element: <PreparationLancement /> },
   { path: '/mon-compte/apps/:id/campagne', element: <SuiviCampagne /> },
   { path: '/mon-compte/apps/:id/paiement', element: <PayerApp /> },
+  { path: '/mon-compte/apps/:id/montee-en-gamme', element: <MonteeEnGamme /> },
   { path: '/mon-compte/paiements', element: <MesPaiements /> },
   { path: '/mon-compte/paiements/:reference', element: <RetourPaiement /> },
   { path: '/paiement/simulation/:reference', element: <SimulationPaiement /> },

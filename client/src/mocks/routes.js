@@ -124,6 +124,7 @@ function apps() {
 function versApp(a) {
   const copie = {
     ...a,
+    offre: a.offre ?? 'standard',
     testObligatoire: a.comptePlay === 'personnel_recent',
     motifRefus: a.motifRefus ?? null,
     preparation: a.preparation ?? { elements: [], complete: false, completeLe: null },
@@ -268,6 +269,17 @@ const OFFRE = {
   garantie:
     'Si Google refuse l’accès à la production à cause d’un manque d’engagement des testeurs, nous relançons une nouvelle campagne sans frais.',
 }
+// Offre Pro (docs/api-offres.md §1) ; la montée en gamme coûte la différence de prix (§2).
+const OFFRE_PRO = {
+  code: 'pro',
+  nom: 'Offre Pro',
+  description:
+    'Tout Standard, avec les testeurs les mieux notés, des rapports de bugs avec captures et au moins 5 téléphones d’entrée de gamme.',
+  prix: { carte: { montant: 5900, devise: 'USD' }, mobile_money: { montant: 35400, devise: 'XOF' } },
+  garantie: OFFRE.garantie,
+  monteeEnGamme: { prix: { carte: { montant: 3000, devise: 'USD' }, mobile_money: { montant: 18000, devise: 'XOF' } } },
+}
+const OFFRES = { standard: OFFRE, pro: OFFRE_PRO }
 
 function paiements() {
   const b = base()
@@ -284,7 +296,8 @@ function versPaiement(p) {
     reference: p.reference,
     appId: p.appId,
     appNom: app?.nom ?? p.appNom,
-    offre: 'standard',
+    offre: p.offre ?? 'standard',
+    nature: p.nature ?? 'offre',
     moyen: p.moyen,
     montant: p.montant,
     devise: p.devise,
@@ -295,6 +308,52 @@ function versPaiement(p) {
     confirmeLe: p.confirmeLe,
     rembourseLe: null,
   }
+}
+
+// Achat de l'offre d'une app en brouillon, ou montée en gamme d'une app déjà payée (§2).
+function lancerPaiement(id, corps = {}, nature) {
+  const { refus, utilisateur } = exigerDeveloppeur()
+  if (refus) return refus
+  if (utilisateur.statut !== 'valide') return erreur(403, 'compte_non_valide')
+  const { moyen } = corps
+  const code = corps.offre ?? (nature === 'offre' ? 'standard' : 'pro')
+  const numero = moyen === 'mobile_money' ? normaliserWhatsapp(corps.numeroMomo) : null
+  const champs = Object.fromEntries(
+    Object.entries({
+      offre: OFFRES[code] && (nature === 'offre' || code !== 'standard') ? null : 'valeur_inconnue',
+      moyen: !moyen ? 'requis' : OFFRE.prix[moyen] ? null : 'valeur_inconnue',
+      numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
+    }).filter(([, c]) => c),
+  )
+  if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
+  const app = appDuDeveloppeur(id, utilisateur)
+  if (!app) return erreur(404, 'introuvable')
+  if (nature === 'offre' && app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
+  if (nature === 'montee_en_gamme') {
+    if (['brouillon', 'refusee'].includes(app.statut)) return erreur(409, 'statut_incompatible', { statut: app.statut })
+    if ((app.offre ?? 'standard') === code) return erreur(409, 'deja_dans_cette_offre')
+    if (campagneDeLApp(app.id)?.statut === 'terminee') return erreur(409, 'campagne_terminee')
+  }
+  const prix = nature === 'offre' ? OFFRES[code].prix[moyen] : OFFRES[code].monteeEnGamme.prix[moyen]
+  const reference = `PAY-${Array.from({ length: 16 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('')}`
+  const paiement = {
+    reference,
+    appId: app.id,
+    appNom: app.nom,
+    developpeurId: utilisateur.id,
+    offre: code,
+    nature,
+    moyen,
+    ...prix,
+    numeroMomo: numero,
+    statut: 'en_attente',
+    facture: null,
+    creeLe: horodatage(),
+    confirmeLe: null,
+  }
+  paiements().push(paiement)
+  sauver()
+  return ok({ paiement: versPaiement(paiement), redirection: `/paiement/simulation/${reference}` }, 201)
 }
 
 function paiementDuDeveloppeur(reference, utilisateur) {
@@ -899,46 +958,18 @@ export const routes = [
     methode: 'GET',
     chemin: '/api/offres',
     traiter() {
-      return ok({ offres: [OFFRE] })
+      return ok({ offres: Object.values(OFFRES) })
     },
   },
   {
     methode: 'POST',
     chemin: '/api/apps/:id/paiements',
-    traiter({ params, corps = {} }) {
-      const { refus, utilisateur } = exigerDeveloppeur()
-      if (refus) return refus
-      if (utilisateur.statut !== 'valide') return erreur(403, 'compte_non_valide')
-      const { moyen } = corps
-      const numero = moyen === 'mobile_money' ? normaliserWhatsapp(corps.numeroMomo) : null
-      const champs = Object.fromEntries(
-        Object.entries({
-          moyen: !moyen ? 'requis' : OFFRE.prix[moyen] ? null : 'valeur_inconnue',
-          numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
-        }).filter(([, code]) => code),
-      )
-      if (Object.keys(champs).length) return erreur(422, 'validation', { champs })
-      const app = appDuDeveloppeur(params.id, utilisateur)
-      if (!app) return erreur(404, 'introuvable')
-      if (app.statut !== 'brouillon') return erreur(409, 'statut_incompatible', { statut: app.statut })
-      const reference = `PAY-${Array.from({ length: 16 }, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]).join('')}`
-      const paiement = {
-        reference,
-        appId: app.id,
-        appNom: app.nom,
-        developpeurId: utilisateur.id,
-        moyen,
-        ...OFFRE.prix[moyen],
-        numeroMomo: numero,
-        statut: 'en_attente',
-        facture: null,
-        creeLe: horodatage(),
-        confirmeLe: null,
-      }
-      paiements().push(paiement)
-      sauver()
-      return ok({ paiement: versPaiement(paiement), redirection: `/paiement/simulation/${reference}` }, 201)
-    },
+    traiter: ({ params, corps }) => lancerPaiement(params.id, corps, 'offre'),
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/apps/:id/montee-en-gamme',
+    traiter: ({ params, corps }) => lancerPaiement(params.id, corps, 'montee_en_gamme'),
   },
   {
     methode: 'GET',
@@ -974,11 +1005,13 @@ export const routes = [
       if (paiement.statut === 'en_attente') {
         const app = apps().find((a) => a.id === paiement.appId)
         paiement.confirmeLe = horodatage()
+        const montee = paiement.nature === 'montee_en_gamme'
         if (corps.resultat === 'echoue') paiement.statut = 'echoue'
-        else if (!app || app.statut !== 'brouillon') paiement.statut = 'doublon'
+        else if (!app || (montee ? (app.offre ?? 'standard') === paiement.offre : app.statut !== 'brouillon')) paiement.statut = 'doublon'
         else {
           paiement.statut = 'reussi'
-          app.statut = 'en_verification'
+          if (!montee) app.statut = 'en_verification'
+          app.offre = paiement.offre ?? 'standard'
           app.modifieLe = paiement.confirmeLe
           base().compteurFactures = (base().compteurFactures ?? 0) + 1
           paiement.facture = `NKY-${paiement.confirmeLe.slice(0, 4)}-${String(base().compteurFactures).padStart(5, '0')}`

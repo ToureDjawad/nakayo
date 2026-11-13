@@ -56,6 +56,9 @@ function Historique({ utilisateur }) {
                   <span className="font-semibold tabular-nums">{montantLisible(p.montant, p.devise)}</span>
                   <span className="text-texte"> · {MOYENS[p.moyen] ?? p.moyen}</span>
                 </p>
+                <p className="mt-0.5 text-sm text-texte">
+                  {p.nature === 'montee_en_gamme' ? 'Passage à l’Offre Pro (différence de prix)' : p.offre === 'pro' ? 'Offre Pro' : 'Offre Standard'}
+                </p>
                 <p className="mt-0.5 text-sm text-discret">
                   {dateHeure(p.confirmeLe ?? p.creeLe)} · <span className="font-mono [overflow-wrap:anywhere]">{p.reference}</span>
                 </p>

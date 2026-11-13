@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { ErreurHttp } from '../lib/erreurs.js'
-import { OFFRE_STANDARD } from '../lib/offres.js'
+import { MOYENS_PAIEMENT, OFFRES, prixMonteeEnGamme } from '../lib/offres.js'
 import { corps } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
 import { transaction } from './auth.js'
@@ -99,9 +99,19 @@ export function routesOffres({ config }) {
   const routeur = Router()
   routeur.get('/', (_req, res) => {
     res.set('Cache-Control', 'public, max-age=300')
+    // docs/api-offres.md §1 : les offres ouvertes, sans les règles internes (paie des testeurs).
     // docs/fedapay.md §1 FedaPay encaisse en FCFA : la carte est alors débitée du prix Mobile Money.
-    const offre = config.paiementMode === 'fedapay' ? { ...OFFRE_STANDARD, debitCarte: OFFRE_STANDARD.prix.mobile_money } : OFFRE_STANDARD
-    res.json({ offres: [offre] })
+    // Pro porte aussi le prix de la montée en gamme depuis Standard (§2), la différence de prix.
+    const fedapay = config.paiementMode === 'fedapay'
+    const offres = Object.values(OFFRES).map(({ remuneration: _r, testeursConfirmes: _t, ...o }) => {
+      const publique = fedapay ? { ...o, debitCarte: o.prix.mobile_money } : { ...o }
+      if (o.code !== 'standard') {
+        const prix = Object.fromEntries(MOYENS_PAIEMENT.map((m) => [m, prixMonteeEnGamme(m, o.code)]))
+        publique.monteeEnGamme = { prix, ...(fedapay && { debitCarte: prix.mobile_money }) }
+      }
+      return publique
+    })
+    res.json({ offres })
   })
   return routeur
 }
