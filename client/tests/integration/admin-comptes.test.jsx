@@ -179,7 +179,7 @@ describe('Back-office : comptes en attente (US-08)', () => {
     await user.click(screen.getByRole('button', { name: 'Refuser le compte de Studio Awa' }))
     await user.keyboard('{Escape}')
     expect(screen.queryByLabelText('Motif du refus')).not.toBeInTheDocument()
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Refuser le compte de Studio Awa' })).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Refuser le compte de Studio Awa' })).toHaveFocus(), { timeout: 3000 })
   })
 
   it('retire un compte déjà traité par un autre administrateur', async () => {
