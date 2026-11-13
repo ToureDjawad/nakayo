@@ -51,6 +51,11 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     }
     var reponseMesBugs: suspend (String) -> Resultat<List<BugSignale>> = { Resultat.Succes(emptyList()) }
     var dernierBug: Pair<RapportBug, List<Photo>>? = null
+    // US-37 : le questionnaire envoyé est marqué comme rempli.
+    var reponseTerrain: suspend (String, RetourTerrain) -> Resultat<AffectationTesteur> = { id, _ ->
+        Resultat.Succes(affectation(id).copy(questionnaireTerrain = QuestionnaireTerrain(envoye = true, ouvert = false)))
+    }
+    var dernierRetourTerrain: RetourTerrain? = null
     var dernierRapport: RapportJour? = null
     var dernieresUsages: List<UsageJour>? = null
 
@@ -147,6 +152,12 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
     }
 
     override suspend fun mesBugs(affectationId: String) = reponseMesBugs(affectationId).also { appels += "bugs:$affectationId" }
+
+    override suspend fun envoyerRetourTerrain(affectationId: String, retour: RetourTerrain): Resultat<AffectationTesteur> {
+        appels += "terrain:$affectationId"
+        dernierRetourTerrain = retour
+        return reponseTerrain(affectationId, retour)
+    }
 
     companion object {
         fun portefeuilleExemple() = Portefeuille(

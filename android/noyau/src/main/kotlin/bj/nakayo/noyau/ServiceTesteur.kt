@@ -26,6 +26,9 @@ interface ServiceTesteur {
     suspend fun envoyerBug(affectationId: String, bug: RapportBug, captures: List<Photo>): Resultat<BugSignale>
     suspend fun mesBugs(affectationId: String): Resultat<List<BugSignale>>
 
+    // US-37 : questionnaire terrain de l'offre Lancement Afrique (docs/api-offres.md §4.5).
+    suspend fun envoyerRetourTerrain(affectationId: String, retour: RetourTerrain): Resultat<AffectationTesteur>
+
     // Sprint 4 : gains en attente et versements reçus (docs/api-sprint4.md §3).
     suspend fun portefeuille(): Resultat<Portefeuille>
 

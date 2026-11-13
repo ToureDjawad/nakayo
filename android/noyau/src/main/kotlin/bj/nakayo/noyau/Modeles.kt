@@ -182,6 +182,25 @@ data class AffectationTesteur(
     val usageMinimumSecondes: Int = 120,
     // US-33 : rapports de bugs avec captures (offres Pro et Lancement Afrique).
     val rapportsDeBugs: Boolean = false,
+    // US-37 : questionnaire terrain (Lancement Afrique), absent pour les autres offres.
+    val questionnaireTerrain: QuestionnaireTerrain? = null,
+)
+
+// US-37 : le questionnaire s'ouvre au jour `ouvertLe` et ne se remplit qu'une fois.
+@Serializable
+data class QuestionnaireTerrain(val envoye: Boolean, val ouvert: Boolean, val ouvertLe: Int = 7)
+
+// Réponses du questionnaire terrain (docs/api-offres.md §4.5).
+// connexion : wifi, 4g, 3g ou 2g ; reseau et telephone : fluide, lent ou inutilisable ;
+// langue : fr ou en ; comprehension : de 1 à 5.
+@Serializable
+data class RetourTerrain(
+    val connexion: String,
+    val reseau: String,
+    val telephone: String,
+    val langue: String,
+    val comprehension: Int,
+    val commentaire: String? = null,
 )
 
 // Position du téléphone : le serveur l'arrondit à 1 km environ.

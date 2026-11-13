@@ -143,4 +143,19 @@ object MessagesChamps {
         }
         else -> "Cette réponse n'est pas valide."
     }
+
+    // US-37 : questionnaire terrain (docs/api-offres.md §4.5).
+    fun terrain(champ: String, code: String): String = when (champ) {
+        "connexion" -> "Choisissez votre connexion."
+        "reseau" -> "Dites comment l'app se comporte sur votre connexion."
+        "telephone" -> "Dites comment l'app se comporte sur votre téléphone."
+        "langue" -> "Choisissez la langue utilisée."
+        "comprehension" -> "Choisissez une note de 1 à 5."
+        "commentaire" -> when (code) {
+            "trop_court" -> "Écrivez au moins 10 caractères, ou laissez vide."
+            "trop_long" -> "1000 caractères au plus."
+            else -> "Ce commentaire n'est pas valide."
+        }
+        else -> "Cette réponse n'est pas valide."
+    }
 }

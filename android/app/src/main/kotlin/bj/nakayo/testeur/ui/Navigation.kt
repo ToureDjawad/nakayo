@@ -6,6 +6,7 @@ import bj.nakayo.noyau.Resultat
 import bj.nakayo.testeur.campagne.OutilsApps
 import bj.nakayo.testeur.ui.apps.AppModele
 import bj.nakayo.testeur.ui.apps.BugModele
+import bj.nakayo.testeur.ui.apps.TerrainModele
 import bj.nakayo.testeur.ui.apps.RapportModele
 import bj.nakayo.noyau.ProfilTesteur
 import bj.nakayo.noyau.ServiceTesteur
@@ -38,6 +39,7 @@ sealed interface Ecran {
     data class App(val modele: AppModele) : Ecran
     data class Rapport(val modele: RapportModele) : Ecran
     data class Bug(val modele: BugModele) : Ecran
+    data class Terrain(val modele: TerrainModele) : Ecran
     data class Portefeuille(val modele: PortefeuilleModele) : Ecran
 }
 
@@ -130,6 +132,7 @@ class Navigation(
                 information = information,
                 surRapport = { a -> allerRapport(a) },
                 surBug = { a -> allerBug(a) },
+                surTerrain = { a -> allerTerrain(a) },
                 surQuitter = { allerEspace(profilEspace) },
                 surSessionExpiree = { message -> allerAccueil(message) },
             ),
@@ -161,6 +164,20 @@ class Navigation(
                 outils = outils,
                 compresser = compresser,
                 calcul = calcul,
+                surQuitter = { allerApp(affectation, profilEspace) },
+                surSessionExpiree = { message -> allerAccueil(message) },
+            ),
+        )
+    }
+
+    // US-37 : questionnaire terrain ; retour à l'app une fois envoyé.
+    fun allerTerrain(affectation: AffectationTesteur): Unit = changer {
+        Ecran.Terrain(
+            TerrainModele(
+                service = service,
+                portee = it,
+                affectation = affectation,
+                surEnvoye = { aJour -> allerApp(aJour, profilEspace, "Merci ! Vos réponses aident le développeur à adapter son app.") },
                 surQuitter = { allerApp(affectation, profilEspace) },
                 surSessionExpiree = { message -> allerAccueil(message) },
             ),
@@ -268,6 +285,10 @@ class Navigation(
             true
         }
         is Ecran.Bug -> {
+            actuel.modele.retour()
+            true
+        }
+        is Ecran.Terrain -> {
             actuel.modele.retour()
             true
         }
