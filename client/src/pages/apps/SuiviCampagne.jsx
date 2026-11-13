@@ -6,6 +6,7 @@ import { Alerte } from '../../components/Alerte.jsx'
 import { Bouton, Indicateur } from '../../components/Bouton.jsx'
 import { AdresseGroupe, BoutonCopier } from '../../components/Copier.jsx'
 import { AvancementCampagne } from './AvancementCampagne.jsx'
+import { RapportFinal } from './RapportFinal.jsx'
 import { PageCompte, PanneauEtapes } from '../../components/MiseEnPage.jsx'
 import { csvGmails, dateCourte, telechargerTexte } from '../../lib/campagnes.js'
 import { messageErreurGlobale } from '../../lib/messages.js'
@@ -122,6 +123,8 @@ function Campagne({ campagne, annonce }) {
           </details>
         </section>
       )}
+
+      <RapportFinal appId={campagne.app.id} />
 
       <AvancementCampagne appId={campagne.app.id} />
 

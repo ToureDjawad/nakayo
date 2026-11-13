@@ -80,6 +80,7 @@ describe('Avancement de la campagne (US-21)', () => {
       'GET /api/auth/moi': { corps: { utilisateur: DEV } },
       'GET /api/apps/:id/campagne': { corps: { campagne: CAMPAGNE } },
       'GET /api/apps/:id/campagne/avancement': { corps: { avancement: AVANCEMENT } },
+      'GET /api/apps/:id/campagne/rapport': { corps: { rapport: { pret: false, disponibleLe: '2026-11-25', bilan: null, brouillon: null, decisionGoogle: null } } },
     })
     rendreA('/mon-compte/apps/7/campagne')
 
@@ -130,6 +131,7 @@ describe('Avancement de la campagne (US-21)', () => {
       'GET /api/auth/moi': { corps: { utilisateur: DEV } },
       'GET /api/apps/:id/campagne': { corps: { campagne: CAMPAGNE } },
       'GET /api/apps/:id/campagne/avancement': ['reseau', { corps: { avancement: vide } }],
+      'GET /api/apps/:id/campagne/rapport': { corps: { rapport: { pret: false, disponibleLe: '2026-11-25', bilan: null, brouillon: null, decisionGoogle: null } } },
     })
     rendreA('/mon-compte/apps/7/campagne')
     await user.click(await screen.findByRole('button', { name: 'Réessayer' }))

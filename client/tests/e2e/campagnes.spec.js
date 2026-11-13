@@ -58,6 +58,9 @@ test.describe('Campagnes de test (US-13, US-16, US-43, US-21)', () => {
     // US-21 : avancement au jour le jour, vide au premier jour.
     await expect(page.getByRole('heading', { name: 'Où en est le test' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fonctionnalités testées' })).toBeVisible()
+    // US-36 : le rapport de fin n'est prêt qu'au 14e jour.
+    await expect(page.getByRole('heading', { name: 'Rapport de fin et réponses pour Google' })).toBeVisible()
+    await expect(page.getByText(/^Disponible le .+, au 14e jour du test\./)).toBeVisible()
     await expect(page.getByText('Aucun rapport pour l’instant.', { exact: false })).toBeVisible()
     await page.getByText('Voir le détail par jour').click()
     await expect(page.getByRole('table')).toBeVisible()

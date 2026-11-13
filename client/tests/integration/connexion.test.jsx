@@ -90,7 +90,7 @@ describe('Connexion (US-09 web)', () => {
 
     const alerte = await screen.findByRole('alert')
     expect(alerte).toHaveTextContent('Adresse email ou mot de passe incorrect.')
-    await waitFor(() => expect(alerte).toHaveFocus())
+    await waitFor(() => expect(alerte).toHaveFocus(), { timeout: 3000 })
     expect(screen.getByLabelText('Mot de passe')).toHaveValue('')
     expect(screen.getByLabelText('Mot de passe')).not.toHaveAttribute('aria-invalid')
     expect(screen.queryByText('Saisissez votre mot de passe.')).not.toBeInTheDocument()

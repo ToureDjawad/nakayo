@@ -10,7 +10,18 @@ import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
 import { creerPaiement, enregistrerReferenceFournisseur, marquerPaiementEchoue, versPaiementApi } from '../services/paiements.js'
 import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, telephonesTesteurs } from '../services/campagnes.js'
 import { lireAvancement } from '../services/avancement.js'
+import { enregistrerDecision, lireRapportFinal, rapportPdf } from '../services/rapportFinal.js'
+import { jourBenin } from '../lib/temps.js'
 import { transaction } from './auth.js'
+
+const DECISIONS_GOOGLE = ['acceptee', 'refusee']
+
+// Date AAAA-MM-JJ qui existe vraiment (refuse 2026-02-30).
+function dateValide(valeur) {
+  if (typeof valeur !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valeur)) return false
+  const date = new Date(`${valeur}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(valeur)
+}
 
 // Seul un compte validé par l'équipe peut soumettre ou modifier une app.
 function exigerCompteValide(req, _res, next) {
@@ -155,13 +166,42 @@ export function routesApps(deps) {
     res.status(201).json({ campagne })
   })
 
-  // Méthode de secours d'US-13 : la liste des Gmail des testeurs, à coller dans la Play Console.
   // docs/api-sprint4.md §1 (US-21) : avancement de la campagne au jour le jour.
   routeur.get('/:id/campagne/avancement', async (req, res) => {
     const id = idApp(req)
     res.json({ avancement: await lireAvancement(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() }) })
   })
 
+  // §6 (US-36) : rapport de fin, brouillon des réponses au formulaire Google et décision de Google.
+  routeur.get('/:id/campagne/rapport', async (req, res) => {
+    const id = idApp(req)
+    res.json({ rapport: await lireRapportFinal(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() }) })
+  })
+
+  routeur.get('/:id/campagne/rapport.pdf', async (req, res) => {
+    const id = idApp(req)
+    const instant = maintenant()
+    const rapport = await lireRapportFinal(pool, { appId: id, developpeurId: developpeurId(req), maintenant: instant })
+    if (!rapport.pret) throw new ErreurHttp(409, 'rapport_pas_pret', { message: 'Le rapport de fin est prêt au 14e jour du test.', disponibleLe: rapport.disponibleLe })
+    const nom = rapport.bilan.app.package.replace(/[^a-zA-Z0-9._-]/g, '-')
+    res.set('Content-Type', 'application/pdf')
+    res.set('Content-Disposition', `attachment; filename="rapport-nakayo-${nom}.pdf"`)
+    res.send(rapportPdf(rapport, { maintenant: instant }))
+  })
+
+  routeur.put('/:id/campagne/decision-google', async (req, res) => {
+    const id = idApp(req)
+    const { decision, le } = corps(req)
+    const instant = maintenant()
+    exigerChamps({
+      decision: !DECISIONS_GOOGLE.includes(decision) && (decision === undefined || decision === '' ? 'requis' : 'valeur_inconnue'),
+      le: le !== undefined && le !== null && le !== '' && (!dateValide(le) || le > jourBenin(instant)) && 'format_invalide',
+    })
+    const decisionGoogle = await enregistrerDecision(pool, { appId: id, developpeurId: developpeurId(req), decision, le: le || null, maintenant: instant })
+    res.json({ decisionGoogle })
+  })
+
+  // Méthode de secours d'US-13 : la liste des Gmail des testeurs, à coller dans la Play Console.
   routeur.get('/:id/campagne/testeurs.csv', async (req, res) => {
     const id = idApp(req)
     const campagne = await lireCampagneApp(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() })

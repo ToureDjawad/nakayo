@@ -1,4 +1,4 @@
-import { requete } from './client.js'
+import { ErreurApi, ErreurReseau, requete } from './client.js'
 
 // Apps du développeur connecté (docs/api-sprint2.md §1).
 export function listerMesApps({ signal } = {}) {
@@ -42,4 +42,33 @@ export function demarrerCampagne(id) {
 // Avancement de la campagne au jour le jour (docs/api-sprint4.md §1, US-21).
 export function lireAvancement(id, { signal } = {}) {
   return requete(`/apps/${encodeURIComponent(id)}/campagne/avancement`, { signal })
+}
+
+// Rapport de fin, brouillon des réponses au formulaire Google et décision de Google (§6, US-36).
+export function lireRapportFinal(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne/rapport`, { signal })
+}
+
+export function enregistrerDecisionGoogle(id, { decision, le }) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne/decision-google`, { methode: 'PUT', corps: { decision, le: le || null } })
+}
+
+// Le rapport est un PDF : récupéré en Blob avec la session du site.
+export async function telechargerRapportFinal(id) {
+  let reponse
+  try {
+    reponse = await fetch(`/api/apps/${encodeURIComponent(id)}/campagne/rapport.pdf`, { credentials: 'same-origin' })
+  } catch {
+    throw new ErreurReseau()
+  }
+  if (!reponse.ok) {
+    let erreur = {}
+    try {
+      erreur = (await reponse.json())?.erreur ?? {}
+    } catch {
+      erreur = {}
+    }
+    throw new ErreurApi({ statut: reponse.status, code: erreur.code ?? 'erreur_inconnue', message: erreur.message })
+  }
+  return reponse.blob()
 }

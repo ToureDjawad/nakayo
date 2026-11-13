@@ -25,7 +25,14 @@ const VERSEMENT = {
 }
 const TABLEAU = {
   aujourdhui: '2026-11-29',
-  campagnes: { enCours: 2, terminees: 1, annulees: 0, enRetard: 1, retards: [{ campagneId: '5', appNom: 'Zem Express', jour: 10, testeursEnBonneVoie: 9 }] },
+  campagnes: {
+    enCours: 2,
+    terminees: 4,
+    annulees: 0,
+    enRetard: 1,
+    retards: [{ campagneId: '5', appNom: 'Zem Express', jour: 10, testeursEnBonneVoie: 9 }],
+    decisionsGoogle: { acceptees: 3, refusees: 1, tauxReussite: 0.75 },
+  },
   testeurs: { valides: 48, actifs: 27, affectations: 45, remplaces: 3, tauxAbandon: 3 / 45, avecRemise: 6 },
   finances: {
     devise: 'XOF',
@@ -61,6 +68,7 @@ describe('Tableau de bord admin (US-24)', () => {
     const campagnes = screen.getByRole('region', { name: 'Campagnes' })
     expect(within(campagnes).getByText('en retard')).toBeInTheDocument()
     expect(within(campagnes).getByText('Jour 10 · 9 testeurs sur 12 en bonne voie')).toBeInTheDocument()
+    expect(within(campagnes).getByText('Google : 3 acceptées, 1 refusée (75 % de réussite).')).toBeInTheDocument()
 
     const testeurs = screen.getByRole('region', { name: 'Testeurs' })
     expect(within(testeurs).getByText('7 %')).toBeInTheDocument()
