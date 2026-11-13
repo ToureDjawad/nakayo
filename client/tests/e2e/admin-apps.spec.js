@@ -39,7 +39,7 @@ test.describe('Vérification des apps payées (US-14)', () => {
     await deconnecter(page)
 
     await seConnecter(page, 'admin@nakayo.test')
-    await page.waitForURL('/admin/comptes')
+    await page.waitForURL('/admin/tableau-de-bord')
     await page.getByRole('link', { name: 'Apps à vérifier' }).click()
     await expect(page.getByRole('heading', { name: '2 apps à vérifier' })).toBeVisible()
     await verifierAccessibilite(page)

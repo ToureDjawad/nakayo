@@ -974,6 +974,95 @@ export const routes = [
       return { statut: 200, corps: null, brut: pdfFacture(params.numero), entetes: { 'Content-Type': 'application/pdf' } }
     },
   },
+  // Tableau de bord global (docs/api-sprint4.md §5). Les testeurs simulés ne sont jamais payés :
+  // ni versement ni échec en mode démo.
+  {
+    methode: 'GET',
+    chemin: '/api/admin/tableau-de-bord',
+    traiter() {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      const lisible = (n) => `${new Intl.NumberFormat('fr-FR').format(n).replace(/\s/g, ' ')} FCFA`
+      const enFcfa = (p) => (p.devise === 'USD' ? Math.round((p.montant / 100) * 600) : p.montant)
+      const reussis = paiements().filter((p) => p.statut === 'reussi')
+      const liste = campagnes()
+      const affectations = liste.flatMap((c) => c.testeurs)
+      const enRetard = liste
+        .filter((c) => c.statut === 'en_cours')
+        .map((c) => {
+          const jour = jourCampagne(c)
+          const restants = JOURS_CAMPAGNE - jour + 1
+          const enBonneVoie = c.testeurs.filter((t) => t.statut === 'active' && t.installationConfirmeeLe && t.joursValides + restants >= 14).length
+          return { campagneId: c.id, appNom: apps().find((a) => a.id === c.appId)?.nom ?? '', jour, testeursEnBonneVoie: enBonneVoie }
+        })
+        .filter((c) => c.testeursEnBonneVoie < 12)
+      const ca = reussis.reduce((s, p) => s + enFcfa(p), 0)
+      const parApp = liste.map((c) => {
+        const encaisse = reussis.filter((p) => p.appId === c.appId).reduce((s, p) => s + enFcfa(p), 0)
+        const dev = base().utilisateurs.find((u) => u.id === c.developpeurId)
+        const definitive = c.statut !== 'en_cours'
+        return {
+          campagneId: c.id,
+          appNom: apps().find((a) => a.id === c.appId)?.nom ?? '',
+          developpeur: dev?.nom ?? '',
+          statut: c.statut,
+          demarreeLe: c.demarreeLe,
+          encaisse,
+          versesTesteurs: 0,
+          dusTesteurs: 0,
+          marge: definitive ? encaisse : encaisse - 15 * 500,
+          margeDefinitive: definitive,
+        }
+      })
+      const remplaces = affectations.filter((t) => t.statut === 'remplacee').length
+      return ok({
+        tableauDeBord: {
+          aujourdhui: new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Porto-Novo' }).format(new Date()),
+          campagnes: {
+            enCours: liste.filter((c) => c.statut === 'en_cours').length,
+            terminees: liste.filter((c) => c.statut === 'terminee').length,
+            annulees: liste.filter((c) => c.statut === 'annulee').length,
+            enRetard: enRetard.length,
+            retards: enRetard,
+          },
+          testeurs: {
+            valides: base().utilisateurs.filter((u) => u.role === 'testeur' && u.statut === 'valide').length,
+            actifs: new Set(
+              liste.filter((c) => c.statut === 'en_cours').flatMap((c) => c.testeurs.filter((t) => t.statut === 'active' && t.installationConfirmeeLe).map((t) => t.testeurId)),
+            ).size,
+            affectations: affectations.length,
+            remplaces,
+            tauxAbandon: affectations.length ? remplaces / affectations.length : 0,
+            avecRemise: affectations.filter((t) => t.nombreRemises > 0).length,
+          },
+          finances: {
+            devise: 'XOF',
+            tauxUsdFcfa: 600,
+            chiffreAffaires: ca,
+            chiffreAffairesLisible: lisible(ca),
+            versesTesteurs: 0,
+            versesTesteursLisible: lisible(0),
+            dusTesteurs: 0,
+            dusTesteursLisible: lisible(0),
+            marge: ca,
+            margeLisible: lisible(ca),
+            parApp,
+          },
+          versementsEchoues: [],
+          nombreVersementsEchoues: 0,
+        },
+      })
+    },
+  },
+  {
+    methode: 'POST',
+    chemin: '/api/admin/versements/:reference/relance',
+    traiter() {
+      const refus = exigerAdmin()
+      if (refus) return refus
+      return erreur(404, 'introuvable', { message: 'Versement introuvable.' })
+    },
+  },
   {
     methode: 'GET',
     chemin: '/api/admin/campagnes',

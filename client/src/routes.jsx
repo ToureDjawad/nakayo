@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router'
 import AppsAVerifier from './pages/admin/AppsAVerifier.jsx'
 import Campagnes from './pages/admin/Campagnes.jsx'
+import TableauDeBord from './pages/admin/TableauDeBord.jsx'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
 import ContactSupport from './pages/admin/ContactSupport.jsx'
 import MessagesSupport from './pages/admin/MessagesSupport.jsx'
@@ -42,7 +43,8 @@ export const routes = [
   { path: '/connexion', element: <Connexion /> },
   { path: '/mot-de-passe-oublie', element: <MotDePasseOublie /> },
   { path: '/reinitialiser-mot-de-passe', element: <ReinitialiserMotDePasse /> },
-  { path: '/admin', element: <Navigate to="/admin/comptes" replace /> },
+  { path: '/admin', element: <Navigate to="/admin/tableau-de-bord" replace /> },
+  { path: '/admin/tableau-de-bord', element: <TableauDeBord /> },
   { path: '/admin/comptes', element: <ComptesEnAttente /> },
   { path: '/admin/apps', element: <AppsAVerifier /> },
   { path: '/admin/campagnes', element: <Campagnes /> },
