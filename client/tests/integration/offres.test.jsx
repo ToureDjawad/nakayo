@@ -74,7 +74,7 @@ describe('Passer une app payée à l’Offre Pro (US-32)', () => {
     rendreA('/mon-compte')
     const carte = (await screen.findByText('Marché Facile', { selector: 'p' })).closest('li')
     expect(within(carte).getByText('Offre Standard')).toBeInTheDocument()
-    expect(within(carte).getByRole('link', { name: 'Passer Marché Facile à l’Offre Pro' })).toHaveAttribute(
+    expect(within(carte).getByRole('link', { name: 'Passer à l’Offre Pro : Marché Facile' })).toHaveAttribute(
       'href',
       '/mon-compte/apps/7/montee-en-gamme',
     )

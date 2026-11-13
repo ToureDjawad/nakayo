@@ -88,7 +88,7 @@ test.describe('Payer l’offre et retrouver la facture (US-12, US-15)', () => {
     await page.getByRole('link', { name: 'Retour à mon compte' }).click()
     const carte = page.getByRole('listitem').filter({ hasText: 'bj.studioawa.tontine' })
     await expect(carte.getByText('Offre Standard')).toBeVisible()
-    await carte.getByRole('link', { name: 'Passer Tontine Facile à l’Offre Pro' }).click()
+    await carte.getByRole('link', { name: 'Passer à l’Offre Pro : Tontine Facile' }).click()
     await expect(page.getByRole('heading', { name: 'Passer à l’Offre Pro' })).toBeVisible()
     await verifierAccessibilite(page)
     await verifierSansDefilementHorizontal(page)
