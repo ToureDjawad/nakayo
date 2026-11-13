@@ -1,7 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ouvrirPageFournisseur } from '../../src/lib/paiements.js'
 import { rendreA, simulerApi } from './outils.jsx'
+
+vi.mock('../../src/lib/paiements.js', async (original) => ({ ...(await original()), ouvrirPageFournisseur: vi.fn() }))
 
 const DEV = { id: '2', role: 'developpeur', statut: 'valide', email: 'awa@studio.bj', emailVerifie: true, nom: 'Studio Awa', pays: 'BJ' }
 const APP = { id: '7', nom: 'Marché Facile', package: 'bj.studioawa.marche', statut: 'brouillon', comptePlay: 'personnel_recent' }
@@ -86,6 +89,23 @@ describe('Payer l’offre d’une app (US-12)', () => {
     await waitFor(() => expect(routeur.state.location.pathname).toBe('/paiement/simulation/PAY-0123456789ABCDEF'))
     expect(serveur.appelsVers('POST', '/api/apps/7/paiements')[0].corps).toEqual({ moyen: 'carte' })
     expect(await screen.findByText('Environnement de test')).toBeInTheDocument()
+  })
+
+  it('avec FedaPay : la carte est débitée en FCFA et le développeur part sur la page FedaPay', async () => {
+    const user = userEvent.setup()
+    simulerApi({
+      ...PAGE_PAIEMENT,
+      'GET /api/offres': { corps: { offres: [{ ...OFFRE, debitCarte: { montant: 17400, devise: 'XOF' } }] } },
+      'POST /api/apps/:id/paiements': {
+        statut: 201,
+        corps: { paiement: { ...PAIEMENT, montant: 17400, devise: 'XOF' }, redirection: 'https://sandbox-process.fedapay.com/tok_1' },
+      },
+    })
+    rendreA('/mon-compte/apps/7/paiement')
+    await user.click(await screen.findByRole('radio', { name: /Carte bancaire/ }))
+    expect(screen.getByText(/Visa ou Mastercard, débitée en FCFA : 17\s400\sFCFA\./)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: bouton(MOMO) }))
+    await waitFor(() => expect(ouvrirPageFournisseur).toHaveBeenCalledWith('https://sandbox-process.fedapay.com/tok_1'))
   })
 
   it('par Mobile Money : demande le numéro, le vérifie et l’envoie au format international', async () => {

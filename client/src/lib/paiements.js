@@ -12,3 +12,8 @@ export const STATUTS_PAIEMENT = {
 // Lien présenté comme le bouton principal.
 export const LIEN_BOUTON =
   'inline-flex h-11 items-center justify-center rounded-champ bg-accent px-[18px] text-[15px] font-semibold text-white hover:bg-accent-fonce'
+
+// Page de paiement du fournisseur (FedaPay), hors du site. Isolé pour être remplacé dans les tests.
+export function ouvrirPageFournisseur(url) {
+  window.location.assign(url)
+}

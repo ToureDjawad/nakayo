@@ -13,6 +13,7 @@ import {
   versPaiementApi,
 } from '../services/paiements.js'
 import { facturePdf, lireFacture } from '../services/factures.js'
+import { statutPaiement } from '../services/fedapay.js'
 
 const STATUTS_CONFIRMATION = ['reussi', 'echoue']
 
@@ -62,8 +63,23 @@ export function routesPaiements(deps) {
 
   routeur.get('/:reference', async (req, res) => {
     const paiement = await lirePaiementDeveloppeur(pool, { reference: req.params.reference, developpeurId: developpeurId(req) })
-    res.json({ paiement: versPaiementApi(paiement) })
+    res.json({ paiement: versPaiementApi(await synchroniser(paiement)) })
   })
+
+  // docs/fedapay.md §2 Au retour de la page FedaPay, le webhook peut arriver après le développeur : on relit
+  // alors le statut chez FedaPay. Une erreur du fournisseur laisse le paiement en attente.
+  async function synchroniser(paiement) {
+    if (paiement.statut !== 'en_attente' || paiement.fournisseur !== 'fedapay' || !paiement.reference_fournisseur || !deps.fedapay) return paiement
+    try {
+      const { statut } = await deps.fedapay.lireTransaction(paiement.reference_fournisseur)
+      const issue = statutPaiement(statut)
+      if (!issue) return paiement
+      return await confirmer({ reference: paiement.reference, statut: issue, referenceFournisseur: paiement.reference_fournisseur })
+    } catch (erreur) {
+      deps.journal.error(erreur)
+      return paiement
+    }
+  }
 
   // §2.3 Simulation (développement et tests seulement) : le développeur choisit l'issue.
   routeur.post('/:reference/simulation', async (req, res) => {
@@ -79,11 +95,13 @@ export function routesPaiements(deps) {
   return routeur
 }
 
-export function routesOffres() {
+export function routesOffres({ config }) {
   const routeur = Router()
   routeur.get('/', (_req, res) => {
     res.set('Cache-Control', 'public, max-age=300')
-    res.json({ offres: [OFFRE_STANDARD] })
+    // docs/fedapay.md §1 FedaPay encaisse en FCFA : la carte est alors débitée du prix Mobile Money.
+    const offre = config.paiementMode === 'fedapay' ? { ...OFFRE_STANDARD, debitCarte: OFFRE_STANDARD.prix.mobile_money } : OFFRE_STANDARD
+    res.json({ offres: [offre] })
   })
   return routeur
 }

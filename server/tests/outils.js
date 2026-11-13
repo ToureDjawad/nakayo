@@ -23,7 +23,7 @@ export async function viderBase() {
 }
 
 // Application de test : messageries en mémoire, horloge réglable, journal muet.
-export function creerAppTest({ maintenant, journal = silencieux, config, momo } = {}) {
+export function creerAppTest({ maintenant, journal = silencieux, config, momo, fedapay } = {}) {
   const emails = creerMessagerieJournal({ canal: 'email', journal: silencieux })
   const sms = creerMessagerieJournal({ canal: 'sms', journal: silencieux })
   const horloge = { date: maintenant ?? null }
@@ -34,6 +34,8 @@ export function creerAppTest({ maintenant, journal = silencieux, config, momo } 
     journal,
     // Fournisseur des versements aux testeurs : simulation par défaut (config de test).
     ...(momo !== undefined && { momo }),
+    // Client FedaPay : absent par défaut (aucune clé en test), remplacé par un faux dans les tests FedaPay.
+    ...(fedapay !== undefined && { fedapay }),
     // Photos des testeurs dans un dossier temporaire propre à chaque application de test.
     config: { dossierDocuments: mkdtempSync(path.join(tmpdir(), 'nakayo-documents-')), ...config },
     maintenant: () => (horloge.date ? new Date(horloge.date) : new Date()),

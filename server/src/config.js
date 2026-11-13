@@ -12,12 +12,19 @@ export function lireConfig(env = process.env) {
     // Contrôles qui appellent Internet (fiche Google Play). Coupés en test pour ne pas
     // dépendre du réseau ; le contrôle est alors marqué « indisponible ».
     controlesReseau: env.CONTROLES_RESEAU ? env.CONTROLES_RESEAU === 'true' : env.NODE_ENV !== 'test',
-    // Paiement (US-12) : « simulation » en développement et en test ; en production, rien
-    // n'est ouvert tant que les fournisseurs (carte, agrégateur Mobile Money) ne sont pas branchés.
+    // Paiement (US-12) : « simulation » en développement et en test, « fedapay » une fois le compte
+    // marchand ouvert (US-03) ; en production, rien n'est ouvert tant qu'aucun fournisseur n'est branché.
     paiementMode: env.PAIEMENT_MODE ?? (production ? 'aucun' : 'simulation'),
-    // Versements aux testeurs (US-22) : « simulation » hors production ; en production, les
-    // versements attendent tant que l'agrégateur Mobile Money n'est pas branché.
+    // Versements aux testeurs (US-22) : « simulation » hors production, « fedapay » une fois les
+    // dépôts activés ; en production, les versements attendent tant qu'aucun fournisseur n'est branché.
     versementMode: env.VERSEMENT_MODE ?? (production ? 'aucun' : 'simulation'),
+    // Agrégateur FedaPay (docs/fedapay.md) : clé secrète, environnement (« sandbox » ou
+    // « live ») et secret de signature du webhook, donnés par le tableau de bord FedaPay.
+    fedapay: {
+      cleSecrete: env.FEDAPAY_CLE_SECRETE || null,
+      environnement: env.FEDAPAY_ENVIRONNEMENT === 'live' ? 'live' : 'sandbox',
+      secretWebhook: env.FEDAPAY_SECRET_WEBHOOK || null,
+    },
     // US-25 : SMS de secours à 22 h quand un rapport manque (désactivable, chaque SMS a un coût).
     rappelsSms: env.RAPPELS_SMS ? env.RAPPELS_SMS === 'true' : true,
     // Secret partagé avec les fournisseurs pour signer leurs webhooks (docs/api-sprint2.md §2.4).
