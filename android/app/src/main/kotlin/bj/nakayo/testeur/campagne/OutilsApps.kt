@@ -23,6 +23,9 @@ interface OutilsApps {
     // Lance l'envoi du temps d'utilisation (tout de suite, puis toutes les heures).
     fun planifierMesure() = Unit
 
+    // US-25 : rappels du soir (19 h et 21 h) quand un rapport manque.
+    fun planifierRappels() = Unit
+
     object Aucun : OutilsApps {
         override fun installation(paquet: String): InstallationApp? = null
         override suspend fun position(): Position? = null

@@ -98,3 +98,16 @@ Réservé au testeur validé (jeton de l'app Android).
   - `en_paiement` : les versements dus et pas encore arrivés, y compris ceux en échec que l'équipe reprend.
 - **`historique`** : les versements reçus, du plus récent au plus ancien. `referenceTransaction` est la référence de l'agrégateur ; si elle manque, l'app affiche la référence Nakayo.
 - **Numéro MoMo** : il n'est jamais renvoyé en entier ; seuls les 2 derniers chiffres apparaissent.
+
+## 4. Rappels du soir (US-25)
+
+- **App Android** : deux tâches WorkManager, à 19 h et 21 h (heure du Bénin). Chacune lit `GET /api/testeurs/moi/apps` et affiche une notification locale si un rapport du jour manque, c'est-à-dire pour une app :
+  - installée ;
+  - dont les 14 jours ne sont pas acquis ;
+  - dont le rapport du jour n'est pas envoyé.
+
+  La notification liste ces apps. Celle de 21 h remplace celle de 19 h. La permission des notifications (Android 13 et plus) est demandée dès qu'une app est à tester.
+- **Serveur** : à 22 h, un SMS de secours est envoyé au testeur validé dont un rapport du jour manque. Un seul SMS par soir, qui liste les apps : « Nakayo : il manque votre rapport du jour pour « Marché Facile ». Envoyez-le avant minuit pour garder votre compteur. »
+  - La table `rappels_sms` (testeur, jour) évite les doublons.
+  - Un serveur redémarré entre 22 h et minuit envoie aussitôt les rappels du soir.
+  - `RAPPELS_SMS=false` coupe ces SMS.
