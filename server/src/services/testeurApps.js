@@ -5,17 +5,19 @@ import { JOURS_RETOUR_DETAILLE, USAGE_MINIMUM_SECONDES } from '../lib/rapports.j
 import { ajouterJours, jourBenin } from '../lib/temps.js'
 import { jourCampagne } from './campagnes.js'
 import { manquesDuJour } from './verificationQuotidienne.js'
+import { etatTerrain } from './terrain.js'
 
 // Affectations du testeur avec ce qu'il lui faut pour le jour en cours ($2 : jour du Bénin).
 const SELECT_AFFECTATION = `SELECT a.*, c.statut AS campagne_statut, c.demarree_le, c.jours_exiges,
     ap.nom, ap.package, ap.offre, ap.lien_test_ferme, ap.instructions, ap.fonctionnalites, ap.connexion_requise, ap.identifiants_test,
-    r.id AS rapport_id, uq.secondes AS usage_secondes,
+    r.id AS rapport_id, uq.secondes AS usage_secondes, rt.envoye_le AS terrain_envoye_le,
     a.derniere_remise_jour::text AS derniere_remise_jour_texte, jr.connexion AS remise_connexion, jr.usage_secondes AS remise_usage, jr.rapport AS remise_rapport
   FROM affectations a
   JOIN campagnes c ON c.id = a.campagne_id
   JOIN apps ap ON ap.id = a.app_id
   LEFT JOIN rapports r ON r.affectation_id = a.id AND r.jour = $2
   LEFT JOIN usages_quotidiens uq ON uq.affectation_id = a.id AND uq.jour = $2
+  LEFT JOIN retours_terrain rt ON rt.affectation_id = a.id
   LEFT JOIN journees jr ON jr.affectation_id = a.id AND jr.jour = a.derniere_remise_jour`
 
 // Objet « app à tester » de l'app Android (docs/api-sprint3.md §2.1).
@@ -58,6 +60,8 @@ export function versAffectationTesteur(l, maintenant) {
     usageMinimumSecondes: USAGE_MINIMUM_SECONDES,
     // US-33 : rapports de bugs avec captures (offres Pro et Lancement Afrique).
     rapportsDeBugs: offre(l.offre).rapportsDeBugs,
+    // US-37 : questionnaire terrain (Lancement Afrique), ou null.
+    questionnaireTerrain: etatTerrain(l, jour),
   }
 }
 

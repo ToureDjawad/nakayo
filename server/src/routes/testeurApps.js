@@ -22,6 +22,9 @@ import {
 import { TAILLE_MAX_PHOTO } from './testeurs.js'
 import { lirePortefeuille } from '../services/versements.js'
 import { enregistrerBug, exigerRapportsDeBugs, listerBugsTesteur, versBugTesteur } from '../services/bugs.js'
+import { lireRetourTerrain } from '../lib/terrain.js'
+import { enregistrerRetourTerrain } from '../services/terrain.js'
+import { jourCampagne } from '../services/campagnes.js'
 
 // Capture d'écran « Vous êtes testeur » (5 Mo au plus), lue en mémoire.
 function lireCapture(req, res) {
@@ -170,6 +173,16 @@ export function routesTesteurApps({ pool, config, maintenant }) {
     const affectation = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: maintenant() })
     exigerRapportsDeBugs(affectation)
     res.json({ bugs: await listerBugsTesteur(pool, { affectation }) })
+  })
+
+  // docs/api-offres.md §4.5 : questionnaire terrain de l'offre Lancement Afrique (US-37).
+  routeur.post('/apps/:id/terrain', async (req, res) => {
+    const instant = maintenant()
+    const affectation = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: instant })
+    const { valeurs, erreurs } = lireRetourTerrain(corps(req))
+    exigerChamps(erreurs)
+    await enregistrerRetourTerrain(pool, { affectation, jour: jourCampagne(affectation.demarree_le, instant), valeurs, maintenant: instant })
+    await repondreAffectation(res.status(201), req)
   })
 
   // §2.5 US-18 : ouverture de l'app compagnon.

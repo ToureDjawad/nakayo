@@ -1,7 +1,9 @@
 import { ErreurHttp } from '../lib/erreurs.js'
 import { creerRedaction } from '../lib/pdf.js'
 import { ajouterJours, jourBenin } from '../lib/temps.js'
+import { offre } from '../lib/offres.js'
 import { lireAvancement } from './avancement.js'
+import { lireTerrain } from './terrain.js'
 import { jourCampagne } from './campagnes.js'
 
 // US-36 : rapport de fin et brouillon des réponses au formulaire Google d'accès à la production
@@ -205,7 +207,7 @@ export function construireBrouillon(b) {
 
 async function lireCampagneDeveloppeur(db, { appId, developpeurId }) {
   const { rows } = await db.query(
-    `SELECT c.*, ap.nom, ap.package, ap.description FROM campagnes c JOIN apps ap ON ap.id = c.app_id
+    `SELECT c.*, ap.nom, ap.package, ap.description, ap.offre FROM campagnes c JOIN apps ap ON ap.id = c.app_id
       WHERE c.app_id = $1 AND c.developpeur_id = $2 ORDER BY c.demarree_le DESC, c.id DESC LIMIT 1`,
     [appId, developpeurId],
   )
@@ -224,6 +226,8 @@ export async function lireRapportFinal(db, { appId, developpeurId, maintenant })
   }
   const avancement = await lireAvancement(db, { appId, developpeurId, maintenant })
   const bilan = construireBilan(c, avancement)
+  // US-37 : test terrain de l'offre Lancement Afrique (réseau, petits téléphones, langue).
+  bilan.terrain = offre(c.offre).questionnaireTerrain ? await lireTerrain(db, c.id) : null
   return { pret: true, disponibleLe: disponibleLe(c), bilan, brouillon: construireBrouillon(bilan), decisionGoogle: versDecision(c) }
 }
 
@@ -271,6 +275,8 @@ export function rapportPdf({ bilan: b, brouillon }, { maintenant }) {
     r.ligneInfo(libelle, `${x.testeurs} testeur${x.testeurs > 1 ? 's' : ''}`)
   }
 
+  if (b.terrain) pdfTerrain(r, b.terrain)
+
   r.titre('Retours par fonctionnalité')
   for (const t of b.themes) {
     r.paragraphe(`${t.fonctionnalite} : ${pourcent(t.part)} des testeurs, ${t.rapports} rapports${t.noteMoyenne !== null ? `, note ${note(t.noteMoyenne)} sur 5` : ''}`, { gras: true })
@@ -288,6 +294,27 @@ export function rapportPdf({ bilan: b, brouillon }, { maintenant }) {
     }
   }
   return r.terminer(`Rapport de fin · ${b.app.nom}`)
+}
+
+const CONNEXIONS_LISIBLES = { wifi: 'Wi-Fi', '4g': '4G', '3g': '3G', '2g': '2G' }
+const LANGUES_LISIBLES = { fr: 'français', en: 'anglais' }
+const tenue = (t) => `${t.fluide} fluide, ${t.lent} lent, ${t.inutilisable} inutilisable`
+
+// US-37 : section « Test terrain » de l'offre Lancement Afrique.
+function pdfTerrain(r, t) {
+  r.titre('Test terrain')
+  if (!t.reponses) {
+    r.paragraphe('Aucun testeur n’a encore répondu au questionnaire terrain.', { gris: true })
+    return
+  }
+  r.paragraphe(`${t.reponses} testeur${t.reponses > 1 ? 's ont' : ' a'} répondu au questionnaire terrain.`, { taille: 10 })
+  r.ligneInfo('Tenue de l’app sur le réseau', tenue(t.reseau))
+  for (const c of t.parConnexion) r.ligneInfo(`En ${CONNEXIONS_LISIBLES[c.connexion]} (${c.reponses})`, tenue(c))
+  r.ligneInfo('Tenue de l’app sur le téléphone', tenue(t.telephone))
+  r.ligneInfo(`Sur les petits téléphones (${t.petitsTelephones.reponses})`, t.petitsTelephones.reponses ? tenue(t.petitsTelephones) : '-')
+  r.ligneInfo('Compréhension de l’app', t.comprehensionMoyenne !== null ? `${note(t.comprehensionMoyenne)} sur 5` : '-')
+  for (const l of t.langues) r.ligneInfo(`En ${LANGUES_LISIBLES[l.langue]} (${l.reponses})`, `${note(l.comprehensionMoyenne)} sur 5`)
+  for (const c of t.commentaires.slice(0, 5)) r.paragraphe(`Avis : ${c}`, { retrait: 12, taille: 9, gris: true })
 }
 
 // Email du 14e jour : le rapport et le brouillon sont prêts.

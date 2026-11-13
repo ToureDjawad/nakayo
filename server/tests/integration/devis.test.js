@@ -145,3 +145,79 @@ describe('campagne Lancement Afrique (§4.4)', () => {
     expect(v).toEqual([{ montant: 1500 }])
   })
 })
+
+describe('questionnaire terrain et rapport de fin (§4.5)', () => {
+  const RETOUR = { connexion: '3g', reseau: 'lent', telephone: 'fluide', langue: 'fr', comprehension: 4, commentaire: 'Les images chargent lentement en 3G au marché.' }
+  const bearer = (t) => ({ Authorization: `Bearer ${t.jeton}` })
+
+  async function campagneAfrique() {
+    const testeurs = await creerTesteursValides(20)
+    await pool.query('UPDATE appareils SET ram_mo = 8192')
+    await pool.query('UPDATE appareils SET ram_mo = 2048 WHERE utilisateur_id = ANY($1)', [testeurs.slice(0, 5).map((t) => t.id)])
+    const id = (await demander()).body.devis.id
+    await proposer(id, { prixCarte: 9900, prixMobileMoney: 59400 })
+    await simuler((await payer({ offre: 'afrique', moyen: 'carte' })).body.paiement.reference)
+    await request(test.app).post(`/api/admin/apps/${appId}/validation`).set('Cookie', admin)
+    await request(test.app).put(`/api/apps/${appId}/preparation`).set('Cookie', dev).send({ elements: TOUT })
+    await request(test.app).post(`/api/apps/${appId}/campagne`).set('Cookie', dev)
+    return testeurs
+  }
+  const affectationDe = async (t) => (await request(test.app).get('/api/testeurs/moi/apps').set(bearer(t))).body.apps[0]
+  const repondre = async (t, corps = RETOUR) => request(test.app).post(`/api/testeurs/moi/apps/${(await affectationDe(t)).id}/terrain`).set(bearer(t)).send(corps)
+
+  it('s’ouvre au 7e jour, une seule fois, avec des réponses valides', async () => {
+    const [t] = await campagneAfrique()
+    expect((await affectationDe(t)).questionnaireTerrain).toEqual({ envoye: false, ouvert: false, ouvertLe: 7 })
+    expect((await repondre(t)).body.erreur.code).toBe('trop_tot')
+
+    test.avancer(6 * JOUR)
+    expect((await affectationDe(t)).questionnaireTerrain.ouvert).toBe(true)
+    const invalide = await repondre(t, { connexion: '5g', comprehension: 9 })
+    expect(invalide.body.erreur.champs).toEqual({ connexion: 'valeur_inconnue', reseau: 'requis', telephone: 'requis', langue: 'requis', comprehension: 'format_invalide' })
+    const r = await repondre(t)
+    expect(r.status).toBe(201)
+    expect(r.body.app.questionnaireTerrain).toEqual({ envoye: true, ouvert: false, ouvertLe: 7 })
+    expect((await repondre(t)).body.erreur.code).toBe('deja_envoye')
+  })
+
+  it('le rapport de fin résume le réseau, les petits téléphones et la langue', async () => {
+    const testeurs = await campagneAfrique()
+    test.avancer(6 * JOUR)
+    await repondre(testeurs[0], { ...RETOUR, telephone: 'lent' })
+    await repondre(testeurs[1], { ...RETOUR, connexion: '4g', reseau: 'fluide', langue: 'en', comprehension: 5, commentaire: undefined })
+    await repondre(testeurs[10], { ...RETOUR, connexion: '2g', reseau: 'inutilisable', comprehension: 3 })
+
+    test.avancer(8 * JOUR)
+    const r = await request(test.app).get(`/api/apps/${appId}/campagne/rapport`).set('Cookie', dev)
+    expect(r.body.rapport.bilan.terrain).toEqual({
+      reponses: 3,
+      reseau: { fluide: 1, lent: 1, inutilisable: 1 },
+      parConnexion: [
+        { connexion: '4g', reponses: 1, fluide: 1, lent: 0, inutilisable: 0 },
+        { connexion: '3g', reponses: 1, fluide: 0, lent: 1, inutilisable: 0 },
+        { connexion: '2g', reponses: 1, fluide: 0, lent: 0, inutilisable: 1 },
+      ],
+      telephone: { fluide: 2, lent: 1, inutilisable: 0 },
+      petitsTelephones: { reponses: 2, fluide: 1, lent: 1, inutilisable: 0 },
+      langues: [
+        { langue: 'fr', reponses: 2, comprehensionMoyenne: 3.5 },
+        { langue: 'en', reponses: 1, comprehensionMoyenne: 5 },
+      ],
+      comprehensionMoyenne: 4,
+      commentaires: [RETOUR.commentaire, RETOUR.commentaire],
+    })
+    const pdf = await request(test.app).get(`/api/apps/${appId}/campagne/rapport.pdf`).set('Cookie', dev).buffer(true)
+    expect(pdf.status).toBe(200)
+  })
+
+  it('hors Lancement Afrique, ni questionnaire ni section terrain', async () => {
+    const [t] = await creerTesteursValides(15)
+    await simuler((await payer({ offre: 'pro', moyen: 'carte' })).body.paiement.reference)
+    await request(test.app).post(`/api/admin/apps/${appId}/validation`).set('Cookie', admin)
+    await request(test.app).put(`/api/apps/${appId}/preparation`).set('Cookie', dev).send({ elements: TOUT })
+    await request(test.app).post(`/api/apps/${appId}/campagne`).set('Cookie', dev)
+    test.avancer(6 * JOUR)
+    expect((await affectationDe(t)).questionnaireTerrain).toBeNull()
+    expect((await repondre(t)).status).toBe(403)
+  })
+})
