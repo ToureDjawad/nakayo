@@ -220,6 +220,8 @@ export async function traiterVersements(deps) {
     const { rows } = await client.query(
       `UPDATE versements SET tentatives = tentatives + 1, derniere_tentative_le = $1, prochaine_tentative_le = NULL
         WHERE id IN (SELECT id FROM versements WHERE statut = 'a_verser' AND prochaine_tentative_le <= $1
+                        -- US-29 : rien n'est versé à un compte suspendu ou banni.
+                        AND testeur_id IN (SELECT id FROM utilisateurs WHERE statut = 'valide')
                       ORDER BY prochaine_tentative_le, id LIMIT $2 FOR UPDATE SKIP LOCKED)
         RETURNING reference, numero_momo, operateur_momo, montant, devise,
                   (SELECT nom FROM utilisateurs WHERE id = versements.testeur_id) AS nom`,

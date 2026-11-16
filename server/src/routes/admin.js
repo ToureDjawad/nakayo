@@ -19,11 +19,12 @@ import { lireCampagne, listerCampagnesAdmin, messageNouvelleApp, remplacerTesteu
 import { listerVersementsAdmin, relancerVersement, traiterVersements } from '../services/versements.js'
 import { lireTableauDeBord } from '../services/tableauDeBord.js'
 import { transaction } from './auth.js'
+import { journaliser, lireJournal, messageSanction, sanctionner, SANCTIONS } from '../services/sanctions.js'
 import { validerMessage, validerPrix } from '../lib/devis.js'
 import { OFFRE_AFRIQUE } from '../lib/offres.js'
 import { lireDevisAdmin, listerDevisAdmin, messageDevis, repondreDevis, STATUTS_DEVIS, versDevisApi } from '../services/devis.js'
 
-const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu']
+const STATUTS = ['en_attente', 'valide', 'refuse', 'suspendu', 'banni']
 const STATUTS_VERSEMENT = ['a_verser', 'en_cours', 'verse', 'echoue']
 const ROLES = ['developpeur', 'testeur']
 const TRIS = ['ancien', 'recent']
@@ -168,6 +169,7 @@ export function routesAdmin(deps) {
         'INSERT INTO decisions_comptes (utilisateur_id, admin_id, decision, motif, cree_le) VALUES ($1, $2, $3, $4, $5)',
         [id, adminId, decision, motif, instant],
       )
+      await journaliser(client, { adminId, action: decision === 'valide' ? 'compte_valide' : 'compte_refuse', cible: 'compte', cibleId: id, detail: motif, maintenant: instant })
       return rows[0]
     })
 
@@ -222,9 +224,13 @@ export function routesAdmin(deps) {
 
   async function deciderSurApp(req, res, decision, motif = null) {
     const id = idApp(req)
-    const ligne = await transaction(pool, (client) =>
-      deciderApp(client, { id, adminId: req.session.utilisateur.id, decision, motif, maintenant: maintenant() }),
-    )
+    const instant = maintenant()
+    const adminId = req.session.utilisateur.id
+    const ligne = await transaction(pool, async (client) => {
+      const resultat = await deciderApp(client, { id, adminId, decision, motif, maintenant: instant })
+      await journaliser(client, { adminId, action: decision === 'validee' ? 'app_validee' : 'app_refusee', cible: 'app', cibleId: id, detail: motif, maintenant: instant })
+      return resultat
+    })
     try {
       await deps.emails.envoyer(messageDecisionApp(ligne, { clientUrl: config.clientUrl }))
     } catch (erreur) {
@@ -320,9 +326,11 @@ export function routesAdmin(deps) {
     const motif = texte(corps(req).motif)
     exigerChamps({ motif: validerMotifRefus(motif) })
     const instant = maintenant()
-    const { testeurId } = await transaction(pool, (client) =>
-      remplacerTesteur(client, { campagneId: id, affectationId: req.params.affectationId, motif, maintenant: instant }),
-    )
+    const { testeurId } = await transaction(pool, async (client) => {
+      const resultat = await remplacerTesteur(client, { campagneId: id, affectationId: req.params.affectationId, motif, maintenant: instant })
+      await journaliser(client, { adminId: req.session.utilisateur.id, action: 'testeur_remplace', cible: 'campagne', cibleId: id, detail: motif, maintenant: instant })
+      return resultat
+    })
     // US-43 : le testeur remplacé quitte le groupe, le remplaçant y entre.
     deps.synchroGroupes.lancer()
     const campagne = await lireCampagne(pool, id, { maintenant: instant, vue: 'admin' })
@@ -351,7 +359,10 @@ export function routesAdmin(deps) {
   routeur.post('/versements/:reference/relance', async (req, res) => {
     const reference = req.params.reference
     if (!/^VER-[0-9A-F]{16}$/.test(reference)) throw introuvable('Versement introuvable.')
-    await transaction(pool, (client) => relancerVersement(client, { reference, maintenant: maintenant() }))
+    await transaction(pool, async (client) => {
+      await relancerVersement(client, { reference, maintenant: maintenant() })
+      await journaliser(client, { adminId: req.session.utilisateur.id, action: 'versement_relance', cible: 'versement', cibleId: reference, maintenant: maintenant() })
+    })
     // Nouvelle tentative tout de suite, sans attendre le prochain passage.
     await traiterVersements(deps)
     const versements = await listerVersementsAdmin(pool, { statut: null, reference })
@@ -395,7 +406,37 @@ export function routesAdmin(deps) {
       decision: !decision ? 'requis' : ['confirmee', 'ecartee'].includes(decision) ? null : 'valeur_inconnue',
       note: note && note.length > 500 ? 'trop_long' : null,
     })
-    res.json({ alerte: await deciderAlerte(pool, { id: req.params.id, decision, note, adminId: req.session.utilisateur.id, maintenant: maintenant() }) })
+    const adminId = req.session.utilisateur.id
+    const alerte = await deciderAlerte(pool, { id: req.params.id, decision, note, adminId, maintenant: maintenant() })
+    await journaliser(pool, { adminId, action: `alerte_${decision}`, cible: 'alerte', cibleId: alerte.id, detail: note, maintenant: maintenant() })
+    res.json({ alerte })
+  })
+
+  // US-29 (docs/sanctions.md) : suspendre, bannir ou réactiver un compte, avec un motif.
+  routeur.post('/comptes/:id/sanction', async (req, res) => {
+    const donnees = corps(req)
+    const action = texte(donnees.action)
+    const motif = texte(donnees.motif) || null
+    exigerChamps({
+      action: !action ? 'requis' : SANCTIONS[action] ? null : 'valeur_inconnue',
+      motif: action === 'reactivation' ? (motif && motif.length > 500 ? 'trop_long' : null) : validerMotifRefus(motif),
+    })
+    const compte = await transaction(pool, (client) =>
+      sanctionner(client, { id: idCompte(req), action, motif, adminId: req.session.utilisateur.id, maintenant: maintenant() }),
+    )
+    const { canal, ...message } = messageSanction(compte, { action, motif })
+    try {
+      await deps[canal].envoyer(message)
+    } catch (erreur) {
+      journal.error(erreur)
+    }
+    res.json({ compte: await lireCompte(pool, idCompte(req)) })
+  })
+
+  routeur.get('/journal', async (req, res) => {
+    const page = entier(req.query.page, 1)
+    exigerChamps({ page: !Number.isInteger(page) || page < 1 || page > 100000 ? 'format_invalide' : null })
+    res.json(await lireJournal(pool, { page }))
   })
 
   // §11.2 Numéro WhatsApp du support : enregistré, puis publié ou retiré.

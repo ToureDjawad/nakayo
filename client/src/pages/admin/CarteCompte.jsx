@@ -9,6 +9,7 @@ import { nomPays } from '../../lib/pays.js'
 import { Controles } from './Controles.jsx'
 import { Documents } from './Documents.jsx'
 import { FormulaireRefus } from './FormulaireRefus.jsx'
+import { ActionsSanction } from './ActionsSanction.jsx'
 import { resumeControles } from './resumeControles.js'
 
 const TONS_RESUME = {
@@ -125,6 +126,17 @@ export function CarteCompte({ compte, onTraite }) {
         </div>
       )}
 
+      {compte.statut !== 'en_attente' ? (
+        <div className="mt-5 border-t border-trait pt-4">
+          {compte.motifSanction && (
+            <p className="mb-4 text-sm text-texte">
+              <span className="font-semibold text-encre">Motif de la sanction : </span>
+              {compte.motifSanction}
+            </p>
+          )}
+          <ActionsSanction compte={compte} onTraite={onTraite} />
+        </div>
+      ) : (
       <div className="mt-5 border-t border-trait pt-4">
         {erreur && (
           <Alerte ton="erreur" className="mb-4">
@@ -170,6 +182,7 @@ export function CarteCompte({ compte, onTraite }) {
           </div>
         )}
       </div>
+      )}
     </article>
   )
 }

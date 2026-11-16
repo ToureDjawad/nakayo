@@ -5,7 +5,7 @@ export const VISIBLE = `u.role <> 'admin' AND (
   (u.role = 'developpeur' AND u.email_verifie_le IS NOT NULL) OR (u.role = 'testeur' AND u.telephone_verifie_le IS NOT NULL)
 )`
 
-const COLONNES = `u.id, u.role, u.statut, u.nom, u.email, u.pays, u.lien_fiche_developpeur, u.telephone, u.cree_le,
+const COLONNES = `u.id, u.role, u.statut, u.nom, u.email, u.pays, u.lien_fiche_developpeur, u.telephone, u.cree_le, u.motif_sanction,
   p.ville, p.gmail, p.numero_momo, p.operateur_momo,
   a.fabricant, a.modele, a.version_android, a.niveau_api`
 
@@ -19,6 +19,7 @@ function versCompte(l, controles) {
     id: String(l.id),
     role: l.role,
     statut: l.statut,
+    motifSanction: l.motif_sanction ?? null,
     nom: l.nom,
     creeLe: new Date(l.cree_le).toISOString(),
     developpeur:

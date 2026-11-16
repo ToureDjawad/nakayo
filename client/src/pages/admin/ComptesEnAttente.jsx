@@ -14,10 +14,20 @@ import { Filtres } from './Filtres.jsx'
 const TITRE = 'Comptes en attente'
 
 // Les filtres vivent dans l'adresse : on peut partager un lien filtré ou revenir en arrière.
+// US-29 : les comptes déjà traités se gèrent aussi ici (suspendre, bannir, réactiver).
+const STATUTS = [
+  { statut: 'en_attente', libelle: 'En attente', singulier: 'compte en attente', pluriel: 'comptes en attente' },
+  { statut: 'valide', libelle: 'Validés', singulier: 'compte validé', pluriel: 'comptes validés' },
+  { statut: 'suspendu', libelle: 'Suspendus', singulier: 'compte suspendu', pluriel: 'comptes suspendus' },
+  { statut: 'banni', libelle: 'Bannis', singulier: 'compte banni', pluriel: 'comptes bannis' },
+]
+
 function lireFiltres(parametres) {
   const role = parametres.get('role')
+  const statut = parametres.get('statut')
   const page = Number.parseInt(parametres.get('page') ?? '1', 10)
   return {
+    statut: STATUTS.some((s) => s.statut === statut) ? statut : 'en_attente',
     role: role === 'developpeur' || role === 'testeur' ? role : '',
     du: parametres.get('du') ?? '',
     au: parametres.get('au') ?? '',
@@ -115,16 +125,35 @@ function ListeComptes() {
   const donnees = resultat.donnees
   const erreur = resultat.cle === cleCourante ? resultat.erreur : null
   const filtresActifs = Boolean(filtres.role || filtres.du || filtres.au)
+  const statut = STATUTS.find((s) => s.statut === filtres.statut)
 
   return (
     <div>
+      <nav aria-label="Statut des comptes" className="mb-5 flex flex-wrap gap-2">
+        {STATUTS.map((s) => (
+          <button
+            key={s.statut}
+            type="button"
+            aria-current={filtres.statut === s.statut ? 'page' : undefined}
+            onClick={() => {
+              setAnnonce(null)
+              modifierParametres({ statut: s.statut === 'en_attente' ? '' : s.statut, page: '' }, { remplacer: false })
+            }}
+            className={`h-10 rounded-champ border px-4 text-sm font-semibold ${
+              filtres.statut === s.statut ? 'border-encre bg-encre text-white' : 'border-trait bg-white text-encre hover:bg-fond-doux'
+            }`}
+          >
+            {s.libelle}
+          </button>
+        ))}
+      </nav>
       <Filtres
         filtres={filtres}
         erreurs={erreursPeriode}
         onChange={changerFiltre}
         onEffacer={() => {
           setAnnonce(null)
-          setParametres(new URLSearchParams(), { replace: true })
+          setParametres(new URLSearchParams(filtres.statut === 'en_attente' ? {} : { statut: filtres.statut }), { replace: true })
         }}
       />
 
@@ -153,8 +182,8 @@ function ListeComptes() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="titre-liste" ref={refTitre} tabIndex={-1} className="text-lg font-semibold text-encre">
               {donnees.total === 0
-                ? 'Aucun compte en attente'
-                : `${pluriel(donnees.total, 'compte')} en attente${filtresActifs ? ' pour ces filtres' : ''}`}
+                ? `Aucun ${statut.singulier}`
+                : `${pluriel(donnees.total, statut.singulier, statut.pluriel)}${filtresActifs ? ' pour ces filtres' : ''}`}
             </h2>
             {chargement && (
               <p role="status" className="flex items-center gap-2 text-sm text-discret">
@@ -177,7 +206,9 @@ function ListeComptes() {
             <p className="mt-2 text-texte">
               {filtresActifs
                 ? 'Aucun compte ne correspond à ces filtres. Élargissez la période ou effacez les filtres.'
-                : 'Les nouvelles inscriptions apparaîtront ici après la vérification de leur email ou de leur téléphone.'}
+                : filtres.statut === 'en_attente'
+                  ? 'Les nouvelles inscriptions apparaîtront ici après la vérification de leur email ou de leur téléphone.'
+                  : 'Aucun compte dans cet état pour le moment.'}
             </p>
           )}
 
@@ -205,7 +236,11 @@ export default function ComptesEnAttente() {
         <PageAdmin
           titre={TITRE}
           utilisateur={utilisateur}
-          intro={<p>Vérifiez chaque compte avant de le valider. Un refus demande un motif, qui est envoyé à la personne.</p>}
+          intro={
+            <p>
+              Vérifiez chaque compte avant de le valider. Un refus, une suspension ou un bannissement demande un motif, qui est envoyé à la personne.
+            </p>
+          }
         >
           <ListeComptes />
         </PageAdmin>

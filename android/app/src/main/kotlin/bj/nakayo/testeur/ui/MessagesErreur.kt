@@ -12,6 +12,8 @@ object MessagesErreur {
                 ?: "Trop de tentatives. Réessayez dans quelques minutes."
             "non_authentifie" -> "Votre session a expiré. Reconnectez-vous avec votre numéro."
             "compte_suspendu" -> "Votre compte est suspendu. Contactez l'équipe Nakayo."
+            "compte_banni" -> "Ce numéro ou ce téléphone est lié à un compte fermé. Vous ne pouvez plus utiliser Nakayo."
+            "compte_bloque" -> "Ces informations sont liées à un compte fermé. L'inscription est impossible."
             "code_invalide" -> when (val restantes = erreur.tentativesRestantes) {
                 null -> "Code incorrect."
                 0 -> "Code incorrect. Demandez un nouveau code."

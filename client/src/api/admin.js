@@ -1,9 +1,9 @@
 import { requete } from './client.js'
 
 // Ne transmet que les filtres renseignés (docs/api-sprint1.md §5.1).
-export function construireRequeteComptes({ role, du, au, tri, page } = {}) {
+export function construireRequeteComptes({ statut = 'en_attente', role, du, au, tri, page } = {}) {
   const parametres = new URLSearchParams()
-  parametres.set('statut', 'en_attente')
+  parametres.set('statut', statut)
   if (role) parametres.set('role', role)
   if (du) parametres.set('du', du)
   if (au) parametres.set('au', au)
@@ -113,4 +113,13 @@ export function listerAlertes({ statut = 'ouverte', page = 1 } = {}, { signal } 
 
 export function deciderAlerte(id, { decision, note }) {
   return requete(`/admin/alertes/${encodeURIComponent(id)}/decision`, { methode: 'POST', corps: { decision, note: note || undefined } })
+}
+
+// Sanctions des comptes et journal des actions admin (docs/sanctions.md, US-29).
+export function sanctionnerCompte(id, { action, motif }) {
+  return requete(`/admin/comptes/${encodeURIComponent(id)}/sanction`, { methode: 'POST', corps: { action, motif: motif || undefined } })
+}
+
+export function lireJournal({ page = 1 } = {}, { signal } = {}) {
+  return requete(`/admin/journal${page > 1 ? `?page=${page}` : ''}`, { signal })
 }

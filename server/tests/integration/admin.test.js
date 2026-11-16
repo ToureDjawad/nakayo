@@ -56,6 +56,7 @@ describe('liste des comptes (§5.1)', () => {
       id: String(b.id),
       role: 'developpeur',
       statut: 'en_attente',
+      motifSanction: null,
       nom: 'Studio B',
       creeLe: '2026-11-01T10:00:00.000Z',
       developpeur: { email: 'b@studio.bj', pays: 'BJ', lienFicheDeveloppeur: null },
