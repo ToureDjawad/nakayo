@@ -294,7 +294,7 @@ class ApiNakayoTest {
     @Test
     fun `capture d'inscription en multipart, installation et rapport en JSON`() = runTest {
         stockage.ecrire("jeton-secret")
-        repeat(3) { repondre(200, """{"app":$app}""") }
+        repeat(4) { repondre(200, """{"app":$app}""") }
         assertIs<Resultat.Succes<AffectationTesteur>>(api.confirmerInscription("31", Photo(byteArrayOf(1, 2), "image/png")))
         val inscription = serveur.takeRequest()
         assertEquals("/api/testeurs/moi/apps/31/inscription", inscription.path)
@@ -315,6 +315,10 @@ class ApiNakayoTest {
                 """"position":{"latitude":6.36536,"longitude":2.41833}}""",
             envoi.body.readUtf8(),
         )
+
+        // US-16 : le Wi-Fi n'est envoyé que s'il est connu.
+        api.envoyerRapport("31", rapport.copy(wifi = true))
+        assertTrue(serveur.takeRequest().body.readUtf8().endsWith(""""longitude":2.41833},"wifi":true}"""))
     }
 
     @Test

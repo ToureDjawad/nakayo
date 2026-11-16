@@ -19,7 +19,8 @@ export const SEUIL_ALERTE_INSCRITS = 13
 const normaliser = (valeur) => (valeur ?? '').trim().toLowerCase()
 
 // Choisit `nombre` testeurs parmi les candidats, du plus assidu au moins assidu.
-// Règle stricte : 3 testeurs au plus avec le même modèle de téléphone.
+// Règles strictes : 3 testeurs au plus avec le même modèle de téléphone, et jamais deux testeurs
+// qui partagent un réseau Wi-Fi (US-16, candidat.reseaux : empreintes, docs/api-reseaux.md).
 // Règles souples (premier passage seulement) : une ville ne dépasse pas la moitié de la campagne,
 // un opérateur pas les deux tiers. `deja` : testeurs déjà dans la campagne (remplacement).
 // candidat : { id, ville, operateur, modele, actives, terminees, remplacees, remises, bugsAcceptes }
@@ -39,8 +40,12 @@ export function choisirTesteurs(candidats, { nombre, deja = [], confirmes = fals
   const choisis = []
   const combien = (cle, valeur) => [...deja, ...choisis].filter((t) => normaliser(t[cle]) === normaliser(valeur)).length
 
+  // US-16 : jamais deux testeurs d'un même réseau Wi-Fi dans une campagne (règle stricte).
+  const partageReseau = (c) => (c.reseaux ?? []).some((r) => [...deja, ...choisis].some((t) => (t.reseaux ?? []).includes(r)))
+
   const accepte = (c, souple) => {
     if (c.modele && combien('modele', c.modele) >= MEME_MODELE_MAX) return false
+    if (partageReseau(c)) return false
     if (!souple) return true
     return combien('ville', c.ville) < plafondVille && combien('operateur', c.operateur) < plafondOperateur
   }

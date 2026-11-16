@@ -242,6 +242,8 @@ data class RapportJour(
     val versionApp: String,
     val position: Position,
     val retourDetaille: String? = null,
+    // US-16 : vrai si le rapport part en Wi-Fi (le serveur garde alors une empreinte du réseau).
+    val wifi: Boolean? = null,
 )
 
 // US-33 : rapport de bug (docs/api-bugs.md §1.1). Gravité : « mineure », « genante » ou « bloquante ».

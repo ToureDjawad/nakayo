@@ -1,4 +1,5 @@
 import { offre } from '../lib/offres.js'
+import { DUREE_RESEAU_JOURS } from '../lib/reseaux.js'
 import {
   choisirTesteurs,
   JOURS_CAMPAGNE,
@@ -23,7 +24,8 @@ async function lireCandidats(db, appId) {
             count(*) FILTER (WHERE a.statut = 'terminee')::int AS terminees,
             count(*) FILTER (WHERE a.statut = 'remplacee')::int AS remplacees,
             COALESCE(sum(a.nombre_remises), 0)::int AS remises,
-            (SELECT count(*) FROM bugs b WHERE b.testeur_id = u.id AND b.statut = 'accepte')::int AS "bugsAcceptes"
+            (SELECT count(*) FROM bugs b WHERE b.testeur_id = u.id AND b.statut = 'accepte')::int AS "bugsAcceptes",
+            ${SELECT_RESEAUX('u.id')}
        FROM utilisateurs u
        JOIN profils_testeurs p ON p.utilisateur_id = u.id
        LEFT JOIN LATERAL (
@@ -45,9 +47,16 @@ async function exigencesOffre(db, appId) {
   return { nombre: o.testeurs, confirmes: o.testeursConfirmes, entreeDeGamme: o.telephonesEntreeDeGamme }
 }
 
+// US-16 : empreintes des réseaux Wi-Fi vus récemment pour ce testeur.
+const SELECT_RESEAUX = (colonne) => `ARRAY(
+              SELECT r.empreinte FROM reseaux_testeurs r
+               WHERE r.testeur_id = ${colonne} AND r.dernier_vu_le > now() - interval '${DUREE_RESEAU_JOURS} days'
+            ) AS reseaux`
+
 async function lireMembres(db, campagneId) {
   const { rows } = await db.query(
-    `SELECT a.*, u.nom, u.telephone, p.ville, p.gmail, p.operateur_momo AS operateur, ap.modele, ap.ram_mo
+    `SELECT a.*, u.nom, u.telephone, p.ville, p.gmail, p.operateur_momo AS operateur, ap.modele, ap.ram_mo,
+            ${SELECT_RESEAUX('a.testeur_id')}
        FROM affectations a
        JOIN utilisateurs u ON u.id = a.testeur_id
        JOIN profils_testeurs p ON p.utilisateur_id = a.testeur_id

@@ -17,6 +17,9 @@ interface OutilsApps {
     // null sans permission de localisation, ou quand le téléphone ne donne aucune position.
     suspend fun position(): Position?
 
+    // US-16 : le téléphone est-il connecté en Wi-Fi ? null si Android ne le dit pas.
+    fun surWifi(): Boolean? = null
+
     // US-18 : le testeur a-t-il donné l'accès aux statistiques d'usage ?
     fun mesureAutorisee(): Boolean = true
 

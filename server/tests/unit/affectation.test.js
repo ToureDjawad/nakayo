@@ -40,6 +40,13 @@ describe('choix des testeurs (US-16)', () => {
     expect(choisirTesteurs(liste, { nombre: 3, confirmes: true }).map((c) => c.id)).toEqual(['3', '2', '1'])
   })
 
+  it('deux testeurs d’un même réseau Wi-Fi ne sont jamais dans la même campagne (US-16)', () => {
+    const liste = [candidat(1, { terminees: 3, reseaux: ['box-a'] }), candidat(2, { terminees: 2, reseaux: ['box-a', 'box-b'] }), candidat(3)]
+    expect(choisirTesteurs(liste, { nombre: 3 }).map((c) => c.id)).toEqual(['1', '3'])
+    // Remplacement : le réseau des testeurs déjà dans la campagne compte aussi.
+    expect(choisirTesteurs([candidat(2, { reseaux: ['box-b'] }), candidat(3)], { nombre: 1, deja: [candidat(9, { reseaux: ['box-b'] })] }).map((c) => c.id)).toEqual(['3'])
+  })
+
   it('offres Pro et Plus (US-38) : les testeurs Or passent avant les Argent, puis les Bronze', () => {
     const liste = [
       candidat(1),

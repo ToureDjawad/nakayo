@@ -115,6 +115,7 @@ class RapportModele(
                 versionApp = installation.version?.take(50)?.ifBlank { null } ?: "inconnue",
                 position = position,
                 retourDetaille = e.retourDetaille.trim().ifEmpty { null },
+                wifi = outils.surWifi(),
             )
             when (val r = service.envoyerRapport(affectation.id, rapport)) {
                 is Resultat.Succes -> surEnvoye(r.valeur)

@@ -35,9 +35,11 @@ import kotlin.test.assertTrue
 class OutilsFactices(
     var installation: InstallationApp? = InstallationApp("com.android.vending", "1.0.3"),
     var position: Position? = Position(6.36536, 2.41833),
+    var wifi: Boolean? = true,
 ) : OutilsApps {
     override fun installation(paquet: String) = installation
     override suspend fun position() = position
+    override fun surWifi() = wifi
 }
 
 // Sprint 3 côté Android : apps à tester, inscription, installation, rapport du jour (US-17 à US-20).
@@ -199,6 +201,7 @@ class TestQuotidienTest {
         assertEquals(listOf("Recherche de produits", "Panier"), envoye.fonctionnalites)
         assertEquals("1.0.3", envoye.versionApp)
         assertEquals(Position(6.36536, 2.41833), envoye.position)
+        assertEquals(true, envoye.wifi)
         assertEquals("Le panier se vide quand je quitte l'app.", envoye.commentaireBug)
 
         val retour = assertIs<Ecran.App>(nav.ecran.value).modele

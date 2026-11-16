@@ -63,6 +63,8 @@ export function lireRapport(corps, { fonctionnalites, retourAttendu }) {
     versionApp: longueur(versionApp, 1, L.versionMax),
     position: erreurPosition ?? null,
     retourDetaille: retourAttendu || retourDetaille ? longueur(retourDetaille, L.retourMin, L.retourMax) : null,
+    // US-16 : facultatif, vrai si le téléphone envoie le rapport en Wi-Fi.
+    wifi: corps.wifi === undefined || typeof corps.wifi === 'boolean' ? null : 'format_invalide',
   }
   return {
     erreurs,
@@ -76,6 +78,7 @@ export function lireRapport(corps, { fonctionnalites, retourAttendu }) {
       versionApp,
       position,
       retourDetaille: retourDetaille || null,
+      wifi: corps.wifi === true,
     },
   }
 }
