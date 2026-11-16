@@ -27,6 +27,7 @@ import { enregistrerRetourTerrain } from '../services/terrain.js'
 import { jourCampagne } from '../services/campagnes.js'
 import { empreinteReseau } from '../lib/reseaux.js'
 import { noterReseau } from '../services/reseaux.js'
+import { lireIntegrite, signalerIntegrite } from '../services/fraude.js'
 
 // Capture d'écran « Vous êtes testeur » (5 Mo au plus), lue en mémoire.
 function lireCapture(req, res) {
@@ -194,7 +195,11 @@ export function routesTesteurApps({ pool, config, maintenant }) {
   // §2.5 US-18 : ouverture de l'app compagnon.
   routeur.post('/signal', async (req, res) => {
     const instant = maintenant()
+    // US-28 : l'app indique si elle tourne sur un émulateur ou un téléphone rooté.
+    const { integrite, erreur } = lireIntegrite(req.body)
+    exigerChamps({ integrite: erreur })
     await enregistrerSignal(pool, { testeurId: testeurId(req), maintenant: instant })
+    await signalerIntegrite(pool, { testeurId: testeurId(req), integrite, maintenant: instant })
     res.json({ recuLe: instant.toISOString() })
   })
 

@@ -364,3 +364,12 @@ internal data class CorpsInstallation(val sourceInstallation: String)
 
 @Serializable
 internal data class CorpsUsages(val usages: List<UsageJour>)
+
+// US-28 : l'app tourne-t-elle sur un émulateur ou un téléphone rooté ? Envoyé avec le signal du jour.
+@Serializable
+data class Integrite(val emulateur: Boolean, val root: Boolean) {
+    val suspecte: Boolean get() = emulateur || root
+}
+
+@Serializable
+internal data class CorpsSignal(val integrite: Integrite)

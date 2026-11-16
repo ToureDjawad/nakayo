@@ -186,8 +186,10 @@ class ApiNakayo(
             .map { it.app }
 
     // §2.5 Ouverture de l'app compagnon, horodatée par le serveur.
-    override suspend fun signaler(): Resultat<Unit> =
-        appeler(requete("api/testeurs/moi/signal").post(ByteArray(0).toRequestBody(null)), null)
+    override suspend fun signaler(integrite: Integrite?): Resultat<Unit> {
+        val corps = integrite?.takeIf { it.suspecte }?.let { json(CorpsSignal.serializer(), CorpsSignal(it)) } ?: ByteArray(0).toRequestBody(null)
+        return appeler(requete("api/testeurs/moi/signal").post(corps), null)
+    }
 
     // §2.6 Cumuls du temps d'utilisation des apps testées.
     override suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages> =

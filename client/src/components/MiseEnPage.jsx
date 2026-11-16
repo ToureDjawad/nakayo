@@ -110,6 +110,7 @@ const LIENS_ADMIN = [
   { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
   { to: '/admin/apps', libelle: 'Apps à vérifier', icone: 'app' },
   { to: '/admin/campagnes', libelle: 'Campagnes', icone: 'campagne' },
+  { to: '/admin/alertes', libelle: 'Alertes de fraude', icone: 'bouclier' },
   { to: '/admin/devis', libelle: 'Devis Offre Plus', icone: 'devis' },
   { to: '/admin/messages', libelle: 'Messages reçus', icone: 'boite' },
   { to: '/admin/support', libelle: 'Contact du support', icone: 'message' },
@@ -153,6 +154,14 @@ function IconeAdmin({ nom }) {
       <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
         <path d="M14 2v6h6M8 13h8M8 17h5" />
+      </svg>
+    )
+  }
+  if (nom === 'bouclier') {
+    return (
+      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+        <path d="M12 8v4M12 16h.01" />
       </svg>
     )
   }

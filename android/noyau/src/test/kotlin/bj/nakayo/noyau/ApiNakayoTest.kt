@@ -368,7 +368,16 @@ class ApiNakayoTest {
 
         repondre(200, """{"recuLe":"2026-11-12T09:00:00.000Z"}""")
         assertEquals(Resultat.Succes(Unit), api.signaler())
-        assertEquals("/api/testeurs/moi/signal", serveur.takeRequest().path)
+        val signal = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/signal", signal.path)
+        assertEquals("", signal.body.readUtf8())
+
+        // US-28 : un appareil suspect est signalé ; un appareil sain n'envoie rien de plus.
+        repeat(2) { repondre(200, """{"recuLe":"2026-11-12T09:00:00.000Z"}""") }
+        api.signaler(Integrite(emulateur = true, root = false))
+        assertEquals("""{"integrite":{"emulateur":true,"root":false}}""", serveur.takeRequest().body.readUtf8())
+        api.signaler(Integrite(emulateur = false, root = false))
+        assertEquals("", serveur.takeRequest().body.readUtf8())
 
         repondre(200, """{"enregistres":1,"ignores":1}""")
         val bilan = api.envoyerUsages(listOf(UsageJour("bj.studioawa.marche", "2026-11-12", 130), UsageJour("x.y", "2026-11-12", 5)))

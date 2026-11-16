@@ -22,6 +22,8 @@ class OutilsAndroid(private val contexte: Context) : OutilsApps {
 
     override fun mesureAutorisee() = statistiques.autorisee()
 
+    override fun integrite() = runCatching { DetectionIntegrite.lire() }.getOrNull()
+
     // US-16 : connexion Wi-Fi active (permission ACCESS_NETWORK_STATE, sans demande au testeur).
     override fun surWifi(): Boolean? = runCatching {
         val cm = contexte.getSystemService(ConnectivityManager::class.java) ?: return null

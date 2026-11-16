@@ -103,3 +103,14 @@ export function proposerDevis(id, { prixCarte, prixMobileMoney, message }) {
 export function refuserDevis(id, message) {
   return requete(`/admin/devis/${encodeURIComponent(id)}/refus`, { methode: 'POST', corps: { message } })
 }
+
+// Alertes de comportements suspects (docs/anti-fraude.md, US-28).
+export function listerAlertes({ statut = 'ouverte', page = 1 } = {}, { signal } = {}) {
+  const parametres = new URLSearchParams({ statut })
+  if (page > 1) parametres.set('page', String(page))
+  return requete(`/admin/alertes?${parametres}`, { signal })
+}
+
+export function deciderAlerte(id, { decision, note }) {
+  return requete(`/admin/alertes/${encodeURIComponent(id)}/decision`, { methode: 'POST', corps: { decision, note: note || undefined } })
+}

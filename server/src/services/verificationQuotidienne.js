@@ -1,6 +1,7 @@
 import { transaction } from '../routes/auth.js'
 import { envoyerEmailsCampagnes } from './emailsCampagne.js'
 import { remplacerInactifs } from './remplacementsAuto.js'
+import { detecterFraudes } from './fraude.js'
 import { USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, debutJourBenin, jourBenin } from '../lib/temps.js'
 import { prevenirRapportsPrets } from './rapportFinal.js'
@@ -131,6 +132,8 @@ export function demarrerVerificationNocturne(deps, { delaiMs = 5 * 60 * 1000 } =
     try {
       for (const jour of await joursEnRetard(deps.pool, { maintenant: deps.maintenant() })) {
         const bilan = await verifierJour(deps, { jour, maintenant: deps.maintenant() })
+        // US-28 : règles anti-fraude sur le jour vérifié.
+        await detecterFraudes(deps.pool, { jour, maintenant: deps.maintenant() })
         deps.journal.info(`[vérification] ${jour} : ${bilan.affectations} affectations, ${bilan.joursValides} jours validés, ${bilan.remises} remises à zéro`)
       }
       // US-27 : remplacement des testeurs inactifs depuis 2 jours (campagne prolongée si besoin).

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { deciderAlerte, listerAlertes, STATUTS_ALERTES } from '../services/fraude.js'
 import { ErreurHttp, erreurValidation, introuvable } from '../lib/erreurs.js'
 import { corps, exigerChamps, texte } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
@@ -374,6 +375,27 @@ export function routesAdmin(deps) {
     if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Message introuvable.')
     const adminId = req.session.utilisateur.id
     res.json({ ticket: await traiterTicket(pool, { id: req.params.id, adminId, maintenant: maintenant() }) })
+  })
+
+  // US-28 (docs/anti-fraude.md) : alertes de comportements suspects, confirmées ou écartées.
+  routeur.get('/alertes', async (req, res) => {
+    const statut = texte(req.query.statut) || 'ouverte'
+    const page = entier(req.query.page, 1)
+    const champs = {}
+    if (!STATUTS_ALERTES.includes(statut)) champs.statut = 'valeur_inconnue'
+    if (!Number.isInteger(page) || page < 1 || page > 100000) champs.page = 'format_invalide'
+    exigerChamps(champs)
+    res.json(await listerAlertes(pool, { statut, page }))
+  })
+
+  routeur.post('/alertes/:id/decision', async (req, res) => {
+    const { decision } = corps(req)
+    const note = texte(corps(req).note) || null
+    exigerChamps({
+      decision: !decision ? 'requis' : ['confirmee', 'ecartee'].includes(decision) ? null : 'valeur_inconnue',
+      note: note && note.length > 500 ? 'trop_long' : null,
+    })
+    res.json({ alerte: await deciderAlerte(pool, { id: req.params.id, decision, note, adminId: req.session.utilisateur.id, maintenant: maintenant() }) })
   })
 
   // §11.2 Numéro WhatsApp du support : enregistré, puis publié ou retiré.
