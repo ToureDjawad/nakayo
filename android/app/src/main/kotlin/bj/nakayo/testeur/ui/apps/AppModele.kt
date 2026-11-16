@@ -36,9 +36,9 @@ class AppModele(
     private val calcul: CoroutineDispatcher,
     information: String? = null,
     private val surRapport: (AffectationTesteur) -> Unit,
-    // US-33 : rapport de bug (offres Pro et Lancement Afrique).
+    // US-33 : rapport de bug (offres Pro et Plus).
     private val surBug: (AffectationTesteur) -> Unit = {},
-    // US-37 : questionnaire terrain (Lancement Afrique).
+    // US-37 : questionnaire terrain (Offre Plus).
     private val surTerrain: (AffectationTesteur) -> Unit = {},
     private val surQuitter: () -> Unit,
     private val surSessionExpiree: (message: String) -> Unit,

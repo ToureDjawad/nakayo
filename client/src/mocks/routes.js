@@ -349,10 +349,10 @@ const OFFRE_PRO = {
   garantie: OFFRE.garantie,
   monteeEnGamme: { prix: { carte: { montant: 3000, devise: 'USD' }, mobile_money: { montant: 18000, devise: 'XOF' } } },
 }
-// Lancement Afrique (docs/api-offres.md §4) : sur devis, à partir de 99 $.
+// Offre Plus (docs/api-offres.md §4) : sur devis, à partir de 99 $.
 const OFFRE_AFRIQUE = {
   code: 'afrique',
-  nom: 'Offre Lancement Afrique',
+  nom: 'Offre Plus',
   description:
     'Tout Pro, avec 20 testeurs dans plusieurs villes et sur plusieurs réseaux, des scénarios sur mesure et un rapport sur l’usage réel : réseau lent, petits téléphones, compréhension de la langue.',
   prix: { carte: { montant: 9900, devise: 'USD' }, mobile_money: { montant: 59400, devise: 'XOF' } },
@@ -362,7 +362,7 @@ const OFFRE_AFRIQUE = {
 }
 const OFFRES = { standard: OFFRE, pro: OFFRE_PRO, afrique: OFFRE_AFRIQUE }
 
-// Devis Lancement Afrique (docs/api-offres.md §4) : un par app, gardé dans la base simulée.
+// Devis Offre Plus (docs/api-offres.md §4) : un par app, gardé dans la base simulée.
 function devisListe() {
   const b = base()
   b.devis ??= []
@@ -468,7 +468,7 @@ function lancerPaiement(id, corps = {}, nature) {
     if ((app.offre ?? 'standard') !== 'standard') return erreur(409, 'deja_dans_cette_offre')
     if (campagneDeLApp(app.id)?.statut === 'terminee') return erreur(409, 'campagne_terminee')
   }
-  // Lancement Afrique : le prix du devis proposé (§4.3).
+  // Offre Plus : le prix du devis proposé (§4.3).
   const devis = devisDeLApp(app.id)
   if (OFFRES[code].surDevis && devis?.statut !== 'propose') return erreur(409, 'devis_requis')
   const prix = OFFRES[code].surDevis
@@ -1462,7 +1462,7 @@ export const routes = [
         reponduLe: horodatage(),
       })
       sauver()
-      console.info('[mocks] Email envoyé au développeur : devis Lancement Afrique proposé')
+      console.info('[mocks] Email envoyé au développeur : devis Offre Plus proposé')
       return ok({ devis: versDevis(devis, 'admin') })
     },
   },
@@ -1479,7 +1479,7 @@ export const routes = [
       if (devis.statut !== 'demande') return erreur(409, 'deja_repondu')
       Object.assign(devis, { statut: 'refuse', message, reponduLe: horodatage() })
       sauver()
-      console.info('[mocks] Email envoyé au développeur : devis Lancement Afrique refusé')
+      console.info('[mocks] Email envoyé au développeur : devis Offre Plus refusé')
       return ok({ devis: versDevis(devis, 'admin') })
     },
   },

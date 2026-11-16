@@ -85,14 +85,14 @@ export function routesApps(deps) {
     const { moyen, numeroMomo, offre = nature === 'offre' ? 'standard' : 'pro' } = corps(req)
     const numero = moyen === 'mobile_money' ? normaliserWhatsapp(numeroMomo) : null
     exigerChamps({
-      // On ne monte en gamme que vers Pro ; Lancement Afrique se choisit au paiement, sur devis.
+      // On ne monte en gamme que vers Pro ; l’Offre Plus se choisit au paiement, sur devis.
       offre: CODES_OFFRES.includes(offre) && (nature === 'offre' || offre === 'pro') ? null : 'valeur_inconnue',
       moyen: !moyen ? 'requis' : MOYENS_PAIEMENT.includes(moyen) ? null : 'valeur_inconnue',
       numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
     })
     const app = await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
     verifier?.(app, offre)
-    // docs/api-offres.md §4 : le prix de Lancement Afrique est celui du devis proposé par l'équipe.
+    // docs/api-offres.md §4 : le prix de l’Offre Plus est celui du devis proposé par l'équipe.
     const prix = lireOffre(offre).surDevis && nature === 'offre' && app.statut === 'brouillon' ? await prixDevis(pool, app.id) : null
     limites.paiements.consommer(String(developpeurId(req)))
     const paiement = await creerPaiement(pool, {
@@ -131,7 +131,7 @@ export function routesApps(deps) {
     res.status(201).json({ paiement: versPaiementApi(paiement), redirection: lien.url })
   }
 
-  // docs/api-offres.md §4 : devis de l'offre Lancement Afrique (US-37).
+  // docs/api-offres.md §4 : devis de l'Offre Plus (US-37).
   routeur.get('/:id/devis', async (req, res) => {
     const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
     const devis = await lireDevisApp(pool, app.id)
@@ -146,7 +146,7 @@ export function routesApps(deps) {
     res.json({ devis: versDevisApi(devis) })
   })
 
-  // §2.2 Paiement de l'offre (Standard, Pro, ou Lancement Afrique au prix du devis) pour une app en brouillon.
+  // §2.2 Paiement de l'offre (Standard, Pro, ou Offre Plus au prix du devis) pour une app en brouillon.
   routeur.post('/:id/paiements', exigerCompteValide, (req, res) => lancerPaiement(req, res, { nature: 'offre' }))
 
   // docs/api-offres.md §2 : passage de Standard à Pro d'une app déjà payée, même pendant la
@@ -158,7 +158,7 @@ export function routesApps(deps) {
         if (app.statut === 'brouillon' || app.statut === 'refusee') {
           throw new ErreurHttp(409, 'statut_incompatible', { message: 'Choisissez l’offre au moment du paiement.', statut: app.statut })
         }
-        // Une app en Lancement Afrique a déjà tout ce que Pro apporte.
+        // Une app en Offre Plus a déjà tout ce que Pro apporte.
         if (app.offre !== 'standard') throw new ErreurHttp(409, 'deja_dans_cette_offre', { message: 'Cette app est déjà dans cette offre.' })
         if (app.campagne_statut && app.campagne_statut !== 'en_cours') {
           throw new ErreurHttp(409, 'campagne_terminee', { message: 'La campagne de test est terminée.' })

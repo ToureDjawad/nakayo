@@ -41,12 +41,12 @@ export const OFFRE_PRO = {
   questionnaireTerrain: false,
 }
 
-// Lancement Afrique (US-37) : sur devis. Le développeur décrit son besoin, l'équipe propose un prix
+// Offre Plus (US-37) : sur devis. Le développeur décrit son besoin, l'équipe propose un prix
 // (au moins le prix de départ ci-dessous), puis le développeur paie ce prix. 20 testeurs, payés
 // 1 500 FCFA, qui répondent en plus à un questionnaire terrain (réseau, téléphone, langue).
 export const OFFRE_AFRIQUE = {
   code: 'afrique',
-  nom: 'Offre Lancement Afrique',
+  nom: 'Offre Plus',
   description:
     'Tout Pro, avec 20 testeurs dans plusieurs villes et sur plusieurs réseaux, des scénarios sur mesure et un rapport sur l’usage réel : réseau lent, petits téléphones, compréhension de la langue.',
   prix: {

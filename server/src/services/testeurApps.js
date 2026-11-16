@@ -58,9 +58,9 @@ export function versAffectationTesteur(l, maintenant) {
     retourDetailleAttendu: !rapportDuJour && JOURS_RETOUR_DETAILLE.includes(jour),
     usageDuJourSecondes: l.usage_secondes ?? 0,
     usageMinimumSecondes: USAGE_MINIMUM_SECONDES,
-    // US-33 : rapports de bugs avec captures (offres Pro et Lancement Afrique).
+    // US-33 : rapports de bugs avec captures (offres Pro et Plus).
     rapportsDeBugs: offre(l.offre).rapportsDeBugs,
-    // US-37 : questionnaire terrain (Lancement Afrique), ou null.
+    // US-37 : questionnaire terrain (Offre Plus), ou null.
     questionnaireTerrain: etatTerrain(l, jour),
   }
 }

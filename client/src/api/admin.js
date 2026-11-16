@@ -91,7 +91,7 @@ export function relancerVersement(reference) {
   return requete(`/admin/versements/${encodeURIComponent(reference)}/relance`, { methode: 'POST' })
 }
 
-// Devis de l'offre Lancement Afrique (docs/api-offres.md §4.2, US-37).
+// Devis de l'Offre Plus (docs/api-offres.md §4.2, US-37).
 export function listerDevis({ statut = 'demande' } = {}, { signal } = {}) {
   return requete(`/admin/devis?statut=${encodeURIComponent(statut)}`, { signal })
 }

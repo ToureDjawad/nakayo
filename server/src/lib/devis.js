@@ -1,6 +1,6 @@
 import { texte } from './validation.js'
 
-// Besoin du développeur pour l'offre Lancement Afrique (US-37, docs/api-offres.md §4).
+// Besoin du développeur pour l'Offre Plus (US-37, docs/api-offres.md §4).
 // Pays d'Afrique de l'Ouest proposés (codes ISO) et langues de test souhaitées.
 export const PAYS_DEVIS = ['BJ', 'TG', 'CI', 'SN', 'BF', 'NG', 'NE', 'ML', 'GH']
 export const LANGUES_DEVIS = ['fr', 'en', 'fon', 'yo']

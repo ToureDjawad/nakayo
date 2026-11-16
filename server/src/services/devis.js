@@ -1,7 +1,7 @@
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
 import { montantLisible, OFFRE_AFRIQUE } from '../lib/offres.js'
 
-// Devis de l'offre Lancement Afrique (US-37, docs/api-offres.md §4).
+// Devis de l'Offre Plus (US-37, docs/api-offres.md §4).
 export const STATUTS_DEVIS = ['demande', 'propose', 'refuse']
 
 const SELECT_DEVIS = `SELECT d.*, a.nom AS app_nom, a.package AS app_package, a.statut AS app_statut,
@@ -60,11 +60,11 @@ export async function enregistrerBesoin(db, { app, developpeurId, valeurs, maint
   return lireDevisApp(db, app.id)
 }
 
-// Prix à payer pour l'offre Lancement Afrique : celui du devis proposé.
+// Prix à payer pour l'Offre Plus : celui du devis proposé.
 export async function prixDevis(db, appId) {
   const devis = await lireDevisApp(db, appId)
   if (devis?.statut !== 'propose') {
-    throw new ErreurHttp(409, 'devis_requis', { message: 'Demandez un devis : le prix de l’offre Lancement Afrique dépend de votre besoin.' })
+    throw new ErreurHttp(409, 'devis_requis', { message: 'Demandez un devis : le prix de l’Offre Plus dépend de votre besoin.' })
   }
   return { carte: { montant: devis.prix_carte, devise: 'USD' }, mobile_money: { montant: devis.prix_mobile_money, devise: 'XOF' } }
 }
@@ -104,7 +104,7 @@ export function messageDevis(ligne, { clientUrl }) {
   if (ligne.statut === 'propose') {
     return {
       a: ligne.dev_email,
-      sujet: `Votre devis Lancement Afrique pour « ${ligne.app_nom} »`,
+      sujet: `Votre devis Offre Plus pour « ${ligne.app_nom} »`,
       texte: [
         'Bonjour,',
         '',
@@ -119,7 +119,7 @@ export function messageDevis(ligne, { clientUrl }) {
   }
   return {
     a: ligne.dev_email,
-    sujet: `Votre demande Lancement Afrique pour « ${ligne.app_nom} »`,
+    sujet: `Votre demande d’Offre Plus pour « ${ligne.app_nom} »`,
     texte: [
       'Bonjour,',
       '',

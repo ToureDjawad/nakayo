@@ -44,7 +44,7 @@ const SELECT_PAIEMENT = `SELECT p.*, a.nom AS app_nom, f.numero AS facture_numer
 
 // Prix à payer : l'offre entière pour une app en brouillon, la différence pour une montée en gamme.
 // `fcfa` : le fournisseur n'encaisse qu'en FCFA (FedaPay) ; la carte est alors débitée du prix Mobile Money.
-// `prix` : prix d'un devis (Lancement Afrique, US-37), à la place de celui de l'offre.
+// `prix` : prix d'un devis (Offre Plus, US-37), à la place de celui de l'offre.
 export function prixAPayer({ offre, nature, moyen, fcfa, prix = null }) {
   const moyenPrix = fcfa ? 'mobile_money' : moyen
   if (prix) return prix[moyenPrix]

@@ -132,7 +132,7 @@ export function routesTesteurApps({ pool, config, maintenant }) {
     res.status(201).json({ app: versAffectationTesteur(ligne, instant) })
   })
 
-  // docs/api-bugs.md §1 US-33 : rapport de bug avec captures (offres Pro et Lancement Afrique).
+  // docs/api-bugs.md §1 US-33 : rapport de bug avec captures (offres Pro et Plus).
   routeur.post('/apps/:id/bugs', async (req, res) => {
     const instant = maintenant()
     const affectation = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: instant })
@@ -175,7 +175,7 @@ export function routesTesteurApps({ pool, config, maintenant }) {
     res.json({ bugs: await listerBugsTesteur(pool, { affectation }) })
   })
 
-  // docs/api-offres.md §4.5 : questionnaire terrain de l'offre Lancement Afrique (US-37).
+  // docs/api-offres.md §4.5 : questionnaire terrain de l'Offre Plus (US-37).
   routeur.post('/apps/:id/terrain', async (req, res) => {
     const instant = maintenant()
     const affectation = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: instant })

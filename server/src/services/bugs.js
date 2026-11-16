@@ -5,7 +5,7 @@ import { offre } from '../lib/offres.js'
 
 export const offreSansRapportsDeBugs = () =>
   new ErreurHttp(403, 'offre_sans_rapports_de_bugs', {
-    message: 'Les rapports de bugs avec captures sont réservés aux apps en Offre Pro ou Lancement Afrique.',
+    message: 'Les rapports de bugs avec captures sont réservés aux apps en Offre Pro ou Plus.',
   })
 
 // `affectation` : ligne de lireAffectationTesteur (avec l'offre de l'app).

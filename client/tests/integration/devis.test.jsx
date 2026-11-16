@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { rendreA, simulerApi } from './outils.jsx'
 
-// Offre Lancement Afrique sur devis (US-37, docs/api-offres.md §4).
+// Offre Plus sur devis (US-37, docs/api-offres.md §4).
 const DEV = { id: '2', role: 'developpeur', statut: 'valide', email: 'awa@studio.bj', emailVerifie: true, nom: 'Studio Awa', pays: 'BJ' }
 const ADMIN = { id: '1', role: 'admin', statut: 'valide', email: 'admin@nakayo.bj', nom: 'Équipe Nakayo' }
 const APP = { id: '7', nom: 'Marché Facile', package: 'bj.studioawa.marche', statut: 'brouillon', offre: 'standard', comptePlay: 'personnel_recent', devis: null }
@@ -17,7 +17,7 @@ const STANDARD = {
 }
 const AFRIQUE = {
   code: 'afrique',
-  nom: 'Offre Lancement Afrique',
+  nom: 'Offre Plus',
   description: '20 testeurs, plusieurs villes.',
   prix: { carte: { montant: 9900, devise: 'USD' }, mobile_money: { montant: 59400, devise: 'XOF' } },
   surDevis: true,
@@ -49,7 +49,7 @@ const BASE = {
   'GET /api/apps/:id': { corps: { app: APP } },
 }
 
-describe('Demander un devis Lancement Afrique (US-37)', () => {
+describe('Demander un devis Offre Plus (US-37)', () => {
   it('le développeur décrit pays, langues, profils et scénarios', async () => {
     const user = userEvent.setup()
     const serveur = simulerApi({ ...BASE, 'GET /api/apps/:id/devis': { corps: { devis: null } }, 'PUT /api/apps/:id/devis': { corps: { devis: DEVIS } } })
@@ -84,7 +84,7 @@ describe('Demander un devis Lancement Afrique (US-37)', () => {
     expect(within(proposition).getByText(/Deux villes et le fon/)).toBeInTheDocument()
     await user.click(within(proposition).getByRole('link', { name: 'Payer ce devis' }))
 
-    const afrique = await screen.findByRole('radio', { name: /Lancement Afrique \(votre devis\)/ })
+    const afrique = await screen.findByRole('radio', { name: /Offre Plus \(votre devis\)/ })
     expect(afrique).toBeChecked()
     expect(afrique.closest('label')).toHaveTextContent('89 400 FCFA ou 149,00 $ US')
     await user.click(screen.getByRole('radio', { name: /Carte bancaire : 149,00/ }))
@@ -97,7 +97,7 @@ describe('Demander un devis Lancement Afrique (US-37)', () => {
     simulerApi({ ...BASE, 'GET /api/apps/:id/devis': { corps: { devis: DEVIS } } })
     rendreA('/mon-compte/apps/7/paiement?offre=afrique')
     expect(await screen.findByRole('radio', { name: /^Offre Standard/ })).toBeChecked()
-    expect(screen.queryByRole('radio', { name: /Lancement Afrique/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: /Offre Plus/ })).not.toBeInTheDocument()
     expect(screen.getByText(/Votre demande est à l’étude/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Voir votre demande de devis' })).toHaveAttribute('href', '/mon-compte/apps/7/devis')
   })

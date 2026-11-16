@@ -127,7 +127,7 @@ const VERIFICATIONS = [
   { icone: 'bouclier', titre: 'Installation depuis le Play Store', detail: 'Pas d’APK, pas d’émulateur, pas de téléphone rooté.' },
 ]
 
-// Offres du modèle économique (§3), toutes ouvertes. Lancement Afrique se commande sur devis (US-37).
+// Offres du modèle économique (§3), toutes ouvertes. L’Offre Plus se commande sur devis (US-37).
 const OFFRES = [
   {
     code: 'standard',
@@ -160,7 +160,7 @@ const OFFRES = [
   },
   {
     code: 'afrique',
-    nom: 'Lancement Afrique',
+    nom: 'Plus',
     prix: '99 $',
     aPartirDe: true,
     fcfa: '59 400 FCFA',
