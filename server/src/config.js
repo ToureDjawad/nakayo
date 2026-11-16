@@ -28,6 +28,9 @@ export function lireConfig(env = process.env) {
     // US-25 : SMS de secours à 22 h quand un rapport manque (désactivable, chaque SMS a un coût).
     rappelsSms: env.RAPPELS_SMS ? env.RAPPELS_SMS === 'true' : true,
     // Secret partagé avec les fournisseurs pour signer leurs webhooks (docs/api-sprint2.md §2.4).
+    // US-16 : secret des empreintes de réseau Wi-Fi (docs/api-reseaux.md). Sans lui en production,
+    // aucune empreinte n'est gardée.
+    secretReseaux: env.SECRET_RESEAUX ?? (production ? null : 'secret-reseaux-developpement'),
     paiementWebhookSecret: env.PAIEMENT_WEBHOOK_SECRET ?? (production ? null : 'secret-webhook-developpement'),
     // Groupe Google des testeurs Nakayo (US-13), que le développeur ajoute à son test fermé.
     // Vide tant que le groupe n'est pas créé : l'équipe donne alors l'adresse par email.

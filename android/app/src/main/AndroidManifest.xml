@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- US-16 : savoir si le rapport part en Wi-Fi (sans demande au testeur). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Rapport du jour : position approximative (la ville), jamais la position précise. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Temps passé dans les apps testées : accès donné par le testeur dans les réglages (US-18). -->

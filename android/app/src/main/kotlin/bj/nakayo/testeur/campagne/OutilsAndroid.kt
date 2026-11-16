@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.CancellationSignal
 import androidx.core.content.ContextCompat
@@ -19,6 +21,13 @@ class OutilsAndroid(private val contexte: Context) : OutilsApps {
     private val statistiques = StatistiquesUsage(contexte)
 
     override fun mesureAutorisee() = statistiques.autorisee()
+
+    // US-16 : connexion Wi-Fi active (permission ACCESS_NETWORK_STATE, sans demande au testeur).
+    override fun surWifi(): Boolean? = runCatching {
+        val cm = contexte.getSystemService(ConnectivityManager::class.java) ?: return null
+        val capacites = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        capacites.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }.getOrNull()
 
     override fun planifierMesure() = PlanificationUsages.planifier(contexte)
 

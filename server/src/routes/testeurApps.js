@@ -25,6 +25,8 @@ import { enregistrerBug, exigerRapportsDeBugs, listerBugsTesteur, versBugTesteur
 import { lireRetourTerrain } from '../lib/terrain.js'
 import { enregistrerRetourTerrain } from '../services/terrain.js'
 import { jourCampagne } from '../services/campagnes.js'
+import { empreinteReseau } from '../lib/reseaux.js'
+import { noterReseau } from '../services/reseaux.js'
 
 // Capture d'écran « Vous êtes testeur » (5 Mo au plus), lue en mémoire.
 function lireCapture(req, res) {
@@ -128,6 +130,8 @@ export function routesTesteurApps({ pool, config, maintenant }) {
     const { valeurs, erreurs } = lireRapport(corps(req), { fonctionnalites: affectation.fonctionnalites, retourAttendu: retourDetailleAttendu })
     exigerChamps(erreurs)
     await enregistrerRapport(pool, { affectation, testeurId: testeurId(req), valeurs, maintenant: instant })
+    // US-16 : empreinte du Wi-Fi du testeur, pour ne pas réunir deux testeurs d'un même réseau.
+    if (valeurs.wifi) await noterReseau(pool, { testeurId: testeurId(req), empreinte: empreinteReseau(req.ip, config.secretReseaux), maintenant: instant })
     const ligne = await lireAffectationTesteur(pool, { id: req.params.id, testeurId: testeurId(req), maintenant: instant })
     res.status(201).json({ app: versAffectationTesteur(ligne, instant) })
   })
