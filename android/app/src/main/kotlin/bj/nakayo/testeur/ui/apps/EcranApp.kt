@@ -39,6 +39,7 @@ import androidx.core.graphics.drawable.toBitmap
 import bj.nakayo.noyau.AffectationTesteur
 import bj.nakayo.noyau.AppTestee
 import bj.nakayo.noyau.DerniereRemise
+import bj.nakayo.noyau.NouvelleVersion
 import bj.nakayo.testeur.R
 import bj.nakayo.testeur.ui.composants.Bandeau
 import bj.nakayo.testeur.ui.composants.Bouton
@@ -113,6 +114,7 @@ fun EcranApp(etat: EtatApp, actions: ActionsApp, mesureAutorisee: Boolean = true
         etat.information?.let { Bandeau(it, TypeBandeau.Succes) }
         etat.erreur?.let { Bandeau(it) }
         a.derniereRemise?.takeIf { remiseVisible(a) }?.let { BandeauRemise(it, a.usageMinimumSecondes) }
+        if (a.installationConfirmee) a.nouvelleVersion?.let { CarteNouvelleVersion(it) { ouvrir(a.lienPlayStore) } }
         if (a.joursAcquis) {
             Bandeau(
                 "Restez inscrit au test et gardez l'app installée jusqu'à la fin de la campagne.",
@@ -150,6 +152,17 @@ private fun BandeauRemise(remise: DerniereRemise, usageMinimumSecondes: Int) {
         titre = "Votre compteur est revenu à 0",
         icone = R.drawable.ic_alerte,
     )
+}
+
+// US-44 : le développeur a publié une correction ; le testeur met à jour puis vérifie.
+@Composable
+private fun CarteNouvelleVersion(version: NouvelleVersion, mettreAJour: () -> Unit) {
+    Bandeau(
+        "Ce qui a changé : ${version.changements}\nMettez l'app à jour depuis le Play Store, puis vérifiez ces corrections dans votre prochain rapport.",
+        TypeBandeau.Information,
+        titre = "Nouvelle version ${version.numero}",
+    )
+    Bouton("Mettre à jour sur le Play Store", mettreAJour, style = StyleBouton.Secondaire)
 }
 
 @Composable

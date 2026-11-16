@@ -328,6 +328,18 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `nouvelle version annoncée par le développeur (US-44)`() = runTest {
+        stockage.ecrire("jeton-secret")
+        val version = app.replaceFirst("\"champFutur\"", "\"nouvelleVersion\":{\"numero\":\"1.0.3\",\"changements\":\"Le panier ne se vide plus.\",\"annonceeLe\":\"2026-11-14T09:00:00.000Z\"},\"champFutur\"")
+        repondre(201, """{"app":$version}""")
+        val r = api.envoyerRetourTerrain("31", RetourTerrain("3g", "lent", "fluide", "fr", 4))
+        assertEquals(
+            NouvelleVersion("1.0.3", "Le panier ne se vide plus.", "2026-11-14T09:00:00.000Z"),
+            assertIs<Resultat.Succes<AffectationTesteur>>(r).valeur.nouvelleVersion,
+        )
+    }
+
+    @Test
     fun `questionnaire terrain en JSON, sans commentaire vide (US-37)`() = runTest {
         stockage.ecrire("jeton-secret")
         val terrain = app.replaceFirst("\"champFutur\"", "\"questionnaireTerrain\":{\"envoye\":true,\"ouvert\":false,\"ouvertLe\":7},\"champFutur\"")

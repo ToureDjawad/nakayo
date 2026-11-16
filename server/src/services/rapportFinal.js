@@ -1,4 +1,5 @@
 import { ErreurHttp } from '../lib/erreurs.js'
+import { lireVersions } from './versionsCampagne.js'
 import { creerRedaction } from '../lib/pdf.js'
 import { ajouterJours, jourBenin } from '../lib/temps.js'
 import { offre } from '../lib/offres.js'
@@ -157,8 +158,13 @@ export function construireBrouillon(b) {
     .filter(Boolean)
     .join('\n')
 
+  const annoncees = b.versionsAnnoncees ?? []
   const changements = [
-    '[À compléter : pour chaque problème signalé, indiquez la correction apportée et la version qui la contient.]',
+    annoncees.length
+      ? `Versions publiées pendant le test et annoncées aux testeurs :\n${annoncees
+          .map((v) => `- ${v.numero} (jour ${v.jourCampagne}) : ${v.changements} Vérifiée par ${v.testeursSurVersion} testeur${v.testeursSurVersion > 1 ? 's' : ''}.`)
+          .join('\n')}`
+      : '[À compléter : pour chaque problème signalé, indiquez la correction apportée et la version qui la contient.]',
     versionsApp.length > 1
       ? `Versions publiées pendant le test : ${b.versionsApp.map((v) => `${v.version} (à partir du jour ${v.premierJour})`).join(', puis ')}.`
       : versionsApp.length
@@ -228,6 +234,8 @@ export async function lireRapportFinal(db, { appId, developpeurId, maintenant })
   const bilan = construireBilan(c, avancement)
   // US-37 : test terrain de l'Offre Plus (réseau, petits téléphones, langue).
   bilan.terrain = offre(c.offre).questionnaireTerrain ? await lireTerrain(db, c.id) : null
+  // US-44 : versions annoncées aux testeurs pendant le test.
+  bilan.versionsAnnoncees = await lireVersions(db, c)
   return { pret: true, disponibleLe: disponibleLe(c), bilan, brouillon: construireBrouillon(bilan), decisionGoogle: versDecision(c) }
 }
 
@@ -268,6 +276,11 @@ export function rapportPdf({ bilan: b, brouillon }, { maintenant }) {
   r.ligneInfo('Versions d’Android', liste(b.appareils.versionsAndroid) || '-')
   r.ligneInfo('Téléphones d’entrée de gamme (3 Go de RAM ou moins)', String(b.appareils.entreeDeGamme))
   r.ligneInfo('Versions de l’app testées', liste(b.versionsApp.map((v) => v.version)) || '-')
+
+  if (b.versionsAnnoncees?.length) {
+    r.titre('Versions publiées pendant le test')
+    for (const v of b.versionsAnnoncees) r.ligneInfo(`${v.numero} · jour ${v.jourCampagne}`, `${v.testeursSurVersion} testeur${v.testeursSurVersion > 1 ? 's' : ''}`)
+  }
 
   r.titre('Téléphones des testeurs')
   for (const x of b.appareils.liste) {

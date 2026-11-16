@@ -90,6 +90,7 @@ describe('apps à tester (US-17)', () => {
         usageMinimumSecondes: 120,
         rapportsDeBugs: false,
         questionnaireTerrain: null,
+        nouvelleVersion: null,
       },
     ])
   })

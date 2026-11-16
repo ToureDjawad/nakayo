@@ -19,6 +19,7 @@ import { cheminAbsolu } from '../services/documents.js'
 import { lireBesoin } from '../lib/devis.js'
 import { enregistrerBesoin, lireDevisApp, prixDevis, versDevisApi } from '../services/devis.js'
 import { transaction } from './auth.js'
+import { annoncerVersion, campagneDeLApp, lireVersions, messageNouvelleVersion, telephonesInscrits, validerVersion } from '../services/versionsCampagne.js'
 import { CHOIX, demanderGarantie, lireGarantie, messageNouvelleGarantie, MOTIFS_GOOGLE, versGarantie } from '../services/garanties.js'
 
 const DECISIONS_GOOGLE = ['acceptee', 'refusee']
@@ -302,6 +303,27 @@ export function routesApps(deps) {
     })
     const decisionGoogle = await enregistrerDecision(pool, { appId: id, developpeurId: developpeurId(req), decision, le: le || null, maintenant: instant })
     res.json({ decisionGoogle })
+  })
+
+  // US-44 (docs/nouvelle-version.md) : versions annoncées aux testeurs pendant le test.
+  routeur.get('/:id/campagne/versions', async (req, res) => {
+    const campagne = await campagneDeLApp(pool, { appId: idApp(req), developpeurId: developpeurId(req) })
+    res.json({ versions: await lireVersions(pool, campagne) })
+  })
+
+  routeur.post('/:id/campagne/versions', exigerCompteValide, async (req, res) => {
+    const donnees = corps(req)
+    const numero = texte(donnees.numero)
+    const changements = texte(donnees.changements)
+    exigerChamps(validerVersion({ numero, changements }))
+    const campagne = await campagneDeLApp(pool, { appId: idApp(req), developpeurId: developpeurId(req) })
+    await transaction(pool, (client) => annoncerVersion(client, { campagne, numero, changements, maintenant: maintenant() }))
+    try {
+      for (const telephone of await telephonesInscrits(pool, campagne.id)) await sms.envoyer({ a: telephone, texte: messageNouvelleVersion(campagne.app_nom, numero) })
+    } catch (erreur) {
+      journal.error(erreur)
+    }
+    res.status(201).json({ versions: await lireVersions(pool, campagne) })
   })
 
   // US-30 (docs/garantie.md) : garantie si Google refuse l'accès à la production.
