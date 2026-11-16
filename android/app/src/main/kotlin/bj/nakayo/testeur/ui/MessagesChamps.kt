@@ -34,6 +34,11 @@ object MessagesChamps {
     }
 
     // US-39 : code de parrainage saisi à l'inscription.
+    fun ancienneteGmail(code: String): String = when (code) {
+        "requis" -> "Indiquez depuis quand vous utilisez ce Gmail sur le Play Store."
+        else -> "Choisissez une des trois durées proposées."
+    }
+
     fun codeParrainage(code: String): String = when (code) {
         "inconnu" -> "Ce code ne correspond à aucun testeur. Vérifiez-le auprès de la personne qui vous a invité, ou laissez le champ vide."
         else -> "Un code de parrainage a 6 caractères, lettres et chiffres, par exemple K7Q2MP."

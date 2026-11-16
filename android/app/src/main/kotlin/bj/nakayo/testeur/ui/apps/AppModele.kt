@@ -21,6 +21,8 @@ import java.io.File
 data class EtatApp(
     val affectation: AffectationTesteur,
     val envoiCapture: Boolean = false,
+    // US-07 : case « ce Gmail est le compte principal du Play Store » (première campagne).
+    val gmailPrincipalConfirme: Boolean = false,
     val verificationInstallation: Boolean = false,
     val information: String? = null,
     val erreur: String? = null,
@@ -66,9 +68,23 @@ class AppModele(
         }
     }
 
+    fun confirmerGmailPrincipal(valeur: Boolean) = etatInterne.update { it.copy(gmailPrincipalConfirme = valeur, erreur = null) }
+
+    // US-07 : la case doit être cochée avant la capture, à la première campagne.
+    fun gmailPrincipalManquant(): Boolean {
+        val e = etatInterne.value
+        if (!e.affectation.gmailPrincipalAConfirmer || e.gmailPrincipalConfirme) return false
+        etatInterne.update { it.copy(erreur = MESSAGE_GMAIL_PRINCIPAL, information = null) }
+        return true
+    }
+
     // US-17 : capture de la page « Vous êtes testeur », réduite puis envoyée.
     fun captureChoisie(fichier: File) {
         if (etatInterne.value.envoiCapture) return
+        if (gmailPrincipalManquant()) {
+            fichier.delete()
+            return
+        }
         etatInterne.update { it.copy(envoiCapture = true, erreur = null, information = null) }
         portee.launch {
             val octets = try {
@@ -82,7 +98,7 @@ class AppModele(
                 etatInterne.update { it.copy(envoiCapture = false, erreur = "Image illisible. Choisissez une autre capture d'écran.") }
                 return@launch
             }
-            when (val r = service.confirmerInscription(id, Photo(octets))) {
+            when (val r = service.confirmerInscription(id, Photo(octets), gmailPrincipal = etatInterne.value.gmailPrincipalConfirme)) {
                 is Resultat.Succes -> etatInterne.update {
                     it.copy(affectation = r.valeur, envoiCapture = false, information = "Inscription confirmée. Installez maintenant l'app depuis le Play Store.")
                 }
@@ -170,3 +186,6 @@ fun messageTest(erreur: ErreurApi): String {
         else -> MessagesErreur.pour(erreur)
     }
 }
+
+const val MESSAGE_GMAIL_PRINCIPAL =
+    "Cochez d'abord la case : le Gmail de votre compte Nakayo doit être le compte principal du Play Store de ce téléphone."

@@ -127,7 +127,8 @@ Routes de l'app Android (`Authorization: Bearer`), réservées aux testeurs dont
 ### 2.2 Inscription au test : `POST /api/testeurs/moi/apps/:id/inscription`
 
 - Corps : `multipart/form-data` avec un champ `capture`, une image JPEG ou PNG de 5 Mo au plus : la page « Vous êtes testeur » de Google Play.
-- Erreurs : `422` (`capture` : `requis`, `type_fichier_invalide`) et `413 fichier_trop_lourd`.
+- US-07, première campagne du testeur : champ `gmailPrincipal=true` obligatoire tant que `gmailPrincipalAConfirmer` vaut `true` dans l'app à tester (§2.1, avec `gmail`, l'adresse du testeur). Le testeur confirme ainsi que ce Gmail est le compte principal du Play Store de son téléphone. La date est gardée sur son profil et la question n'est plus posée ensuite.
+- Erreurs : `422` (`capture` : `requis`, `type_fichier_invalide` ; `gmailPrincipal` : `doit_etre_confirme`) et `413 fichier_trop_lourd`.
 - La capture est stockée hors du dossier public, comme les pièces d'identité. Une nouvelle capture remplace la précédente. La première date de confirmation est gardée.
 
 ### 2.3 Installation : `POST /api/testeurs/moi/apps/:id/installation`

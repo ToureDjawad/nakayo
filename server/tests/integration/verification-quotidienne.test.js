@@ -56,7 +56,7 @@ beforeEach(async () => {
   const { rows } = await pool.query('SELECT id, testeur_id FROM affectations ORDER BY id LIMIT 1')
   affectation = String(rows[0].id)
   testeur = testeurs.find((t) => t.id === String(rows[0].testeur_id))
-  await request(test.app).post(`/api/testeurs/moi/apps/${affectation}/inscription`).set(bearer()).attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
+  await request(test.app).post(`/api/testeurs/moi/apps/${affectation}/inscription`).set(bearer()).field('gmailPrincipal', 'true').attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
   await request(test.app).post(`/api/testeurs/moi/apps/${affectation}/installation`).set(bearer()).send({ sourceInstallation: 'com.android.vending' })
   test.sms.vider()
 })

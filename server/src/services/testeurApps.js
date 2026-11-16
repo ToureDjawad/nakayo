@@ -11,8 +11,10 @@ import { etatTerrain } from './terrain.js'
 const SELECT_AFFECTATION = `SELECT a.*, c.statut AS campagne_statut, c.demarree_le, c.jours_exiges,
     ap.nom, ap.package, ap.offre, ap.lien_test_ferme, ap.instructions, ap.fonctionnalites, ap.connexion_requise, ap.identifiants_test,
     r.id AS rapport_id, uq.secondes AS usage_secondes, rt.envoye_le AS terrain_envoye_le,
-    a.derniere_remise_jour::text AS derniere_remise_jour_texte, jr.connexion AS remise_connexion, jr.usage_secondes AS remise_usage, jr.rapport AS remise_rapport
+    a.derniere_remise_jour::text AS derniere_remise_jour_texte, jr.connexion AS remise_connexion, jr.usage_secondes AS remise_usage, jr.rapport AS remise_rapport,
+    pt.gmail AS testeur_gmail, pt.gmail_principal_confirme_le
   FROM affectations a
+  JOIN profils_testeurs pt ON pt.utilisateur_id = a.testeur_id
   JOIN campagnes c ON c.id = a.campagne_id
   JOIN apps ap ON ap.id = a.app_id
   LEFT JOIN rapports r ON r.affectation_id = a.id AND r.jour = $2
@@ -53,6 +55,10 @@ export function versAffectationTesteur(l, maintenant) {
         }
       : null,
     inscriptionConfirmee: Boolean(l.inscription_confirmee_le),
+    // US-07 : à la première campagne, le testeur confirme que son Gmail est le compte principal
+    // du Play Store de ce téléphone (avec la capture d'inscription).
+    gmailPrincipalAConfirmer: !l.gmail_principal_confirme_le,
+    gmail: l.testeur_gmail,
     installationConfirmee: Boolean(l.installation_confirmee_le),
     rapportDuJour,
     retourDetailleAttendu: !rapportDuJour && JOURS_RETOUR_DETAILLE.includes(jour),
@@ -94,6 +100,10 @@ export async function lireAffectationTesteur(db, { id, testeurId, maintenant }) 
 // US-17 / US-43 : le testeur confirme son inscription avec la capture de la page « Vous êtes testeur ».
 // Une nouvelle capture remplace l'ancienne (son chemin est renvoyé pour la supprimer).
 export async function confirmerInscription(db, { affectation, chemin, maintenant }) {
+  await db.query(
+    'UPDATE profils_testeurs SET gmail_principal_confirme_le = COALESCE(gmail_principal_confirme_le, $2) WHERE utilisateur_id = $1',
+    [affectation.testeur_id, maintenant],
+  )
   await db.query(
     `UPDATE affectations SET capture_inscription = $2, inscription_confirmee_le = COALESCE(inscription_confirmee_le, $3) WHERE id = $1`,
     [affectation.id, chemin, maintenant],

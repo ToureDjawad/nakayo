@@ -109,6 +109,7 @@ class NavigationTest {
         inscription.saisirNom("Afi Dossou")
         inscription.choisirVille("Cotonou")
         inscription.saisirGmail("afi.dossou@gmail.com")
+        inscription.choisirAncienneteGmail("plus_6_mois")
         inscription.continuer()
         assertEquals(EtapeInscription.Pieces, inscription.etat.value.etape)
         assertTrue(nav.retour())
@@ -122,6 +123,7 @@ class NavigationTest {
         m.saisirNom("Afi Dossou")
         m.choisirVille("Cotonou")
         m.saisirGmail("afi.dossou@gmail.com")
+        m.choisirAncienneteGmail("1_6_mois")
         m.continuer()
         val photo = kotlin.io.path.createTempFile().toFile().apply { writeBytes(byteArrayOf(1)) }
         m.photoPrise(bj.nakayo.testeur.ui.inscription.ChampPhoto.PieceIdentite, photo)

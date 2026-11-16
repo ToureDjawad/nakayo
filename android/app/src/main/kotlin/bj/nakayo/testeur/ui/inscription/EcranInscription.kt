@@ -101,6 +101,11 @@ private fun EtapeProfil(etat: EtatInscription, actions: ActionsInscription, oper
             clavier = KeyboardType.Email,
             actionClavier = ImeAction.Next,
         )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Libelle("Depuis quand utilisez-vous ce Gmail sur le Play Store ?")
+            Segment(ANCIENNETES_GMAIL, etat.ancienneteGmail, actions::choisirAncienneteGmail, "Ancienneté du Gmail")
+            etat.erreurs["ancienneteGmail"]?.let { Erreur(MessagesChamps.ancienneteGmail(it)) }
+        }
         // US-39 : code de la personne qui a invité le testeur.
         ChampTexte(
             valeur = etat.codeParrainage,
@@ -278,6 +283,7 @@ private object ActionsVides : ActionsInscription {
     override fun saisirGmail(valeur: String) = Unit
     override fun saisirCodeParrainage(valeur: String) = Unit
     override fun choisirOperateur(code: String) = Unit
+    override fun choisirAncienneteGmail(code: String) = Unit
     override fun basculerLangue(code: String) = Unit
     override fun continuer() = Unit
     override fun photoPrise(champ: ChampPhoto, fichier: File) = Unit

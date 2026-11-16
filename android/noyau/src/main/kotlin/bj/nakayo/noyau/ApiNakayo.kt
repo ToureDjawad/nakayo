@@ -87,6 +87,7 @@ class ApiNakayo(
             .addFormDataPart("accepteConditions", formulaire.accepteConditions.toString())
             .addFormDataPart("appareil", JSON.encodeToString(Appareil.serializer(), formulaire.appareil))
             .apply { formulaire.codeParrainage?.takeIf { it.isNotBlank() }?.let { addFormDataPart("codeParrainage", it) } }
+            .apply { formulaire.ancienneteGmail?.let { addFormDataPart("ancienneteGmail", it) } }
             .addFormDataPart("pieceIdentite", nomFichier("piece-identite", pieceIdentite), photo(pieceIdentite))
             .addFormDataPart("selfie", nomFichier("selfie", selfie), photo(selfie))
             .build()
@@ -139,9 +140,10 @@ class ApiNakayo(
         appeler(requete("api/testeurs/moi/portefeuille").get(), ReponsePortefeuille.serializer()).map { it.portefeuille }
 
     // §2.2 Capture de la page « Vous êtes testeur » de Google Play.
-    override suspend fun confirmerInscription(affectationId: String, capture: Photo): Resultat<AffectationTesteur> {
+    override suspend fun confirmerInscription(affectationId: String, capture: Photo, gmailPrincipal: Boolean): Resultat<AffectationTesteur> {
         val corps = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
+            .apply { if (gmailPrincipal) addFormDataPart("gmailPrincipal", "true") }
             .addFormDataPart("capture", nomFichier("capture", capture), photo(capture))
             .build()
         return appeler(requete(cheminApp(affectationId, "inscription")).post(corps), ReponseApp.serializer()).map { it.app }

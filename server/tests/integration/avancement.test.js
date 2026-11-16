@@ -32,7 +32,7 @@ async function connecter(email) {
 // Le testeur n° `i` de la campagne : inscription, installation.
 async function installer(i) {
   const bearer = { Authorization: `Bearer ${testeurs[i].jeton}` }
-  await request(test.app).post(`/api/testeurs/moi/apps/${affectations[i]}/inscription`).set(bearer).attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
+  await request(test.app).post(`/api/testeurs/moi/apps/${affectations[i]}/inscription`).set(bearer).field('gmailPrincipal', 'true').attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
   await request(test.app).post(`/api/testeurs/moi/apps/${affectations[i]}/installation`).set(bearer).send({ sourceInstallation: 'com.android.vending' })
 }
 

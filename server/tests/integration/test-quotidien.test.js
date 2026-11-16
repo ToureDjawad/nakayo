@@ -26,7 +26,7 @@ async function connecter(email) {
 const bearer = (t) => ({ Authorization: `Bearer ${t.jeton}` })
 const appsDe = (t) => request(test.app).get('/api/testeurs/moi/apps').set(bearer(t))
 const inscrire = (t, id = affectation) =>
-  request(test.app).post(`/api/testeurs/moi/apps/${id}/inscription`).set(bearer(t)).attach('capture', JPEG, { filename: 'capture.jpg', contentType: 'image/jpeg' })
+  request(test.app).post(`/api/testeurs/moi/apps/${id}/inscription`).set(bearer(t)).field('gmailPrincipal', 'true').attach('capture', JPEG, { filename: 'capture.jpg', contentType: 'image/jpeg' })
 const installer = (t, id = affectation, sourceInstallation = 'com.android.vending') =>
   request(test.app).post(`/api/testeurs/moi/apps/${id}/installation`).set(bearer(t)).send({ sourceInstallation })
 const rapporter = (t, corps = RAPPORT, id = affectation) => request(test.app).post(`/api/testeurs/moi/apps/${id}/rapports`).set(bearer(t)).send(corps)
@@ -81,6 +81,8 @@ describe('apps à tester (US-17)', () => {
         joursAcquis: false,
         derniereRemise: null,
         inscriptionConfirmee: false,
+        gmailPrincipalAConfirmer: true,
+        gmail: expect.stringMatching(/@gmail\.com$/),
         installationConfirmee: false,
         rapportDuJour: false,
         retourDetailleAttendu: false,
@@ -124,6 +126,23 @@ describe('inscription et installation (US-17, US-18, US-43)', () => {
     const { rows } = await pool.query('SELECT app_id FROM affectations WHERE id = $1', [affectation])
     const suivi = await request(test.app).get(`/api/apps/${rows[0].app_id}/campagne`).set('Cookie', dev)
     expect(suivi.body.campagne.compteurs.inscritsConfirmes).toBe(1)
+  })
+
+  it('à la première campagne, le Gmail doit être confirmé comme compte principal du Play Store (US-07)', async () => {
+    const testeur = await testeurAffecte()
+    const [app] = (await appsDe(testeur)).body.apps
+    expect(app).toMatchObject({ gmailPrincipalAConfirmer: true, gmail: expect.stringMatching(/@gmail\.com$/) })
+    const sans = await request(test.app)
+      .post(`/api/testeurs/moi/apps/${affectation}/inscription`)
+      .set(bearer(testeur))
+      .attach('capture', JPEG, { filename: 'capture.jpg', contentType: 'image/jpeg' })
+    expect(sans.status).toBe(422)
+    expect(sans.body.erreur.champs).toEqual({ gmailPrincipal: 'doit_etre_confirme' })
+
+    expect((await inscrire(testeur)).body.app.gmailPrincipalAConfirmer).toBe(false)
+    // Confirmé une fois pour toutes : les campagnes suivantes ne le redemandent pas.
+    const { rows } = await pool.query('SELECT gmail_principal_confirme_le FROM profils_testeurs WHERE utilisateur_id = $1', [testeur.id])
+    expect(rows[0].gmail_principal_confirme_le).not.toBeNull()
   })
 
   it('refuse un fichier qui n’est pas une image', async () => {

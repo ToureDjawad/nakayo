@@ -12,6 +12,7 @@ import org.junit.After
 import org.junit.Before
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -224,9 +225,10 @@ class ApiNakayoTest {
     fun `le code de parrainage part avec l'inscription, et le parrainage se lit (US-39)`() = runTest {
         repondre(201, """{"jeton":"jeton-session","utilisateur":$profil}""")
         val photo = Photo(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 1))
-        api.inscrire("jeton-inscription", formulaire.copy(codeParrainage = "K7Q2MP"), photo, photo)
+        api.inscrire("jeton-inscription", formulaire.copy(codeParrainage = "K7Q2MP", ancienneteGmail = "1_6_mois"), photo, photo)
         val corps = serveur.takeRequest().body.readUtf8()
         assertTrue(corps.contains("name=\"codeParrainage\"\r\nContent-Length: 6\r\n\r\nK7Q2MP"))
+        assertTrue(corps.contains("name=\"ancienneteGmail\"\r\nContent-Length: 8\r\n\r\n1_6_mois"))
 
         repondre(
             200,
@@ -294,12 +296,16 @@ class ApiNakayoTest {
     @Test
     fun `capture d'inscription en multipart, installation et rapport en JSON`() = runTest {
         stockage.ecrire("jeton-secret")
-        repeat(4) { repondre(200, """{"app":$app}""") }
+        repeat(5) { repondre(200, """{"app":$app}""") }
         assertIs<Resultat.Succes<AffectationTesteur>>(api.confirmerInscription("31", Photo(byteArrayOf(1, 2), "image/png")))
         val inscription = serveur.takeRequest()
         assertEquals("/api/testeurs/moi/apps/31/inscription", inscription.path)
         val corps = inscription.body.readUtf8()
         assertTrue("name=\"capture\"; filename=\"capture.png\"" in corps)
+        assertFalse("gmailPrincipal" in corps)
+
+        api.confirmerInscription("31", Photo(byteArrayOf(1, 2), "image/png"), gmailPrincipal = true)
+        assertTrue("name=\"gmailPrincipal\"\r\nContent-Length: 4\r\n\r\ntrue" in serveur.takeRequest().body.readUtf8())
 
         api.confirmerInstallation("31", "com.android.vending")
         val installation = serveur.takeRequest()

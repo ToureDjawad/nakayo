@@ -9,6 +9,7 @@ export const LIBELLES = {
   momo_doublon: 'Numéro Mobile Money unique',
   momo_titulaire: 'Titulaire Mobile Money identique au nom saisi',
   gmail_doublon: 'Gmail unique',
+  gmail_anciennete: 'Gmail utilisé sur le Play Store depuis plus de 6 mois',
   appareil_doublon: 'Appareil utilisé par aucun autre compte',
   photos_presentes: 'Pièce d’identité et selfie reçus',
 }
@@ -97,6 +98,20 @@ async function controlesTesteur(db, compte) {
       : resultat('gmail_doublon', 'ok'),
   )
 
+  // US-07 : Google repère les comptes testeurs neufs ou peu utilisés (ancienneté déclarée).
+  const ANCIENNETE = { moins_1_mois: 'moins d’un mois', '1_6_mois': '1 à 6 mois' }
+  liste.push(
+    !compte.anciennete_gmail
+      ? resultat('gmail_anciennete', 'indisponible', 'Ancienneté du Gmail non déclarée (compte créé avant ce contrôle).')
+      : compte.anciennete_gmail === 'plus_6_mois'
+        ? resultat('gmail_anciennete', 'ok')
+        : resultat(
+            'gmail_anciennete',
+            'alerte',
+            `Gmail récent : le testeur l’utilise depuis ${ANCIENNETE[compte.anciennete_gmail]}. Google peut écarter les comptes neufs.`,
+          ),
+  )
+
   const { rows: appareils } = await db.query(
     `SELECT u.statut, count(DISTINCT u.id)::int AS n
        FROM appareils a JOIN appareils b ON b.identifiant = a.identifiant AND b.utilisateur_id <> a.utilisateur_id
@@ -135,7 +150,7 @@ async function controlesTesteur(db, compte) {
 // Exécute tous les contrôles d'un compte, enregistre chaque résultat puis la date de fin.
 export async function executerControles(db, utilisateurId, { maintenant = () => new Date(), reseau = false, fetch } = {}) {
   const { rows } = await db.query(
-    `SELECT u.id, u.role, u.email, u.lien_fiche_developpeur, p.numero_momo, p.gmail_normalise
+    `SELECT u.id, u.role, u.email, u.lien_fiche_developpeur, p.numero_momo, p.gmail_normalise, p.anciennete_gmail
        FROM utilisateurs u LEFT JOIN profils_testeurs p ON p.utilisateur_id = u.id WHERE u.id = $1`,
     [utilisateurId],
   )

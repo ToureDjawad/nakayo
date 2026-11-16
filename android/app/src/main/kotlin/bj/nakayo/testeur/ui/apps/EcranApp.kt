@@ -43,6 +43,7 @@ import bj.nakayo.testeur.R
 import bj.nakayo.testeur.ui.composants.Bandeau
 import bj.nakayo.testeur.ui.composants.Bouton
 import bj.nakayo.testeur.ui.composants.Carte
+import bj.nakayo.testeur.ui.composants.CaseACocher
 import bj.nakayo.testeur.ui.composants.Ecran
 import bj.nakayo.testeur.ui.composants.EnTete
 import bj.nakayo.testeur.ui.composants.LigneIcone
@@ -70,10 +71,16 @@ class ActionsApp(
     val ecrireRapport: () -> Unit,
     val signalerBug: () -> Unit = {},
     val repondreTerrain: () -> Unit = {},
+    val confirmerGmailPrincipal: (Boolean) -> Unit = {},
+    // Vrai si la case du Gmail principal manque (le message d'erreur est alors affiché).
+    val gmailPrincipalManquant: () -> Boolean = { false },
 )
 
 fun AppModele.actions() =
-    ActionsApp(::retour, ::captureChoisie, ::afficherErreur, ::confirmerInstallation, ::ecrireRapport, ::signalerBug, ::repondreTerrain)
+    ActionsApp(
+        ::retour, ::captureChoisie, ::afficherErreur, ::confirmerInstallation, ::ecrireRapport, ::signalerBug, ::repondreTerrain,
+        ::confirmerGmailPrincipal, ::gmailPrincipalManquant,
+    )
 
 // Une app à tester (T08) : inscription au test, installation depuis le Play Store, test du jour.
 @Composable
@@ -116,8 +123,8 @@ fun EcranApp(etat: EtatApp, actions: ActionsApp, mesureAutorisee: Boolean = true
         if (a.installationConfirmee && !a.joursAcquis && !mesureAutorisee) BandeauMesure()
         if (a.installationConfirmee) Progression(a)
 
-        EtapeInscription(a, etat.envoiCapture, { a.lienInscription?.let(::ouvrir) }) {
-            selecteur.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        EtapeInscription(a, etat.envoiCapture, etat.gmailPrincipalConfirme, actions.confirmerGmailPrincipal, { a.lienInscription?.let(::ouvrir) }) {
+            if (!actions.gmailPrincipalManquant()) selecteur.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
         if (a.inscriptionConfirmee) EtapeInstallation(a, etat.verificationInstallation, { ouvrir(a.lienPlayStore) }, actions.confirmerInstallation)
         if (a.installationConfirmee) {
@@ -168,7 +175,14 @@ private fun Progression(a: AffectationTesteur) {
 }
 
 @Composable
-private fun EtapeInscription(a: AffectationTesteur, envoiEnCours: Boolean, surLien: () -> Unit, surCapture: () -> Unit) {
+private fun EtapeInscription(
+    a: AffectationTesteur,
+    envoiEnCours: Boolean,
+    gmailPrincipalConfirme: Boolean,
+    surGmailPrincipal: (Boolean) -> Unit,
+    surLien: () -> Unit,
+    surCapture: () -> Unit,
+) {
     Carte {
         Surtitre("Étape 1 · S'inscrire au test")
         if (a.inscriptionConfirmee) {
@@ -179,6 +193,14 @@ private fun EtapeInscription(a: AffectationTesteur, envoiEnCours: Boolean, surLi
             Paragraphe("1. Ouvrez le lien et touchez « Devenir testeur », avec le Gmail de ce téléphone.")
             Paragraphe("2. Faites une capture d'écran de la page « Vous êtes testeur ».")
             Paragraphe("3. Ajoutez cette capture ici.")
+            // US-07 : Google ne compte que le compte principal du Play Store (première campagne).
+            if (a.gmailPrincipalAConfirmer) {
+                CaseACocher(
+                    gmailPrincipalConfirme,
+                    surGmailPrincipal,
+                    "${a.gmail ?: "Mon Gmail Nakayo"} est le compte principal du Play Store de ce téléphone (celui affiché en haut du Play Store).",
+                )
+            }
             if (a.lienInscription != null) Bouton("Ouvrir le lien d'inscription", surLien, StyleBouton.Secondaire)
             Bouton("Ajouter la capture d'écran", surCapture, enCours = envoiEnCours, icone = R.drawable.ic_appareil_photo)
         }

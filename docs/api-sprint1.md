@@ -451,6 +451,7 @@ Liste indicative ; les codes sont libres, le front affiche `libelle` et `detail`
 | testeur | `momo_doublon` | Numéro Mobile Money unique |
 | testeur | `momo_titulaire` | Titulaire Mobile Money identique au nom saisi (si l'agrégateur le permet) |
 | testeur | `gmail_doublon` | Gmail unique |
+| testeur | `gmail_anciennete` | Gmail utilisé sur le Play Store depuis plus de 6 mois (US-07 : `alerte` si l'ancienneté déclarée est plus courte, `indisponible` pour un compte créé avant ce contrôle) |
 | testeur | `appareil_doublon` | Appareil utilisé par aucun autre compte (`appareil.identifiant`) |
 | testeur | `photos_presentes` | Pièce d'identité et selfie reçus |
 
@@ -750,3 +751,7 @@ Objet `ticket` : `{ "id": "12", "sujet": "...", "message": "...", "statut": "ouv
 - `POST /api/admin/tickets/:id/traitement` : `200 { "ticket": ticket + auteur }`. `409 statut_incompatible` (avec `statut`) si le message est déjà traité, `404` s'il n'existe pas.
 
 Migration `007_tickets_support.sql` : table `tickets_support` (`utilisateur_id`, `sujet`, `message`, `statut`, `cree_le`, `traite_le`, `traite_par`).
+
+## Complément US-07 : ancienneté du Gmail
+
+`POST /api/testeurs/inscription` (§4.3) demande le champ `ancienneteGmail` : depuis quand le testeur utilise ce Gmail sur le Play Store, `moins_1_mois`, `1_6_mois` ou `plus_6_mois` (`422` : `requis`, `valeur_inconnue`). Google repère les comptes testeurs neufs ou peu utilisés : l'admin voit le contrôle `gmail_anciennete` en alerte quand l'ancienneté déclarée est de moins de 6 mois (migration 025).
