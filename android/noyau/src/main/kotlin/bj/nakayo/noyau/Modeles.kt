@@ -180,9 +180,9 @@ data class AffectationTesteur(
     val retourDetailleAttendu: Boolean,
     val usageDuJourSecondes: Int = 0,
     val usageMinimumSecondes: Int = 120,
-    // US-33 : rapports de bugs avec captures (offres Pro et Lancement Afrique).
+    // US-33 : rapports de bugs avec captures (offres Pro et Plus).
     val rapportsDeBugs: Boolean = false,
-    // US-37 : questionnaire terrain (Lancement Afrique), absent pour les autres offres.
+    // US-37 : questionnaire terrain (Offre Plus), absent pour les autres offres.
     val questionnaireTerrain: QuestionnaireTerrain? = null,
 )
 

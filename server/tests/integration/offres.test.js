@@ -35,7 +35,7 @@ async function lancerCampagne() {
 }
 
 describe('offres publiques (§1)', () => {
-  it('Standard, Pro et Lancement Afrique, avec leurs prix, sans la paie des testeurs', async () => {
+  it('Standard, Pro et Plus, avec leurs prix, sans la paie des testeurs', async () => {
     const { offres } = (await request(test.app).get('/api/offres')).body
     expect(offres.map((o) => o.code)).toEqual(['standard', 'pro', 'afrique'])
     expect(offres[1]).toMatchObject({

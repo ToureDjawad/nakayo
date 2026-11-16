@@ -221,7 +221,7 @@ function LigneTerrain({ terme, children }) {
   )
 }
 
-// US-37 : questionnaire terrain de l'offre Lancement Afrique (réseau, petits téléphones, langue).
+// US-37 : questionnaire terrain de l'Offre Plus (réseau, petits téléphones, langue).
 function TestTerrain({ terrain: t }) {
   return (
     <section aria-labelledby="test-terrain" className="mt-6 rounded-carte border border-trait bg-white p-4 sm:p-5">

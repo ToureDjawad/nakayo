@@ -45,7 +45,7 @@ data class EtatBug(
     val erreur: String? = null,
 )
 
-// US-33 : rapport de bug avec captures d'écran (offres Pro et Lancement Afrique).
+// US-33 : rapport de bug avec captures d'écran (offres Pro et Plus).
 class BugModele(
     private val service: ServiceTesteur,
     private val portee: CoroutineScope,

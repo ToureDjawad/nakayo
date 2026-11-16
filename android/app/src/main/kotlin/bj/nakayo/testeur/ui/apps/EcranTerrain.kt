@@ -45,7 +45,7 @@ private fun Question(titre: String, erreur: String?, aide: String? = null, conte
     }
 }
 
-// US-37 : questionnaire terrain (Lancement Afrique) : réseau, téléphone et langue.
+// US-37 : questionnaire terrain (Offre Plus) : réseau, téléphone et langue.
 @Composable
 fun EcranTerrain(etat: EtatTerrain, nomApp: String, actions: ActionsTerrain) {
     val champ = { cle: String -> etat.erreurs[cle]?.let { MessagesChamps.terrain(cle, it) } }

@@ -27,7 +27,7 @@ const MESSAGES_ERREUR = {
   paiement_indisponible: 'Le paiement en ligne n’est pas encore ouvert. Votre app est conservée : nous vous prévenons par email dès l’ouverture.',
   compte_non_valide: 'Votre compte doit être validé par l’équipe avant de payer une offre.',
   deja_dans_cette_offre: 'Votre app est déjà en Offre Pro.',
-  devis_requis: 'Le prix de l’Offre Lancement Afrique dépend de votre besoin : demandez d’abord un devis.',
+  devis_requis: 'Le prix de l’Offre Plus dépend de votre besoin : demandez d’abord un devis.',
   campagne_terminee: 'La campagne de cette app est terminée : elle ne peut plus changer d’offre.',
   fournisseur_indisponible: 'Le service de paiement ne répond pas pour le moment. Aucun montant n’a été prélevé : réessayez dans quelques minutes.',
 }
@@ -168,7 +168,7 @@ function useAppEtOffres(id) {
   return useChargement(
     async (signal) => {
       const [{ app }, { offres }] = await Promise.all([lireApp(id, { signal }), lireOffres({ signal })])
-      // US-37 : le prix de Lancement Afrique vient du devis de l'app.
+      // US-37 : le prix de l’Offre Plus vient du devis de l'app.
       const devis = app.statut === 'brouillon' && offres.some((o) => o.surDevis) ? (await lireDevis(id, { signal })).devis : null
       return { app, offres, devis }
     },
@@ -176,7 +176,7 @@ function useAppEtOffres(id) {
   )
 }
 
-// Offres payables : Lancement Afrique seulement avec un devis proposé, à son prix.
+// Offres payables : L’Offre Plus seulement avec un devis proposé, à son prix.
 function offresPayables(offres, devis) {
   return offres
     .filter((o) => !o.surDevis || devis?.statut === 'propose')
@@ -191,7 +191,7 @@ function offresPayables(offres, devis) {
     )
 }
 
-// Lancement Afrique sans devis proposé : lien vers la demande de devis.
+// Offre Plus sans devis proposé : lien vers la demande de devis.
 function NoteDevis({ app, offre, devis }) {
   if (!offre || devis?.statut === 'propose') return null
   const lien = `/mon-compte/apps/${app.id}/devis`
@@ -275,7 +275,7 @@ function Montee({ id, utilisateur }) {
   let blocage = null
   if (!pro) blocage = 'L’Offre Pro n’est pas encore ouverte.'
   else if (app.offre === 'pro') blocage = 'Votre app est déjà en Offre Pro.'
-  else if (app.offre === 'afrique') blocage = 'Votre app est en Offre Lancement Afrique : elle a déjà tout ce que l’Offre Pro apporte.'
+  else if (app.offre === 'afrique') blocage = 'Votre app est en Offre Plus : elle a déjà tout ce que l’Offre Pro apporte.'
   else if (app.statut === 'refusee') blocage = 'Cette app a été refusée : elle ne peut pas changer d’offre.'
   else if (app.campagne?.statut === 'terminee') blocage = 'La campagne de cette app est terminée : elle ne peut plus changer d’offre.'
 

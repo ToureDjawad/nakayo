@@ -2,7 +2,7 @@
 
 Suite de `docs/api-offres.md`. Mêmes conventions : JSON, identifiants en chaînes, dates ISO 8601 en UTC, erreurs `{ "erreur": { "code", "message", "champs"? } }`.
 
-Les rapports de bugs sont réservés aux apps en Offre Pro ou Lancement Afrique. Le testeur les envoie depuis l'app Android, à tout moment de sa campagne. Le développeur accepte ou refuse chaque bug (US-34). Un bug accepté rapporte un bonus au testeur.
+Les rapports de bugs sont réservés aux apps en Offre Pro ou Plus. Le testeur les envoie depuis l'app Android, à tout moment de sa campagne. Le développeur accepte ou refuse chaque bug (US-34). Un bug accepté rapporte un bonus au testeur.
 
 ## 1. Testeur (app Android)
 
@@ -96,7 +96,7 @@ Tous les bugs de l'app, pour un tableur ou un outil de suivi. Format : UTF-8 ave
 - `/mon-compte/apps/:id/bugs` :
   - résumé, filtre par gravité, case « Seulement les bugs à examiner » et export CSV ;
   - chaque bug avec ses captures, puis « Accepter » ou « Refuser » (motif demandé).
-- Accès depuis le suivi de la campagne (section « Bugs signalés ») et depuis la carte de l'app (offres Pro et Lancement Afrique).
+- Accès depuis le suivi de la campagne (section « Bugs signalés ») et depuis la carte de l'app (offres Pro et Plus).
 - En Offre Standard, la page propose de passer à l'Offre Pro.
 
 ## 3. Bonus des bugs acceptés

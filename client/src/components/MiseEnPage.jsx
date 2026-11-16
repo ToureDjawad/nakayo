@@ -110,7 +110,7 @@ const LIENS_ADMIN = [
   { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
   { to: '/admin/apps', libelle: 'Apps à vérifier', icone: 'app' },
   { to: '/admin/campagnes', libelle: 'Campagnes', icone: 'campagne' },
-  { to: '/admin/devis', libelle: 'Devis Afrique', icone: 'devis' },
+  { to: '/admin/devis', libelle: 'Devis Offre Plus', icone: 'devis' },
   { to: '/admin/messages', libelle: 'Messages reçus', icone: 'boite' },
   { to: '/admin/support', libelle: 'Contact du support', icone: 'message' },
 ]

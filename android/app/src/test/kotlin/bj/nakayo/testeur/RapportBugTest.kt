@@ -21,7 +21,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-// US-33 côté Android : rapport de bug avec captures (offres Pro et Lancement Afrique).
+// US-33 côté Android : rapport de bug avec captures (offres Pro et Plus).
 class RapportBugTest {
     private val service = ServiceTesteurFactice("jeton").apply {
         reponseMoi = { Resultat.Succes(ServiceTesteurFactice.profil(statut = "valide")) }

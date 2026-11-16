@@ -19,11 +19,11 @@ describe('Accueil (maquette D01)', () => {
     expect(screen.getByText(/ne vous demande jamais l’accès à votre Play Console/)).toBeInTheDocument()
   })
 
-  it('les trois offres sont ouvertes : Standard, Pro et Lancement Afrique sur devis', () => {
+  it('les trois offres sont ouvertes : Standard, Pro et Plus sur devis', () => {
     simulerFetch()
     rendreA('/')
     const section = screen.getByRole('region', { name: 'Un prix par app, payé une fois' })
-    const offres = within(section).getAllByRole('listitem', { name: /Standard|Pro|Lancement Afrique/ })
+    const offres = within(section).getAllByRole('listitem', { name: /Standard|Pro|Plus/ })
     expect(offres.map((o) => o.getAttribute('aria-labelledby'))).toEqual(['offre-standard', 'offre-pro', 'offre-afrique'])
     expect(within(offres[0]).getByText(/17\s400 FCFA/)).toBeInTheDocument()
     expect(within(offres[0]).getByRole('link', { name: 'Choisir Standard' })).toHaveAttribute('href', '/inscription')

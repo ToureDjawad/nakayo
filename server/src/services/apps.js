@@ -24,7 +24,7 @@ export function versAppApi(l) {
     statut: l.statut,
     // Offre payée (US-32, US-37) : « standard », « pro » ou « afrique ».
     offre: l.offre,
-    // Devis de l'offre Lancement Afrique (US-37) : « demande », « propose » ou « refuse », ou null.
+    // Devis de l'Offre Plus (US-37) : « demande », « propose » ou « refuse », ou null.
     devis: l.devis_statut ? { statut: l.devis_statut } : null,
     // Motif donné par l'équipe quand l'app est refusée (US-14).
     motifRefus: l.motif_refus ?? null,

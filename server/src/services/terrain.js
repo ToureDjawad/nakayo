@@ -2,9 +2,9 @@ import { ErreurHttp } from '../lib/erreurs.js'
 import { estEntreeDeGamme, offre } from '../lib/offres.js'
 import { JOUR_TERRAIN, TENUES } from '../lib/terrain.js'
 
-// Questionnaire terrain de l'offre Lancement Afrique (US-37, docs/api-offres.md §4.5).
+// Questionnaire terrain de l'Offre Plus (US-37, docs/api-offres.md §4.5).
 
-// État du questionnaire pour l'app Android : null hors Lancement Afrique.
+// État du questionnaire pour l'app Android : null hors Offre Plus.
 export function etatTerrain(affectation, jour) {
   if (!offre(affectation.offre).questionnaireTerrain) return null
   const envoye = Boolean(affectation.terrain_envoye_le)
@@ -18,7 +18,7 @@ export function etatTerrain(affectation, jour) {
 export async function enregistrerRetourTerrain(db, { affectation, jour, valeurs, maintenant }) {
   const etat = etatTerrain(affectation, jour)
   if (!etat) {
-    throw new ErreurHttp(403, 'offre_sans_questionnaire_terrain', { message: 'Le questionnaire terrain est réservé aux apps en Lancement Afrique.' })
+    throw new ErreurHttp(403, 'offre_sans_questionnaire_terrain', { message: 'Le questionnaire terrain est réservé aux apps en Offre Plus.' })
   }
   if (etat.envoye) throw new ErreurHttp(409, 'deja_envoye', { message: 'Vous avez déjà répondu au questionnaire pour cette app.' })
   if (affectation.campagne_statut !== 'en_cours' || affectation.statut !== 'active') {

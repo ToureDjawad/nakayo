@@ -12,7 +12,7 @@ import { useFormulaire } from "../../lib/useFormulaire.js";
 import { LANGUES_DEVIS, nomsDe, PAYS_DEVIS } from "../../lib/devis.js";
 import { AccesAdmin } from "./AccesAdmin.jsx";
 
-const TITRE = "Devis Lancement Afrique";
+const TITRE = "Devis Offre Plus";
 const ONGLETS = [
   { statut: "demande", libelle: "À étudier" },
   { statut: "propose", libelle: "Proposés" },
@@ -393,7 +393,7 @@ function ListeDevis() {
   );
 }
 
-// /admin/devis : devis de l'offre Lancement Afrique (US-37).
+// /admin/devis : devis de l'Offre Plus (US-37).
 export default function DevisAfrique() {
   return (
     <AccesAdmin titre={TITRE}>

@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
-// US-37 côté Android : questionnaire terrain de l'offre Lancement Afrique.
+// US-37 côté Android : questionnaire terrain de l'Offre Plus.
 class QuestionnaireTerrainTest {
     private val service = ServiceTesteurFactice("jeton").apply {
         reponseMoi = { Resultat.Succes(ServiceTesteurFactice.profil(statut = "valide")) }
@@ -35,7 +35,7 @@ class QuestionnaireTerrainTest {
     )
 
     @Test
-    fun `le questionnaire ne s'ouvre pas avant le 7e jour ni hors Lancement Afrique`() = runTest {
+    fun `le questionnaire ne s'ouvre pas avant le 7e jour ni hors Offre Plus`() = runTest {
         val nav = navigation()
         advanceUntilIdle()
         nav.allerApp(affectation(), null)

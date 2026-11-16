@@ -94,7 +94,7 @@ export async function telechargerBugsCsv(id) {
   return reponse.blob()
 }
 
-// Devis de l'offre Lancement Afrique (docs/api-offres.md §4, US-37).
+// Devis de l'Offre Plus (docs/api-offres.md §4, US-37).
 export function lireDevis(id, { signal } = {}) {
   return requete(`/apps/${encodeURIComponent(id)}/devis`, { signal })
 }

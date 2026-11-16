@@ -174,7 +174,7 @@ class ApiNakayo(
     override suspend fun mesBugs(affectationId: String): Resultat<List<BugSignale>> =
         appeler(requete(cheminApp(affectationId, "bugs")).get(), ReponseBugs.serializer()).map { it.bugs }
 
-    // docs/api-offres.md §4.5 Questionnaire terrain (Lancement Afrique).
+    // docs/api-offres.md §4.5 Questionnaire terrain (Offre Plus).
     override suspend fun envoyerRetourTerrain(affectationId: String, retour: RetourTerrain): Resultat<AffectationTesteur> =
         appeler(requete(cheminApp(affectationId, "terrain")).post(json(RetourTerrain.serializer(), retour)), ReponseApp.serializer())
             .map { it.app }

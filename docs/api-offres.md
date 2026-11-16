@@ -1,14 +1,14 @@
-# Offres par app · Standard, Pro et Lancement Afrique (US-32, US-37)
+# Offres par app · Standard, Pro et Plus (US-32, US-37)
 
 Suite de `docs/api-sprint2.md` §2 (paiement de l'offre) et de `docs/fedapay.md`. Mêmes conventions : JSON, identifiants en chaînes, montants dans la plus petite unité (centimes pour `USD`, francs pour `XOF`), erreurs `{ "erreur": { "code", "message", "champs"? } }`.
 
-Chaque app a une offre (`apps.offre` : `standard`, `pro` ou `afrique`). Le développeur la choisit au paiement. Il peut aussi passer de Standard à Pro plus tard, en payant la différence. Lancement Afrique se paie au prix d'un devis (§4). Les prix suivent le modèle économique (1 $ = 600 FCFA).
+Chaque app a une offre (`apps.offre` : `standard`, `pro` ou `afrique`). Le développeur la choisit au paiement. Il peut aussi passer de Standard à Pro plus tard, en payant la différence. L’Offre Plus se paie au prix d'un devis (§4). Les prix suivent le modèle économique (1 $ = 600 FCFA).
 
 | Offre | Carte | Mobile Money | Paie d'un testeur | Choix des testeurs |
 | --- | --- | --- | --- | --- |
 | Standard | 29 $ | 17 400 FCFA | 500 FCFA | tous les testeurs valides |
 | Pro | 59 $ | 35 400 FCFA | 800 FCFA | testeurs confirmés d'abord |
-| Lancement Afrique | dès 99 $, sur devis | dès 59 400 FCFA | 1 500 FCFA | 20 testeurs, confirmés d'abord |
+| Offre Plus | dès 99 $, sur devis | dès 59 400 FCFA | 1 500 FCFA | 20 testeurs, confirmés d'abord |
 
 ## 1. Offres et paiement
 
@@ -23,7 +23,7 @@ Public. Renvoie les offres ouvertes, sans les règles internes (paie et choix de
   { "code": "pro", "nom": "Offre Pro", "description": "…", "garantie": "…",
     "prix": { "carte": { "montant": 5900, "devise": "USD" }, "mobile_money": { "montant": 35400, "devise": "XOF" } },
     "monteeEnGamme": { "prix": { "carte": { "montant": 3000, "devise": "USD" }, "mobile_money": { "montant": 18000, "devise": "XOF" } } } },
-  { "code": "afrique", "nom": "Offre Lancement Afrique", "description": "…", "garantie": "…", "surDevis": true, "testeurs": 20,
+  { "code": "afrique", "nom": "Offre Plus", "description": "…", "garantie": "…", "surDevis": true, "testeurs": 20,
     "prix": { "carte": { "montant": 9900, "devise": "USD" }, "mobile_money": { "montant": 59400, "devise": "XOF" } } }
 ] }
 ```
@@ -60,10 +60,10 @@ Erreurs `409` :
 | Code | Cas |
 | --- | --- |
 | `statut_incompatible` | app en brouillon (choisir Pro au paiement) ou refusée |
-| `deja_dans_cette_offre` | app déjà en Pro ou en Lancement Afrique |
+| `deja_dans_cette_offre` | app déjà en Pro ou en Offre Plus |
 | `campagne_terminee` | la campagne est terminée : plus rien à améliorer |
 
-`422` : `offre` vaut autre chose que `pro` (on ne monte pas vers Lancement Afrique : elle se choisit au paiement, sur devis).
+`422` : `offre` vaut autre chose que `pro` (on ne monte pas vers l’Offre Plus : elle se choisit au paiement, sur devis).
 
 ### 2.2 Base de données (migration 018)
 
@@ -82,7 +82,7 @@ Erreurs `409` :
   - L'avancement (`docs/api-sprint4.md` §1) donne `resume.appareilsEntreeDeGamme` et `entreeDeGamme` sur chaque ligne de `appareils`.
   - Le rapport de fin (web, PDF et brouillon du formulaire Google) indique les modèles utilisés et le nombre de téléphones d'entrée de gamme.
 
-## 4. Lancement Afrique sur devis (US-37)
+## 4. Offre Plus sur devis (US-37)
 
 ### 4.1 Besoin du développeur
 
@@ -126,9 +126,9 @@ Le développeur reçoit un email dans les deux cas, avec le lien vers `/mon-comp
 
 ### 4.5 Questionnaire terrain
 
-Chaque testeur d'une app en Lancement Afrique répond une fois, à partir du 7e jour, pendant la campagne.
+Chaque testeur d'une app en Offre Plus répond une fois, à partir du 7e jour, pendant la campagne.
 
-- L'app à tester (`docs/api-sprint3.md` §2.1) porte `questionnaireTerrain` : `null` hors Lancement Afrique, sinon `{ "envoye": false, "ouvert": true, "ouvertLe": 7 }`.
+- L'app à tester (`docs/api-sprint3.md` §2.1) porte `questionnaireTerrain` : `null` hors Offre Plus, sinon `{ "envoye": false, "ouvert": true, "ouvertLe": 7 }`.
 - `POST /api/testeurs/moi/apps/:id/terrain` :
 
 ```json
@@ -149,7 +149,7 @@ Base de données : migrations 021 (`devis`) et 022 (`retours_terrain`).
 
 ### 4.6 Rapport de fin
 
-Pour Lancement Afrique, `bilan.terrain` (sinon `null`) résume les réponses, sans nommer les testeurs :
+Pour l’Offre Plus, `bilan.terrain` (sinon `null`) résume les réponses, sans nommer les testeurs :
 
 ```json
 { "reponses": 3, "reseau": { "fluide": 1, "lent": 1, "inutilisable": 1 },
@@ -164,7 +164,7 @@ Pour Lancement Afrique, `bilan.terrain` (sinon `null`) résume les réponses, sa
 
 ## 5. Web
 
-- `/mon-compte/apps/:id/paiement` : choix de l'offre, puis du moyen de paiement ; `?offre=pro` présélectionne Pro, `?offre=afrique` le devis proposé. Sans devis proposé, Lancement Afrique n'est pas proposée : un lien mène à la demande de devis.
+- `/mon-compte/apps/:id/paiement` : choix de l'offre, puis du moyen de paiement ; `?offre=pro` présélectionne Pro, `?offre=afrique` le devis proposé. Sans devis proposé, l’Offre Plus n'est pas proposée : un lien mène à la demande de devis.
 - `/mon-compte/apps/:id/devis` : besoin du développeur et réponse de l'équipe, avec le lien de paiement.
 - `/admin/devis` : file des devis, proposition d'un prix ou refus.
 - `/mon-compte/apps/:id/montee-en-gamme` : paiement de la différence ; le lien apparaît sur la carte de l'app tant qu'elle est en Standard et que sa campagne n'est pas terminée.

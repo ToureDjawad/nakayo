@@ -32,7 +32,7 @@ data class EtatTerrain(
     val erreur: String? = null,
 )
 
-// US-37 : questionnaire terrain de l'offre Lancement Afrique, une fois par app à partir du 7e jour.
+// US-37 : questionnaire terrain de l'Offre Plus, une fois par app à partir du 7e jour.
 class TerrainModele(
     private val service: ServiceTesteur,
     private val portee: CoroutineScope,

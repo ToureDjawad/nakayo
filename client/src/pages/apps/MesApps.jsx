@@ -13,14 +13,14 @@ const STATUTS = {
   refusee: ['Refusée', 'bg-erreur-clair text-erreur'],
 }
 
-const NOMS_OFFRES = { standard: 'Offre Standard', pro: 'Offre Pro', afrique: 'Offre Lancement Afrique' }
+const NOMS_OFFRES = { standard: 'Offre Standard', pro: 'Offre Pro', afrique: 'Offre Plus' }
 
-// Lien vers le devis Lancement Afrique (US-37), selon où il en est.
+// Lien vers le devis Offre Plus (US-37), selon où il en est.
 const LIENS_DEVIS = {
-  aucun: 'Devis Lancement Afrique',
-  demande: 'Devis Lancement Afrique à l’étude',
-  propose: 'Devis Lancement Afrique reçu',
-  refuse: 'Réponse au devis Lancement Afrique',
+  aucun: 'Devis Offre Plus',
+  demande: 'Devis Offre Plus à l’étude',
+  propose: 'Devis Offre Plus reçu',
+  refuse: 'Réponse au devis Offre Plus',
 }
 
 const lienBoutonPetit =

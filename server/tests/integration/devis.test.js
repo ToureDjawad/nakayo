@@ -4,7 +4,7 @@ import { APP, cookieSession, creerTesteursValides, creerUtilisateur } from '../f
 import { creerAppTest, pool, viderBase } from '../outils.js'
 import { verifierJour } from '../../src/services/verificationQuotidienne.js'
 
-// docs/api-offres.md §4 : offre Lancement Afrique sur devis (US-37).
+// docs/api-offres.md §4 : Offre Plus sur devis (US-37).
 const TOUT = ['testeurs_ajoutes', 'fiche_complete', 'version_publiee', 'pays_coches', 'pas_de_test_interne', 'mises_a_jour_prevues']
 const JOUR = 24 * 60 * 60 * 1000
 const BESOIN = {
@@ -36,7 +36,7 @@ beforeEach(async () => {
 })
 
 describe('offre publique', () => {
-  it('Lancement Afrique est ouverte, sur devis, avec son prix de départ et 20 testeurs', async () => {
+  it('L’Offre Plus est ouverte, sur devis, avec son prix de départ et 20 testeurs', async () => {
     const { offres } = (await request(test.app).get('/api/offres')).body
     const afrique = offres.find((o) => o.code === 'afrique')
     expect(afrique).toMatchObject({
@@ -75,13 +75,13 @@ describe('besoin du développeur (§4.1)', () => {
 })
 
 describe('réponse de l’équipe et paiement (§4.2, §4.3)', () => {
-  it('sans devis proposé, Lancement Afrique ne se paie pas', async () => {
+  it('sans devis proposé, l’Offre Plus ne se paie pas', async () => {
     const r = await payer({ offre: 'afrique', moyen: 'carte' })
     expect(r.status).toBe(409)
     expect(r.body.erreur.code).toBe('devis_requis')
   })
 
-  it('l’équipe propose un prix, le développeur le paie et l’app passe en Lancement Afrique', async () => {
+  it('l’équipe propose un prix, le développeur le paie et l’app passe en Offre Plus', async () => {
     const id = (await demander()).body.devis.id
     expect((await proposer(id, { prixCarte: 5000, prixMobileMoney: 59400 })).body.erreur.champs).toEqual({ prixCarte: 'trop_petit' })
 
@@ -89,7 +89,7 @@ describe('réponse de l’équipe et paiement (§4.2, §4.3)', () => {
     expect(r.status).toBe(200)
     expect(r.body.devis).toMatchObject({ statut: 'propose', prix: { carte: { montant: 14900 }, mobile_money: { montant: 89400 } } })
     const courriel = test.emails.dernierPour('awa@studio.bj')
-    expect(courriel.sujet).toBe('Votre devis Lancement Afrique pour « Marché Facile »')
+    expect(courriel.sujet).toBe('Votre devis Offre Plus pour « Marché Facile »')
     expect(courriel.texte).toContain('149,00 $ US')
     expect(courriel.texte).toContain(`/mon-compte/apps/${appId}/devis`)
     expect((await proposer(id, { prixCarte: 9900, prixMobileMoney: 59400 })).body.erreur.code).toBe('deja_repondu')
@@ -117,14 +117,14 @@ describe('réponse de l’équipe et paiement (§4.2, §4.3)', () => {
     expect(corrige.body.devis).toMatchObject({ id, statut: 'demande', pays: ['BJ'], message: null })
   })
 
-  it('une montée en gamme ne peut pas viser Lancement Afrique', async () => {
+  it('une montée en gamme ne peut pas viser l’Offre Plus', async () => {
     const r = await request(test.app).post(`/api/apps/${appId}/montee-en-gamme`).set('Cookie', dev).send({ offre: 'afrique', moyen: 'carte' })
     expect(r.status).toBe(422)
     expect(r.body.erreur.champs).toEqual({ offre: 'valeur_inconnue' })
   })
 })
 
-describe('campagne Lancement Afrique (§4.4)', () => {
+describe('campagne Offre Plus (§4.4)', () => {
   it('affecte 20 testeurs et les paie 1 500 FCFA à la clôture', async () => {
     await creerTesteursValides(24)
     const id = (await demander()).body.devis.id
@@ -210,7 +210,7 @@ describe('questionnaire terrain et rapport de fin (§4.5)', () => {
     expect(pdf.status).toBe(200)
   })
 
-  it('hors Lancement Afrique, ni questionnaire ni section terrain', async () => {
+  it('hors Offre Plus, ni questionnaire ni section terrain', async () => {
     const [t] = await creerTesteursValides(15)
     await simuler((await payer({ offre: 'pro', moyen: 'carte' })).body.paiement.reference)
     await request(test.app).post(`/api/admin/apps/${appId}/validation`).set('Cookie', admin)
