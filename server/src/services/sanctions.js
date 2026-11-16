@@ -21,6 +21,8 @@ export const LIBELLES_ACTIONS = {
   versement_relance: 'Versement relancé',
   alerte_confirmee: 'Alerte de fraude confirmée',
   alerte_ecartee: 'Alerte de fraude écartée',
+  garantie_acceptee: 'Garantie acceptée',
+  garantie_refusee: 'Garantie refusée',
 }
 
 export async function journaliser(db, { adminId, action, cible, cibleId, detail = null, maintenant }) {

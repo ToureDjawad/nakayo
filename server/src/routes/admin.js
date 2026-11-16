@@ -20,6 +20,7 @@ import { listerVersementsAdmin, relancerVersement, traiterVersements } from '../
 import { lireTableauDeBord } from '../services/tableauDeBord.js'
 import { transaction } from './auth.js'
 import { journaliser, lireJournal, messageSanction, sanctionner, SANCTIONS } from '../services/sanctions.js'
+import { deciderGarantie, listerGaranties, messageDecisionGarantie, STATUTS_GARANTIE } from '../services/garanties.js'
 import { validerMessage, validerPrix } from '../lib/devis.js'
 import { OFFRE_AFRIQUE } from '../lib/offres.js'
 import { lireDevisAdmin, listerDevisAdmin, messageDevis, repondreDevis, STATUTS_DEVIS, versDevisApi } from '../services/devis.js'
@@ -431,6 +432,40 @@ export function routesAdmin(deps) {
       journal.error(erreur)
     }
     res.json({ compte: await lireCompte(pool, idCompte(req)) })
+  })
+
+  // US-30 (docs/garantie.md) : demandes de garantie après un refus de Google.
+  routeur.get('/garanties', async (req, res) => {
+    const statut = texte(req.query.statut) || 'en_attente'
+    const page = entier(req.query.page, 1)
+    exigerChamps({
+      statut: STATUTS_GARANTIE.includes(statut) ? null : 'valeur_inconnue',
+      page: !Number.isInteger(page) || page < 1 || page > 100000 ? 'format_invalide' : null,
+    })
+    res.json(await listerGaranties(pool, { statut, page }))
+  })
+
+  routeur.post('/garanties/:id/decision', async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Demande introuvable.')
+    const { decision } = corps(req)
+    const motif = texte(corps(req).motif) || null
+    exigerChamps({
+      decision: !decision ? 'requis' : ['acceptee', 'refusee'].includes(decision) ? null : 'valeur_inconnue',
+      motif: decision === 'refusee' ? validerMotifRefus(motif) : null,
+    })
+    const instant = maintenant()
+    const adminId = req.session.utilisateur.id
+    const { garantie, paiement } = await transaction(pool, async (client) => {
+      const resultat = await deciderGarantie(client, { id: req.params.id, decision, motif, adminId, maintenant: instant })
+      await journaliser(client, { adminId, action: `garantie_${decision}`, cible: 'app', cibleId: resultat.garantie.app.id, detail: motif, maintenant: instant })
+      return resultat
+    })
+    try {
+      await deps.emails.envoyer(messageDecisionGarantie(garantie, { paiement, clientUrl: config.clientUrl }))
+    } catch (erreur) {
+      journal.error(erreur)
+    }
+    res.json({ garantie })
   })
 
   routeur.get('/journal', async (req, res) => {

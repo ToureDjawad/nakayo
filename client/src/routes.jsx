@@ -3,6 +3,7 @@ import AppsAVerifier from './pages/admin/AppsAVerifier.jsx'
 import Campagnes from './pages/admin/Campagnes.jsx'
 import AlertesFraude from './pages/admin/AlertesFraude.jsx'
 import JournalAdmin from './pages/admin/JournalAdmin.jsx'
+import Garanties from './pages/admin/Garanties.jsx'
 import DevisAfrique from './pages/admin/DevisAfrique.jsx'
 import TableauDeBord from './pages/admin/TableauDeBord.jsx'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
@@ -58,6 +59,7 @@ export const routes = [
   { path: '/admin/campagnes', element: <Campagnes /> },
   { path: '/admin/alertes', element: <AlertesFraude /> },
   { path: '/admin/journal', element: <JournalAdmin /> },
+  { path: '/admin/garanties', element: <Garanties /> },
   { path: '/admin/devis', element: <DevisAfrique /> },
   { path: '/admin/messages', element: <MessagesSupport /> },
   { path: '/admin/support', element: <ContactSupport /> },

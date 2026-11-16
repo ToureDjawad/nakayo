@@ -19,6 +19,7 @@ import { cheminAbsolu } from '../services/documents.js'
 import { lireBesoin } from '../lib/devis.js'
 import { enregistrerBesoin, lireDevisApp, prixDevis, versDevisApi } from '../services/devis.js'
 import { transaction } from './auth.js'
+import { CHOIX, demanderGarantie, lireGarantie, messageNouvelleGarantie, MOTIFS_GOOGLE, versGarantie } from '../services/garanties.js'
 
 const DECISIONS_GOOGLE = ['acceptee', 'refusee']
 
@@ -301,6 +302,36 @@ export function routesApps(deps) {
     })
     const decisionGoogle = await enregistrerDecision(pool, { appId: id, developpeurId: developpeurId(req), decision, le: le || null, maintenant: instant })
     res.json({ decisionGoogle })
+  })
+
+  // US-30 (docs/garantie.md) : garantie si Google refuse l'accès à la production.
+  routeur.get('/:id/garantie', async (req, res) => {
+    const id = idApp(req)
+    await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
+    res.json(await lireGarantie(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() }))
+  })
+
+  routeur.post('/:id/garantie', exigerCompteValide, async (req, res) => {
+    const id = idApp(req)
+    const donnees = corps(req)
+    const emailGoogle = texte(donnees.emailGoogle)
+    exigerChamps({
+      choix: !donnees.choix ? 'requis' : CHOIX[donnees.choix] ? null : 'valeur_inconnue',
+      motifGoogle: !donnees.motifGoogle ? 'requis' : MOTIFS_GOOGLE[donnees.motifGoogle] ? null : 'valeur_inconnue',
+      emailGoogle: !emailGoogle ? 'requis' : emailGoogle.length < 30 ? 'trop_court' : emailGoogle.length > 5000 ? 'trop_long' : null,
+      engagement: donnees.engagement === true ? null : 'doit_etre_accepte',
+    })
+    const app = await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
+    const garantie = await transaction(pool, (client) =>
+      demanderGarantie(client, { appId: id, developpeurId: developpeurId(req), choix: donnees.choix, motifGoogle: donnees.motifGoogle, emailGoogle, maintenant: maintenant() }),
+    )
+    try {
+      const { rows } = await pool.query("SELECT email FROM utilisateurs WHERE role = 'admin' AND statut = 'valide' ORDER BY id")
+      for (const { email } of rows) await emails.envoyer(messageNouvelleGarantie({ email, app: app.nom, clientUrl: config.clientUrl }))
+    } catch (erreur) {
+      journal.error(erreur)
+    }
+    res.status(201).json({ garantie: versGarantie(garantie), possible: false, jusquau: null, raison: 'deja_demandee' })
   })
 
   // Méthode de secours d'US-13 : la liste des Gmail des testeurs, à coller dans la Play Console.

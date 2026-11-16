@@ -7,6 +7,7 @@ import { Champ, ChampTexte, ChoixRadio } from '../../components/Champ.jsx'
 import { BoutonCopier } from '../../components/Copier.jsx'
 import { jourLong } from '../../lib/campagnes.js'
 import { messageErreurGlobale } from '../../lib/messages.js'
+import { Garantie } from './Garantie.jsx'
 
 const A_COMPLETER = '[À compléter'
 const DECISIONS = [
@@ -268,7 +269,7 @@ function TestTerrain({ terrain: t }) {
   )
 }
 
-export function RapportFinal({ appId }) {
+export function RapportFinal({ appId, onCampagneDemarree }) {
   const [essai, setEssai] = useState(0)
   const [etat, setEtat] = useState({ rapport: null, erreur: null })
 
@@ -321,6 +322,7 @@ export function RapportFinal({ appId }) {
         {rapport.bilan?.terrain && <TestTerrain terrain={rapport.bilan.terrain} />}
         <Brouillon appId={appId} brouillon={rapport.brouillon} />
         <DecisionGoogle appId={appId} decisionInitiale={rapport.decisionGoogle} />
+        <Garantie appId={appId} onCampagneDemarree={onCampagneDemarree} />
       </>
     )
   }
