@@ -322,6 +322,8 @@ export function routesAdmin(deps) {
     const { testeurId } = await transaction(pool, (client) =>
       remplacerTesteur(client, { campagneId: id, affectationId: req.params.affectationId, motif, maintenant: instant }),
     )
+    // US-43 : le testeur remplacé quitte le groupe, le remplaçant y entre.
+    deps.synchroGroupes.lancer()
     const campagne = await lireCampagne(pool, id, { maintenant: instant, vue: 'admin' })
     try {
       for (const telephone of await telephonesTesteurs(pool, id, [testeurId])) {
