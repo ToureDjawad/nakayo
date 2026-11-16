@@ -142,7 +142,9 @@ describe('rapport de fin (US-36)', () => {
     let planificateur = demarrerVerificationNocturne(deps())
     await planificateur.premier
     planificateur.arreter()
-    expect(test.emails.envoyes.filter((m) => m.a === 'awa@studio.bj')).toEqual([])
+    // Seul l'email du rapport compte ici (les emails d'étapes d'US-26 sont testés à part).
+    const rapportPret = () => test.emails.envoyes.filter((m) => m.a === 'awa@studio.bj' && m.sujet.startsWith('Votre rapport de fin'))
+    expect(rapportPret()).toEqual([])
 
     test.avancer(JOUR)
     planificateur = demarrerVerificationNocturne(deps())
@@ -151,7 +153,7 @@ describe('rapport de fin (US-36)', () => {
     planificateur = demarrerVerificationNocturne(deps())
     await planificateur.premier
     planificateur.arreter()
-    const recus = test.emails.envoyes.filter((m) => m.a === 'awa@studio.bj')
+    const recus = rapportPret()
     expect(recus).toHaveLength(1)
     expect(recus[0].sujet).toBe('Votre rapport de fin de test est prêt : « Marché Facile »')
     expect(recus[0].texte).toContain(`/mon-compte/apps/${appId}/campagne`)
