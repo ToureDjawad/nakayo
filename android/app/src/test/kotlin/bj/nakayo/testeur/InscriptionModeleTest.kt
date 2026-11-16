@@ -51,6 +51,7 @@ class InscriptionModeleTest {
         saisirNom("  Afi Dossou ")
         choisirVille("Cotonou")
         saisirGmail(" Afi.Dossou@Gmail.com ")
+        choisirAncienneteGmail("plus_6_mois")
     }
 
     @Test
@@ -63,6 +64,7 @@ class InscriptionModeleTest {
         assertEquals("requis", erreurs["nom"])
         assertEquals("requis", erreurs["ville"])
         assertEquals("format_invalide", erreurs["gmail"])
+        assertEquals("requis", erreurs["ancienneteGmail"])
         assertEquals("requis", erreurs["operateurMomo"])
         assertEquals("requis", erreurs["langues"])
         assertEquals(EtapeInscription.Profil, m.etat.value.etape)
@@ -111,6 +113,7 @@ class InscriptionModeleTest {
         assertEquals("Afi Dossou", f.nom)
         assertEquals("Cotonou", f.ville)
         assertEquals("afi.dossou@gmail.com", f.gmail)
+        assertEquals("plus_6_mois", f.ancienneteGmail)
         assertEquals("+2290197000000", f.numeroMomo)
         assertEquals("mtn", f.operateurMomo)
         assertEquals(appareil, f.appareil)

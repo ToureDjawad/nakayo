@@ -126,8 +126,13 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
 
     override suspend fun mesApps() = reponseApps().also { appels += "apps" }
 
-    override suspend fun confirmerInscription(affectationId: String, capture: Photo) =
-        reponseInscriptionTest(affectationId, capture).also { appels += "inscription-test:$affectationId" }
+    var dernierGmailPrincipal: Boolean? = null
+
+    override suspend fun confirmerInscription(affectationId: String, capture: Photo, gmailPrincipal: Boolean) =
+        reponseInscriptionTest(affectationId, capture).also {
+            appels += "inscription-test:$affectationId"
+            dernierGmailPrincipal = gmailPrincipal
+        }
 
     override suspend fun confirmerInstallation(affectationId: String, sourceInstallation: String) =
         reponseInstallation(affectationId, sourceInstallation).also { appels += "installation:$affectationId:$sourceInstallation" }

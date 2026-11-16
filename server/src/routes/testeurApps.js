@@ -102,6 +102,8 @@ export function routesTesteurApps({ pool, config, maintenant }) {
     if (!fichier?.size) exigerChamps({ capture: 'requis' })
     const typeMime = typeImage(fichier.buffer)
     if (!typeMime) exigerChamps({ capture: 'type_fichier_invalide' })
+    // US-07 : première campagne, le Gmail déclaré doit être le compte principal du Play Store.
+    if (!affectation.gmail_principal_confirme_le && req.body?.gmailPrincipal !== 'true') exigerChamps({ gmailPrincipal: 'doit_etre_confirme' })
     const chemin = await ecrireDocument(config.dossierDocuments, {
       utilisateurId: testeurId(req),
       type: `inscription-${affectation.id}`,

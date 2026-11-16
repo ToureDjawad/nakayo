@@ -214,7 +214,7 @@ describe('inscription d’un testeur (§4.3)', () => {
 
   it('valide tous les champs et les photos (422)', async () => {
     const r = await inscrire(await jetonInscription(), {
-      champs: { nom: 'K', ville: '', gmail: 'koffi@yahoo.fr', numeroMomo: '97000000', operateurMomo: 'celtiis', consentementSuivi: 'false' },
+      champs: { nom: 'K', ville: '', gmail: 'koffi@yahoo.fr', ancienneteGmail: 'hier', numeroMomo: '97000000', operateurMomo: 'celtiis', consentementSuivi: 'false' },
       appareil: null,
       piece: Buffer.from('GIF89a pas une photo acceptée'),
       selfie: null,
@@ -225,6 +225,7 @@ describe('inscription d’un testeur (§4.3)', () => {
       nom: 'trop_court',
       ville: 'requis',
       gmail: 'non_gmail',
+      ancienneteGmail: 'valeur_inconnue',
       numeroMomo: 'format_invalide',
       operateurMomo: 'valeur_inconnue',
       consentementSuivi: 'doit_etre_accepte',

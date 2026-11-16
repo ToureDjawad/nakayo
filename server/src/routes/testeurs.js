@@ -10,7 +10,7 @@ import {
   normaliserGmail,
   normaliserTelephone,
   typeImage,
-  validerGmail,
+  validerAncienneteGmail, validerGmail,
   validerOperateur,
   validerTelephone,
   validerMotifMomo,
@@ -96,6 +96,7 @@ export function routesTesteurs(deps) {
     const nom = texte(champs.nom)
     const ville = texte(champs.ville)
     const gmail = texte(champs.gmail).toLowerCase()
+    const ancienneteGmail = texte(champs.ancienneteGmail)
     const numeroMomo = normaliserTelephone(champs.numeroMomo)
     const operateurMomo = texte(champs.operateurMomo).toLowerCase()
     const { appareil, erreur: erreurAppareil } = lireAppareil(champs.appareil ?? jetons[0].appareil)
@@ -120,6 +121,7 @@ export function routesTesteurs(deps) {
       nom: validerNom(nom),
       ville: validerVille(ville),
       gmail: validerGmail(gmail),
+      ancienneteGmail: validerAncienneteGmail(ancienneteGmail),
       numeroMomo: validerTelephone(numeroMomo),
       operateurMomo: validerOperateur(operateurMomo),
       consentementSuivi: champs.consentementSuivi === 'true' ? null : 'doit_etre_accepte',
@@ -159,9 +161,9 @@ export function routesTesteurs(deps) {
         const utilisateurId = rows[0].id
         await client.query(
           `INSERT INTO profils_testeurs (utilisateur_id, ville, gmail, gmail_normalise, numero_momo, operateur_momo,
-                                         consentement_suivi_le, conditions_acceptees_le, parrain_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8)`,
-          [utilisateurId, ville, gmail, gmailNormalise, numeroMomo, operateurMomo, instant, parrainId],
+                                         consentement_suivi_le, conditions_acceptees_le, parrain_id, anciennete_gmail)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9)`,
+          [utilisateurId, ville, gmail, gmailNormalise, numeroMomo, operateurMomo, instant, parrainId, ancienneteGmail],
         )
         await enregistrerAppareil(client, { utilisateurId, appareil, maintenant: instant })
 

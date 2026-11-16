@@ -97,6 +97,8 @@ data class FormulaireInscription(
     val accepteConditions: Boolean,
     // US-39 : code du parrain, facultatif.
     val codeParrainage: String? = null,
+    // US-07 : depuis quand le Gmail sert sur le Play Store (« moins_1_mois », « 1_6_mois », « plus_6_mois »).
+    val ancienneteGmail: String? = null,
 )
 
 // Photo prête à l'envoi (JPEG ou PNG, 5 Mo au plus côté serveur).
@@ -199,6 +201,9 @@ data class AffectationTesteur(
     val joursAcquis: Boolean = false,
     val derniereRemise: DerniereRemise? = null,
     val inscriptionConfirmee: Boolean,
+    // US-07 : à la première campagne, le testeur confirme que ce Gmail est le compte principal du Play Store.
+    val gmailPrincipalAConfirmer: Boolean = false,
+    val gmail: String? = null,
     val installationConfirmee: Boolean,
     val rapportDuJour: Boolean,
     val retourDetailleAttendu: Boolean,

@@ -43,7 +43,7 @@ async function campagne(pkg) {
 async function rapporter(t, corps) {
   const bearer = { Authorization: `Bearer ${t.jeton}` }
   const [app] = (await request(test.app).get('/api/testeurs/moi/apps').set(bearer)).body.apps
-  await request(test.app).post(`/api/testeurs/moi/apps/${app.id}/inscription`).set(bearer).attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
+  await request(test.app).post(`/api/testeurs/moi/apps/${app.id}/inscription`).set(bearer).field('gmailPrincipal', 'true').attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
   await request(test.app).post(`/api/testeurs/moi/apps/${app.id}/installation`).set(bearer).send({ sourceInstallation: 'com.android.vending' })
   return request(test.app).post(`/api/testeurs/moi/apps/${app.id}/rapports`).set(bearer).send(corps)
 }

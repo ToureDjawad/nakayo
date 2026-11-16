@@ -50,6 +50,7 @@ export const FORMULAIRE_TESTEUR = {
   nom: 'Koffi Agbo',
   ville: 'Cotonou',
   gmail: 'koffi.agbo@gmail.com',
+  ancienneteGmail: 'plus_6_mois',
   numeroMomo: '+2290196000000',
   operateurMomo: 'mtn',
   consentementSuivi: 'true',
@@ -66,6 +67,7 @@ export async function creerTesteur({
   statut = 'en_attente',
   appareil = APPAREIL,
   ville = 'Cotonou',
+  ancienneteGmail = 'plus_6_mois',
 } = {}) {
   const { ouvrirSession } = await import('../src/services/sessions.js')
   const { enregistrerAppareil } = await import('../src/services/testeurs.js')
@@ -78,9 +80,9 @@ export async function creerTesteur({
   const id = rows[0].id
   await pool.query(
     `INSERT INTO profils_testeurs (utilisateur_id, ville, gmail, gmail_normalise, numero_momo, operateur_momo,
-                                   consentement_suivi_le, conditions_acceptees_le)
-     VALUES ($1, $6, $2, $3, $4, $5, now(), now())`,
-    [id, gmail, normaliserGmail(gmail), numeroMomo, operateurMomo, ville],
+                                   consentement_suivi_le, conditions_acceptees_le, anciennete_gmail)
+     VALUES ($1, $6, $2, $3, $4, $5, now(), now(), $7)`,
+    [id, gmail, normaliserGmail(gmail), numeroMomo, operateurMomo, ville, ancienneteGmail],
   )
   if (appareil) await enregistrerAppareil(pool, { utilisateurId: id, appareil, maintenant: new Date() })
   const { jeton } = await ouvrirSession(pool, { utilisateurId: id, client: 'android', maintenant: new Date() })

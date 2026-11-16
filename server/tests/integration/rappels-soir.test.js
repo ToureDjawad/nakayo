@@ -51,7 +51,7 @@ async function preparer(maintenant = '2026-11-12T20:30:00Z') {
   testeurs = rows.map((r) => crees.find((t) => t.id === String(r.testeur_id)))
   // Les 3 premiers testeurs ont installé l'app ; le 2e a envoyé son rapport, le 3e a ses 14 jours.
   for (const i of [0, 1, 2]) {
-    await request(test.app).post(`/api/testeurs/moi/apps/${affectations[i]}/inscription`).set(bearer(i)).attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
+    await request(test.app).post(`/api/testeurs/moi/apps/${affectations[i]}/inscription`).set(bearer(i)).field('gmailPrincipal', 'true').attach('capture', JPEG, { filename: 'c.jpg', contentType: 'image/jpeg' })
     await request(test.app).post(`/api/testeurs/moi/apps/${affectations[i]}/installation`).set(bearer(i)).send({ sourceInstallation: 'com.android.vending' })
   }
   expect((await request(test.app).post(`/api/testeurs/moi/apps/${affectations[1]}/rapports`).set(bearer(1)).send(RAPPORT)).status).toBe(201)

@@ -7,6 +7,7 @@ import bj.nakayo.noyau.Position
 import bj.nakayo.noyau.Resultat
 import bj.nakayo.noyau.ServiceTesteurFactice
 import bj.nakayo.noyau.ServiceTesteurFactice.Companion.affectation
+import bj.nakayo.testeur.ui.apps.MESSAGE_GMAIL_PRINCIPAL
 import bj.nakayo.testeur.campagne.InstallationApp
 import bj.nakayo.testeur.campagne.OutilsApps
 import bj.nakayo.testeur.ui.Ecran
@@ -131,6 +132,28 @@ class TestQuotidienTest {
         assertTrue("inscription-test:31" in service.appels)
         assertEquals(Etape.Installation, etape(m.etat.value.affectation))
         assertTrue(m.etat.value.information!!.startsWith("Inscription confirmée"))
+        assertEquals(false, service.dernierGmailPrincipal)
+    }
+
+    @Test
+    fun `première campagne, le Gmail principal du Play Store est confirmé avant la capture (US-07)`() = runTest {
+        val nav = navigation()
+        advanceUntilIdle()
+        val m = ouvrirApp(nav, affectation(inscription = false, installation = false).copy(gmailPrincipalAConfirmer = true, gmail = "afi@gmail.com"))
+        assertTrue(m.gmailPrincipalManquant())
+        assertEquals(MESSAGE_GMAIL_PRINCIPAL, m.etat.value.erreur)
+        val sansCase = File.createTempFile("capture", ".img")
+        m.captureChoisie(sansCase)
+        advanceUntilIdle()
+        assertFalse(sansCase.exists())
+        assertTrue(service.appels.none { it.startsWith("inscription-test") })
+
+        m.confirmerGmailPrincipal(true)
+        assertFalse(m.gmailPrincipalManquant())
+        assertNull(m.etat.value.erreur)
+        m.captureChoisie(File.createTempFile("capture", ".img"))
+        advanceUntilIdle()
+        assertEquals(true, service.dernierGmailPrincipal)
     }
 
     @Test

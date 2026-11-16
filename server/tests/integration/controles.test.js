@@ -62,9 +62,20 @@ describe('contrôles d’un testeur', () => {
       momo_doublon: 'ok',
       momo_titulaire: 'indisponible',
       gmail_doublon: 'ok',
+      gmail_anciennete: 'ok',
       appareil_doublon: 'ok',
       photos_presentes: 'ok',
     })
+  })
+
+  it('avertit l’admin quand le Gmail semble neuf (US-07)', async () => {
+    const recent = await creerTesteur({ ancienneteGmail: 'moins_1_mois' })
+    expect(parCode(await executerControles(pool, recent.id)).gmail_anciennete).toMatchObject({
+      resultat: 'alerte',
+      detail: 'Gmail récent : le testeur l’utilise depuis moins d’un mois. Google peut écarter les comptes neufs.',
+    })
+    const ancien = await creerTesteur({ telephone: '+2290191000000', gmail: 'autre@gmail.com', numeroMomo: '+2290191000001', appareil: null, ancienneteGmail: null })
+    expect(parCode(await executerControles(pool, ancien.id)).gmail_anciennete.resultat).toBe('indisponible')
   })
 
   it('détecte un téléphone partagé, des photos manquantes et un Gmail déjà utilisé par un développeur', async () => {

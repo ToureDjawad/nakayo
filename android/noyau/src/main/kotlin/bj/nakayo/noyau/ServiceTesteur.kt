@@ -16,7 +16,8 @@ interface ServiceTesteur {
 
     // Sprint 3 : apps à tester et test quotidien (docs/api-sprint3.md §2).
     suspend fun mesApps(): Resultat<List<AffectationTesteur>>
-    suspend fun confirmerInscription(affectationId: String, capture: Photo): Resultat<AffectationTesteur>
+    // US-07 : `gmailPrincipal`, le testeur confirme que son Gmail est le compte principal du Play Store.
+    suspend fun confirmerInscription(affectationId: String, capture: Photo, gmailPrincipal: Boolean = false): Resultat<AffectationTesteur>
     suspend fun confirmerInstallation(affectationId: String, sourceInstallation: String): Resultat<AffectationTesteur>
     suspend fun envoyerRapport(affectationId: String, rapport: RapportJour): Resultat<AffectationTesteur>
     suspend fun signaler(): Resultat<Unit>

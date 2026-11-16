@@ -59,6 +59,7 @@ class ParcoursInscriptionTest {
             compose.onNodeWithText("Continuer").performClick()
             compose.attendreTexte("Adresse incomplète")
             compose.onNodeWithContentDescription("Adresse Gmail du Play Store").performTextInput(".com")
+            compose.onNodeWithText("Plus de 6 mois").performScrollTo().performClick()
             compose.onNodeWithText("Continuer").performClick()
 
             compose.attendreTexte("Une personne, un compte")

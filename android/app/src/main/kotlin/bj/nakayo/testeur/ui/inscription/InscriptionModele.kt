@@ -29,6 +29,7 @@ interface ActionsInscription {
     fun saisirVilleLibre(valeur: String)
     fun saisirGmail(valeur: String)
     fun saisirCodeParrainage(valeur: String)
+    fun choisirAncienneteGmail(code: String)
     fun choisirOperateur(code: String)
     fun basculerLangue(code: String)
     fun continuer()
@@ -63,6 +64,8 @@ data class EtatInscription(
     val ville: String = "",
     val villeLibre: String = "",
     val gmail: String = "",
+    // US-07 : depuis quand ce Gmail sert sur le Play Store (ANCIENNETES_GMAIL).
+    val ancienneteGmail: String? = null,
     // US-39 : code du parrain, facultatif.
     val codeParrainage: String = "",
     val langues: Set<String> = setOf("fr"),
@@ -122,6 +125,7 @@ class InscriptionModele(
         it.copy(codeParrainage = valeur.uppercase().filter { c -> c.isLetterOrDigit() }.take(6))
     }
     override fun choisirOperateur(code: String) = modifier("operateurMomo") { it.copy(operateur = code) }
+    override fun choisirAncienneteGmail(code: String) = modifier("ancienneteGmail") { it.copy(ancienneteGmail = code) }
     override fun basculerLangue(code: String) = modifier("langues") {
         it.copy(langues = if (code in it.langues) it.langues - code else it.langues + code)
     }
@@ -146,6 +150,7 @@ class InscriptionModele(
             !e.gmail.endsWith("@gmail.com") -> put("gmail", "non_gmail")
             !Regex("^[a-z0-9.+]+@gmail\\.com$").matches(e.gmail) -> put("gmail", "format_invalide")
         }
+        if (e.ancienneteGmail == null) put("ancienneteGmail", "requis")
         if (e.codeParrainage.isNotEmpty() && !FORMAT_CODE_PARRAINAGE.matches(e.codeParrainage)) put("codeParrainage", "format_invalide")
         if (e.operateur == null) put("operateurMomo", "requis")
         if (e.langues.isEmpty()) put("langues", "requis")
@@ -215,6 +220,7 @@ class InscriptionModele(
                 consentementSuivi = true,
                 accepteConditions = true,
                 codeParrainage = e.codeParrainage.ifEmpty { null },
+                ancienneteGmail = e.ancienneteGmail,
             )
             when (val r = service.inscrire(jetonInscription, formulaire, e.pieceIdentite!!, e.selfie!!)) {
                 is Resultat.Succes -> {
@@ -238,7 +244,7 @@ class InscriptionModele(
             return
         }
         val champs = http?.champs.orEmpty()
-        val surProfil = champs.keys.any { it in setOf("nom", "ville", "gmail", "operateurMomo", "codeParrainage") }
+        val surProfil = champs.keys.any { it in setOf("nom", "ville", "gmail", "ancienneteGmail", "operateurMomo", "codeParrainage") }
         etatInterne.update {
             it.copy(
                 enCours = false,
@@ -257,6 +263,9 @@ class InscriptionModele(
     private companion object {
         // Mêmes caractères que le serveur : sans 0, O, 1, I ni L.
         val FORMAT_CODE_PARRAINAGE = Regex("^[A-HJKMNP-Z2-9]{6}$")
-        val CHAMPS_AFFICHES = setOf("nom", "ville", "gmail", "operateurMomo", "codeParrainage", "langues", "pieceIdentite", "selfie", "accepteConditions", "consentementSuivi")
+        val CHAMPS_AFFICHES = setOf("nom", "ville", "gmail", "ancienneteGmail", "operateurMomo", "codeParrainage", "langues", "pieceIdentite", "selfie", "accepteConditions", "consentementSuivi")
     }
 }
+
+// US-07 : Google repère les comptes testeurs neufs ; l'admin est averti d'un Gmail récent.
+val ANCIENNETES_GMAIL = listOf("moins_1_mois" to "Moins d'1 mois", "1_6_mois" to "1 à 6 mois", "plus_6_mois" to "Plus de 6 mois")

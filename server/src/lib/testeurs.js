@@ -37,6 +37,14 @@ export function validerGmail(valeur) {
   return null
 }
 
+// US-07 : depuis quand le testeur utilise ce Gmail sur le Play Store.
+export const ANCIENNETES_GMAIL = ['moins_1_mois', '1_6_mois', 'plus_6_mois']
+
+export function validerAncienneteGmail(valeur) {
+  if (!valeur) return 'requis'
+  return ANCIENNETES_GMAIL.includes(valeur) ? null : 'valeur_inconnue'
+}
+
 // Gmail ignore les points et ce qui suit « + » : k.offi+test@gmail.com = koffi@gmail.com.
 export function normaliserGmail(gmail) {
   const [local, domaine] = gmail.toLowerCase().split('@')
