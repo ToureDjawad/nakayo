@@ -169,6 +169,14 @@ describe('inscription d’un testeur (§4.3)', () => {
       demandeChangementMomo: null,
       motifRefus: null,
       creeLe: expect.any(String),
+      niveau: {
+        code: 'bronze',
+        nom: 'Bronze',
+        campagnesTerminees: 0,
+        bugsAcceptes: 0,
+        assiduite: 50,
+        suivant: { code: 'argent', nom: 'Argent', conditions: [{ code: 'campagnes', requis: 1, actuel: 0, rempli: false }] },
+      },
     })
 
     const { rows } = await pool.query('SELECT type, chemin, type_mime, taille_octets FROM documents_identite ORDER BY type')

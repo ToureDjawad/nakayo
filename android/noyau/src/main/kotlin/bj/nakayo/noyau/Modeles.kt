@@ -61,7 +61,27 @@ data class ProfilTesteur(
     val demandeChangementMomo: DemandeChangementMomo? = null,
     val motifRefus: String? = null,
     val creeLe: String,
+    // US-38 : niveau Bronze, Argent ou Or (docs/api-niveaux.md).
+    val niveau: NiveauTesteur? = null,
 )
+
+// Niveau du testeur (US-38) : ses chiffres et ce qu'il manque pour le suivant (null au niveau Or).
+@Serializable
+data class NiveauTesteur(
+    val code: String,
+    val nom: String,
+    val campagnesTerminees: Int = 0,
+    val bugsAcceptes: Int = 0,
+    val assiduite: Int = 0,
+    val suivant: NiveauSuivant? = null,
+)
+
+@Serializable
+data class NiveauSuivant(val code: String, val nom: String, val conditions: List<ConditionNiveau> = emptyList())
+
+// code : « campagnes », « bugs » ou « assiduite » (en %).
+@Serializable
+data class ConditionNiveau(val code: String, val requis: Int, val actuel: Int, val rempli: Boolean)
 
 // Formulaire d'inscription d'un testeur (§4.3). Les deux consentements doivent être donnés.
 data class FormulaireInscription(

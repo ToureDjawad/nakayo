@@ -1,4 +1,7 @@
 import { estEntreeDeGamme } from './offres.js'
+import { assiduite, rangNiveau } from './niveaux.js'
+
+export { assiduite }
 
 // Règles d'affectation des testeurs aux campagnes (US-16, docs/api-sprint3.md §1.2).
 export const TESTEURS_PAR_CAMPAGNE = 15
@@ -13,24 +16,19 @@ export const JOURS_REMPLACEMENT_MANUEL = 2
 // Sous ce nombre d'inscrits confirmés, la marge au-dessus des 12 exigés est entamée.
 export const SEUIL_ALERTE_INSCRITS = 13
 
-// Assiduité : part des affectations menées au bout, lissée pour qu'un nouveau testeur parte à 0,5.
-export function assiduite({ terminees = 0, remplacees = 0, remises = 0 }) {
-  return (terminees + 1) / (terminees + remplacees + remises + 2)
-}
-
 const normaliser = (valeur) => (valeur ?? '').trim().toLowerCase()
 
 // Choisit `nombre` testeurs parmi les candidats, du plus assidu au moins assidu.
 // Règle stricte : 3 testeurs au plus avec le même modèle de téléphone.
 // Règles souples (premier passage seulement) : une ville ne dépasse pas la moitié de la campagne,
 // un opérateur pas les deux tiers. `deja` : testeurs déjà dans la campagne (remplacement).
-// candidat : { id, ville, operateur, modele, actives, terminees, remplacees, remises }
-// `confirmes` (offre Pro, US-32) : les testeurs qui ont déjà mené une campagne au bout passent
-// avant les nouveaux, quel que soit leur score ; les nouveaux ne complètent que s'il en manque.
+// candidat : { id, ville, operateur, modele, actives, terminees, remplacees, remises, bugsAcceptes }
+// `confirmes` (offres Pro et Plus, US-32 et US-38) : les testeurs passent par niveau (Or, puis Argent,
+// puis Bronze), quel que soit leur score ; les Bronze ne complètent que s'il en manque.
 // `entreeDeGamme` (offre Pro, US-35) : nombre de téléphones de 3 Go de RAM ou moins à réunir
 // en priorité (candidat.ram_mo) ; s'il en manque, la campagne part quand même avec ceux qui existent.
 export function choisirTesteurs(candidats, { nombre, deja = [], confirmes = false, entreeDeGamme = 0 }) {
-  const confirme = (c) => (confirmes && c.terminees > 0 ? 1 : 0)
+  const confirme = (c) => (confirmes ? rangNiveau(c) : 0)
   const tries = candidats
     .filter((c) => c.actives < APPS_MAX_PAR_TESTEUR)
     .map((c) => ({ ...c, score: assiduite(c) }))

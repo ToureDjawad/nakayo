@@ -26,7 +26,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import bj.nakayo.noyau.Appareil
+import bj.nakayo.noyau.ConditionNiveau
 import bj.nakayo.noyau.DemandeChangementMomo
+import bj.nakayo.noyau.NiveauSuivant
+import bj.nakayo.noyau.NiveauTesteur
 import bj.nakayo.noyau.ProfilTesteur
 import bj.nakayo.testeur.ui.MessagesChamps
 import bj.nakayo.testeur.ui.composants.Bandeau
@@ -107,6 +110,7 @@ private fun Resume(etat: EtatProfil, actions: ActionsProfil) {
         }
         etat.information?.let { Bandeau(it, TypeBandeau.Succes) }
         etat.erreur?.let { Bandeau(it) }
+        profil.niveau?.let { CarteNiveau(it) }
         Carte(espacement = 0.dp, marge = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
             LigneInfo("Mon téléphone", profil.appareil?.let(::descriptionAppareil) ?: "Non renseigné")
             LigneInfo("Numéro de connexion", afficher(profil.telephone))
@@ -183,6 +187,13 @@ private fun ApercuProfil() {
         appareil = Appareil("Tecno", "Spark 10", "13", 33),
         demandeChangementMomo = DemandeChangementMomo("3", "+2290196000000", "moov", "en_attente", "2026-11-11T10:00:00.000Z"),
         creeLe = "2026-11-10T14:07:01.512Z",
+        niveau = NiveauTesteur(
+            "argent", "Argent", campagnesTerminees = 1, bugsAcceptes = 1, assiduite = 66,
+            suivant = NiveauSuivant(
+                "or", "Or",
+                listOf(ConditionNiveau("campagnes", 3, 1, false), ConditionNiveau("bugs", 2, 1, false), ConditionNiveau("assiduite", 75, 66, false)),
+            ),
+        ),
     )
     NakayoTheme { EcranProfil(EtatProfil(profil), ActionsProfil({}, {}, {}, {}, {}, {}, {}, {})) }
 }

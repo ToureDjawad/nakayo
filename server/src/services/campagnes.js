@@ -22,7 +22,8 @@ async function lireCandidats(db, appId) {
             count(*) FILTER (WHERE a.statut = 'active')::int AS actives,
             count(*) FILTER (WHERE a.statut = 'terminee')::int AS terminees,
             count(*) FILTER (WHERE a.statut = 'remplacee')::int AS remplacees,
-            COALESCE(sum(a.nombre_remises), 0)::int AS remises
+            COALESCE(sum(a.nombre_remises), 0)::int AS remises,
+            (SELECT count(*) FROM bugs b WHERE b.testeur_id = u.id AND b.statut = 'accepte')::int AS "bugsAcceptes"
        FROM utilisateurs u
        JOIN profils_testeurs p ON p.utilisateur_id = u.id
        LEFT JOIN LATERAL (

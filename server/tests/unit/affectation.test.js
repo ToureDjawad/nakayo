@@ -40,6 +40,17 @@ describe('choix des testeurs (US-16)', () => {
     expect(choisirTesteurs(liste, { nombre: 3, confirmes: true }).map((c) => c.id)).toEqual(['3', '2', '1'])
   })
 
+  it('offres Pro et Plus (US-38) : les testeurs Or passent avant les Argent, puis les Bronze', () => {
+    const liste = [
+      candidat(1),
+      candidat(2, { terminees: 5 }),
+      candidat(3, { terminees: 3, bugsAcceptes: 2 }),
+    ]
+    // En Standard, le plus assidu d'abord ; en Pro, l'Or (3) devance l'Argent (2), même moins assidu.
+    expect(choisirTesteurs(liste, { nombre: 3 }).map((c) => c.id)).toEqual(['2', '3', '1'])
+    expect(choisirTesteurs(liste, { nombre: 3, confirmes: true }).map((c) => c.id)).toEqual(['3', '2', '1'])
+  })
+
   it('offre Pro (US-35) : réserve d’abord les places des téléphones de 3 Go de RAM ou moins', () => {
     // Les plus assidus ont de gros téléphones ; les petits passent quand même devant pour 2 places.
     const liste = [

@@ -1,4 +1,5 @@
 // Lecture du profil testeur (contrat §4.4) et enregistrement de l'appareil.
+import { niveauTesteur } from '../lib/niveaux.js'
 
 export async function enregistrerAppareil(db, { utilisateurId, appareil, maintenant }) {
   await db.query(
@@ -38,13 +39,21 @@ export async function lireProfilTesteur(db, utilisateurId) {
             p.ville, p.gmail, p.numero_momo, p.operateur_momo, p.langues,
             a.fabricant, a.modele, a.version_android, a.niveau_api,
             d.id AS demande_id, d.numero_momo AS demande_numero, d.operateur_momo AS demande_operateur,
-            d.statut AS demande_statut, d.cree_le AS demande_cree_le
+            d.statut AS demande_statut, d.cree_le AS demande_cree_le,
+            st.terminees, st.remplacees, st.remises,
+            (SELECT count(*) FROM bugs b WHERE b.testeur_id = u.id AND b.statut = 'accepte')::int AS bugs_acceptes
        FROM utilisateurs u
        JOIN profils_testeurs p ON p.utilisateur_id = u.id
        LEFT JOIN LATERAL (
          SELECT * FROM appareils WHERE utilisateur_id = u.id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
        ) a ON true
        LEFT JOIN demandes_changement_momo d ON d.utilisateur_id = u.id AND d.statut = 'en_attente'
+       CROSS JOIN LATERAL (
+         SELECT count(*) FILTER (WHERE statut = 'terminee')::int AS terminees,
+                count(*) FILTER (WHERE statut = 'remplacee')::int AS remplacees,
+                COALESCE(sum(nombre_remises), 0)::int AS remises
+           FROM affectations WHERE testeur_id = u.id
+       ) st
       WHERE u.id = $1 AND u.role = 'testeur'`,
     [utilisateurId],
   )
@@ -75,5 +84,7 @@ export async function lireProfilTesteur(db, utilisateurId) {
       : null,
     motifRefus: l.motif_refus,
     creeLe: new Date(l.cree_le).toISOString(),
+    // US-38 : niveau Bronze, Argent ou Or, et ce qu'il manque pour le suivant.
+    niveau: niveauTesteur({ terminees: l.terminees, remplacees: l.remplacees, remises: l.remises, bugsAcceptes: l.bugs_acceptes }),
   }
 }
