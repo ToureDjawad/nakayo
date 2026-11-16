@@ -124,6 +124,23 @@ function Campagne({ campagne, annonce }) {
         </section>
       )}
 
+      {campagne.app.offre && campagne.app.offre !== 'standard' && (
+        <section aria-labelledby="titre-bugs" className="rounded-carte border border-trait bg-white p-4">
+          <h2 id="titre-bugs" className="text-lg font-semibold text-encre">
+            Bugs signalés
+          </h2>
+          <p className="mt-1 text-sm text-texte">
+            Vos testeurs envoient des bugs avec étapes et captures. Acceptez ou refusez chacun, puis exportez-les en CSV.
+          </p>
+          <Link
+            to={`/mon-compte/apps/${campagne.app.id}/bugs`}
+            className="mt-3 inline-flex h-10 items-center justify-center rounded-champ bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-fonce"
+          >
+            Voir les bugs signalés
+          </Link>
+        </section>
+      )}
+
       <RapportFinal appId={campagne.app.id} />
 
       <AvancementCampagne appId={campagne.app.id} />

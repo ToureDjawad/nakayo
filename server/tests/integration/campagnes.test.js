@@ -41,7 +41,7 @@ describe('démarrage de la campagne (US-13, US-16)', () => {
     expect(r.status).toBe(201)
     const { campagne } = r.body
     expect(campagne).toMatchObject({
-      app: { id, nom: 'Marché Facile', package: 'bj.studioawa.marche' },
+      app: { id, nom: 'Marché Facile', package: 'bj.studioawa.marche', offre: 'standard' },
       statut: 'en_cours',
       jour: 1,
       joursCampagne: 16,

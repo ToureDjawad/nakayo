@@ -60,7 +60,7 @@ async function lireMembres(db, campagneId) {
   return rows
 }
 
-const SELECT_CAMPAGNE = `SELECT c.*, ap.nom AS app_nom, ap.package AS app_package, ap.lien_test_ferme AS app_lien,
+const SELECT_CAMPAGNE = `SELECT c.*, ap.nom AS app_nom, ap.package AS app_package, ap.offre AS app_offre, ap.lien_test_ferme AS app_lien,
     u.nom AS dev_nom, u.email AS dev_email
   FROM campagnes c JOIN apps ap ON ap.id = c.app_id JOIN utilisateurs u ON u.id = c.developpeur_id`
 
@@ -77,7 +77,7 @@ export function versCampagneApi(c, membres, { maintenant, vue = 'developpeur' })
   const visibles = vue === 'admin' ? membres : actifs
   return {
     id: String(c.id),
-    app: { id: String(c.app_id), nom: c.app_nom, package: c.app_package },
+    app: { id: String(c.app_id), nom: c.app_nom, package: c.app_package, offre: c.app_offre },
     ...(vue === 'admin' ? { developpeur: { id: String(c.developpeur_id), nom: c.dev_nom, email: c.dev_email } } : {}),
     statut: c.statut,
     jour,

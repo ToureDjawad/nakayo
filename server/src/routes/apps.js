@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { lireApp } from '../lib/apps.js'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
-import { corps, exigerChamps } from '../lib/validation.js'
+import { GRAVITES } from '../lib/bugs.js'
+import { corps, exigerChamps, texte } from '../lib/validation.js'
 import { exigerRole } from '../middlewares/authentification.js'
 import { creerApp, enregistrerPreparation, lireAppDeveloppeur, listerAppsDeveloppeur, modifierApp, supprimerApp, versAppApi } from '../services/apps.js'
 import { normaliserWhatsapp, validerWhatsapp } from '../services/support.js'
@@ -12,6 +13,8 @@ import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, te
 import { lireAvancement } from '../services/avancement.js'
 import { enregistrerDecision, lireRapportFinal, rapportPdf } from '../services/rapportFinal.js'
 import { jourBenin } from '../lib/temps.js'
+import { bugsEnCsv, cheminCapture, deciderBug, LIBELLES_STATUT_BUG, listerBugsApp, MOTIF_REFUS, resumeBugsApp } from '../services/bugs.js'
+import { cheminAbsolu } from '../services/documents.js'
 import { transaction } from './auth.js'
 
 const DECISIONS_GOOGLE = ['acceptee', 'refusee']
@@ -194,6 +197,52 @@ export function routesApps(deps) {
   routeur.get('/:id/campagne/avancement', async (req, res) => {
     const id = idApp(req)
     res.json({ avancement: await lireAvancement(pool, { appId: id, developpeurId: developpeurId(req), maintenant: maintenant() }) })
+  })
+
+  // docs/api-bugs.md §2 (US-34) : bugs signalés par les testeurs, décision et export CSV.
+  routeur.get('/:id/bugs', async (req, res) => {
+    const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const gravite = texte(req.query.gravite) || null
+    const statut = texte(req.query.statut) || null
+    exigerChamps({
+      gravite: gravite && !GRAVITES.includes(gravite) ? 'valeur_inconnue' : null,
+      statut: statut && !(statut in LIBELLES_STATUT_BUG) ? 'valeur_inconnue' : null,
+    })
+    const [bugs, resume] = await Promise.all([listerBugsApp(pool, { appId: app.id, gravite, statut }), resumeBugsApp(pool, { appId: app.id })])
+    res.json({ bugs, resume, rapportsDeBugs: lireOffre(app.offre).rapportsDeBugs })
+  })
+
+  routeur.get('/:id/bugs.csv', async (req, res) => {
+    const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const bugs = await listerBugsApp(pool, { appId: app.id })
+    const nom = app.package.replace(/[^a-zA-Z0-9._-]/g, '-')
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="bugs-${nom}.csv"`, 'Cache-Control': 'private, no-store' })
+    res.send(bugsEnCsv(bugs))
+  })
+
+  routeur.get('/:id/bugs/:bugId/captures/:rang', async (req, res) => {
+    const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const chemin = await cheminCapture(pool, { appId: app.id, bugId: req.params.bugId, rang: req.params.rang })
+    res.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' })
+    res.type(chemin.endsWith('.png') ? 'image/png' : 'image/jpeg')
+    res.sendFile(cheminAbsolu(config.dossierDocuments, chemin), (erreur) => {
+      if (erreur && !res.headersSent) {
+        journal.error(erreur)
+        res.status(404).json({ erreur: { code: 'introuvable', message: 'Capture introuvable.' } })
+      }
+    })
+  })
+
+  routeur.post('/:id/bugs/:bugId/decision', async (req, res) => {
+    const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const decision = texte(corps(req).decision)
+    const motif = texte(corps(req).motif)
+    const [min, max] = MOTIF_REFUS
+    exigerChamps({
+      decision: !decision ? 'requis' : ['accepte', 'refuse'].includes(decision) ? null : 'valeur_inconnue',
+      motif: decision !== 'refuse' ? null : !motif ? 'requis' : motif.length < min ? 'trop_court' : motif.length > max ? 'trop_long' : null,
+    })
+    res.json({ bug: await deciderBug(pool, { appId: app.id, bugId: req.params.bugId, decision, motif, maintenant: maintenant() }) })
   })
 
   // §6 (US-36) : rapport de fin, brouillon des réponses au formulaire Google et décision de Google.
