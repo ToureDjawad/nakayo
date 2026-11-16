@@ -1,5 +1,6 @@
 import { once } from 'node:events'
 import { Router } from 'express'
+import { exigerNonBloque } from '../services/sanctions.js'
 import multer from 'multer'
 import { ErreurHttp, nonAuthentifie } from '../lib/erreurs.js'
 import { hacherJeton } from '../lib/jetons.js'
@@ -132,6 +133,7 @@ export function routesTesteurs(deps) {
     })
 
     const gmailNormalise = normaliserGmail(gmail)
+    await exigerNonBloque(pool, { momo: numeroMomo })
     const { rows: doublons } = await pool.query(
       `SELECT gmail_normalise = $1 AS gmail, numero_momo = $2 AS momo FROM profils_testeurs
         WHERE gmail_normalise = $1 OR numero_momo = $2`,

@@ -20,6 +20,12 @@ class MessagesErreurTest {
     }
 
     @Test
+    fun `compte banni ou informations bloquées (US-29)`() {
+        assertTrue(MessagesErreur.pour(ErreurApi.Http(403, "compte_banni")).startsWith("Ce numéro ou ce téléphone est lié à un compte fermé."))
+        assertTrue(MessagesErreur.pour(ErreurApi.Http(403, "compte_bloque")).startsWith("Ces informations sont liées à un compte fermé."))
+    }
+
+    @Test
     fun `code SMS faux avec les essais restants`() {
         val code = { n: Int? -> MessagesErreur.pour(ErreurApi.Http(400, "code_invalide", tentativesRestantes = n)) }
         assertEquals("Code incorrect. Il vous reste 3 essais.", code(3))

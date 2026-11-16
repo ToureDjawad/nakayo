@@ -107,10 +107,11 @@ export function BoiteIcone({ ton = 'ocre', children }) {
 
 const LIENS_ADMIN = [
   { to: '/admin/tableau-de-bord', libelle: 'Tableau de bord', icone: 'tableau' },
-  { to: '/admin/comptes', libelle: 'Comptes à valider', icone: 'utilisateurs' },
+  { to: '/admin/comptes', libelle: 'Comptes', icone: 'utilisateurs' },
   { to: '/admin/apps', libelle: 'Apps à vérifier', icone: 'app' },
   { to: '/admin/campagnes', libelle: 'Campagnes', icone: 'campagne' },
   { to: '/admin/alertes', libelle: 'Alertes de fraude', icone: 'bouclier' },
+  { to: '/admin/journal', libelle: 'Journal des actions', icone: 'journal' },
   { to: '/admin/devis', libelle: 'Devis Offre Plus', icone: 'devis' },
   { to: '/admin/messages', libelle: 'Messages reçus', icone: 'boite' },
   { to: '/admin/support', libelle: 'Contact du support', icone: 'message' },
@@ -154,6 +155,14 @@ function IconeAdmin({ nom }) {
       <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
         <path d="M14 2v6h6M8 13h8M8 17h5" />
+      </svg>
+    )
+  }
+  if (nom === 'journal') {
+    return (
+      <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z" />
+        <path d="M9 9h6M9 13h6" />
       </svg>
     )
   }

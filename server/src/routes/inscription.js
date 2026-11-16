@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { ErreurHttp } from '../lib/erreurs.js'
+import { exigerNonBloque } from '../services/sanctions.js'
 import { consommerEnvoiEmail } from '../lib/limitesApi.js'
 import { hacherMotDePasse } from '../lib/motsDePasse.js'
 import { COLONNES_UTILISATEUR, versUtilisateurApi } from '../lib/utilisateurs.js'
@@ -83,6 +84,8 @@ export function routesInscription(deps) {
 
     limites.inscriptionIp.verifier(req.ip)
 
+    await exigerNonBloque(pool, { email })
+
     // Contrôle préalable pour signaler tous les doublons d'un coup ; la base reste la garde.
     const { rows: doublons } = await pool.query(
       `SELECT email = $1 AS email, lien_fiche_developpeur = $2 AND statut <> 'refuse' AS fiche
@@ -152,7 +155,7 @@ export function routesInscription(deps) {
 
     const { rows } = await pool.query(
       `SELECT id FROM utilisateurs
-        WHERE email = $1 AND role = 'developpeur' AND email_verifie_le IS NULL AND statut <> 'suspendu'`,
+        WHERE email = $1 AND role = 'developpeur' AND email_verifie_le IS NULL AND statut NOT IN ('suspendu', 'banni')`,
       [email],
     )
     if (rows.length) {

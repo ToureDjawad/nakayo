@@ -107,6 +107,9 @@ export function routesAuth(deps) {
     if (ligne.statut === 'suspendu') {
       throw new ErreurHttp(403, 'compte_suspendu', { message: 'Compte suspendu.' })
     }
+    if (ligne.statut === 'banni') {
+      throw new ErreurHttp(403, 'compte_banni', { message: 'Compte fermé définitivement.' })
+    }
 
     const { jeton } = await ouvrirSession(pool, { utilisateurId: ligne.id, client: 'web', maintenant: maintenant() })
     poserCookieSession(res, config, jeton)
@@ -137,7 +140,7 @@ export function routesAuth(deps) {
     const { rows } = await pool.query(
       `SELECT id FROM utilisateurs
         WHERE email = $1 AND role IN ('developpeur', 'admin') AND mot_de_passe_hash IS NOT NULL
-          AND statut <> 'suspendu'`,
+          AND statut NOT IN ('suspendu', 'banni')`,
       [email],
     )
     if (rows.length) {

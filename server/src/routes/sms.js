@@ -91,11 +91,18 @@ export function routesSms(deps) {
       )
       const compte = comptes[0]
       if (compte) {
-        if (compte.statut === 'suspendu') return { erreur: 'suspendu' }
+        if (compte.statut === 'suspendu' || compte.statut === 'banni') return { erreur: compte.statut }
         await enregistrerAppareil(client, { utilisateurId: compte.id, appareil, maintenant: instant })
         const { jeton } = await ouvrirSession(client, { utilisateurId: compte.id, client: 'android', maintenant: instant })
         return { resultat: 'connecte', jeton, utilisateurId: compte.id }
       }
+
+      // US-29 : un numéro ou un téléphone banni ne peut pas ouvrir un nouveau compte.
+      const { rows: bloques } = await client.query(
+        `SELECT 1 FROM blocages WHERE (type = 'telephone' AND valeur = $1) OR (type = 'appareil' AND valeur = $2) LIMIT 1`,
+        [telephone, appareil.identifiant],
+      )
+      if (bloques.length) return { erreur: 'banni' }
 
       const jetonInscription = genererJeton()
       await client.query(
@@ -127,6 +134,7 @@ export function routesSms(deps) {
       })
     }
     if (issue.erreur === 'suspendu') throw new ErreurHttp(403, 'compte_suspendu', { message: 'Compte suspendu.' })
+    if (issue.erreur === 'banni') throw new ErreurHttp(403, 'compte_banni', { message: 'Ce numéro ou ce téléphone est lié à un compte banni.' })
 
     if (issue.resultat === 'connecte') {
       const utilisateur = await lireProfilTesteur(pool, issue.utilisateurId)
