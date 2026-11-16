@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { groupeDeLApp } from '../services/googleGroupes.js'
 import { lireApp } from '../lib/apps.js'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
 import { GRAVITES } from '../lib/bugs.js'
@@ -169,8 +170,11 @@ export function routesApps(deps) {
 
   // §6 Préparation du lancement (US-42) : la liste des points et le groupe des testeurs (US-13).
   routeur.get('/:id/preparation', async (req, res) => {
-    const app = versAppApi(await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) }))
-    res.json({ preparation: app.preparation, elements: ELEMENTS_PREPARATION, groupeTesteurs: config.groupeTesteurs })
+    const ligne = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const app = versAppApi(ligne)
+    // US-43 : le groupe de l'app est créé ici, pour être ajouté au test fermé avant le démarrage.
+    const groupeTesteurs = app.statut === 'validee' ? await groupeDeLApp(deps, ligne) : config.groupeTesteurs
+    res.json({ preparation: app.preparation, elements: ELEMENTS_PREPARATION, groupeTesteurs })
   })
 
   routeur.put('/:id/preparation', async (req, res) => {
@@ -199,9 +203,12 @@ export function routesApps(deps) {
   routeur.post('/:id/campagne', exigerCompteValide, async (req, res) => {
     const id = idApp(req)
     const instant = maintenant()
+    const groupeGoogle = await groupeDeLApp(deps, await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) }))
     const campagneId = await transaction(pool, (client) =>
-      demarrerCampagne(client, { appId: id, developpeurId: developpeurId(req), groupeGoogle: config.groupeTesteurs, maintenant: instant }),
+      demarrerCampagne(client, { appId: id, developpeurId: developpeurId(req), groupeGoogle, maintenant: instant }),
     )
+    // US-43 : les testeurs sont ajoutés au groupe de l'app, sans action du développeur.
+    deps.synchroGroupes.lancer()
     const campagne = await lireCampagne(pool, campagneId, { maintenant: instant, vue: 'developpeur' })
     try {
       for (const telephone of await telephonesTesteurs(pool, campagneId)) {
