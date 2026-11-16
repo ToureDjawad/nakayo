@@ -213,7 +213,12 @@ data class AffectationTesteur(
     val rapportsDeBugs: Boolean = false,
     // US-37 : questionnaire terrain (Offre Plus), absent pour les autres offres.
     val questionnaireTerrain: QuestionnaireTerrain? = null,
+    // US-44 : version annoncée par le développeur, à mettre à jour puis vérifier.
+    val nouvelleVersion: NouvelleVersion? = null,
 )
+
+@Serializable
+data class NouvelleVersion(val numero: String, val changements: String, val annonceeLe: String)
 
 // US-37 : le questionnaire s'ouvre au jour `ouvertLe` et ne se remplit qu'une fois.
 @Serializable

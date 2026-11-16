@@ -111,3 +111,12 @@ export function lireGarantie(id, { signal } = {}) {
 export function demanderGarantie(id, { choix, motifGoogle, emailGoogle, engagement }) {
   return requete(`/apps/${encodeURIComponent(id)}/garantie`, { methode: 'POST', corps: { choix, motifGoogle, emailGoogle, engagement } })
 }
+
+// Versions annoncées aux testeurs pendant le test (docs/nouvelle-version.md, US-44).
+export function lireVersions(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne/versions`, { signal })
+}
+
+export function annoncerVersion(id, { numero, changements }) {
+  return requete(`/apps/${encodeURIComponent(id)}/campagne/versions`, { methode: 'POST', corps: { numero, changements } })
+}

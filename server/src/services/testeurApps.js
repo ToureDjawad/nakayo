@@ -12,7 +12,9 @@ const SELECT_AFFECTATION = `SELECT a.*, c.statut AS campagne_statut, c.demarree_
     ap.nom, ap.package, ap.offre, ap.lien_test_ferme, ap.instructions, ap.fonctionnalites, ap.connexion_requise, ap.identifiants_test,
     r.id AS rapport_id, uq.secondes AS usage_secondes, rt.envoye_le AS terrain_envoye_le,
     a.derniere_remise_jour::text AS derniere_remise_jour_texte, jr.connexion AS remise_connexion, jr.usage_secondes AS remise_usage, jr.rapport AS remise_rapport,
-    pt.gmail AS testeur_gmail, pt.gmail_principal_confirme_le
+    pt.gmail AS testeur_gmail, pt.gmail_principal_confirme_le,
+    nv.numero AS version_numero, nv.changements AS version_changements, nv.annoncee_le AS version_annoncee_le,
+    EXISTS (SELECT 1 FROM rapports rv WHERE rv.affectation_id = a.id AND rv.version_app = nv.numero) AS version_verifiee
   FROM affectations a
   JOIN profils_testeurs pt ON pt.utilisateur_id = a.testeur_id
   JOIN campagnes c ON c.id = a.campagne_id
@@ -20,7 +22,10 @@ const SELECT_AFFECTATION = `SELECT a.*, c.statut AS campagne_statut, c.demarree_
   LEFT JOIN rapports r ON r.affectation_id = a.id AND r.jour = $2
   LEFT JOIN usages_quotidiens uq ON uq.affectation_id = a.id AND uq.jour = $2
   LEFT JOIN retours_terrain rt ON rt.affectation_id = a.id
-  LEFT JOIN journees jr ON jr.affectation_id = a.id AND jr.jour = a.derniere_remise_jour`
+  LEFT JOIN journees jr ON jr.affectation_id = a.id AND jr.jour = a.derniere_remise_jour
+  LEFT JOIN LATERAL (
+    SELECT numero, changements, annoncee_le FROM versions_campagne WHERE campagne_id = a.campagne_id ORDER BY annoncee_le DESC, id DESC LIMIT 1
+  ) nv ON true`
 
 // Objet « app à tester » de l'app Android (docs/api-sprint3.md §2.1).
 export function versAffectationTesteur(l, maintenant) {
@@ -68,6 +73,12 @@ export function versAffectationTesteur(l, maintenant) {
     rapportsDeBugs: offre(l.offre).rapportsDeBugs,
     // US-37 : questionnaire terrain (Offre Plus), ou null.
     questionnaireTerrain: etatTerrain(l, jour),
+    // US-44 : dernière version annoncée par le développeur, tant que le testeur n'a pas envoyé
+    // de rapport sur cette version.
+    nouvelleVersion:
+      l.version_numero && !l.version_verifiee
+        ? { numero: l.version_numero, changements: l.version_changements, annonceeLe: l.version_annoncee_le.toISOString() }
+        : null,
   }
 }
 

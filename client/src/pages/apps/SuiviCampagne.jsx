@@ -7,6 +7,7 @@ import { Bouton, Indicateur } from '../../components/Bouton.jsx'
 import { AdresseGroupe, BoutonCopier } from '../../components/Copier.jsx'
 import { AvancementCampagne } from './AvancementCampagne.jsx'
 import { RapportFinal } from './RapportFinal.jsx'
+import { NouvelleVersion } from './NouvelleVersion.jsx'
 import { PageCompte, PanneauEtapes } from '../../components/MiseEnPage.jsx'
 import { csvGmails, dateCourte, telechargerTexte } from '../../lib/campagnes.js'
 import { messageErreurGlobale } from '../../lib/messages.js'
@@ -140,6 +141,8 @@ function Campagne({ campagne, annonce, onCampagneDemarree }) {
           </Link>
         </section>
       )}
+
+      <NouvelleVersion appId={campagne.app.id} enCours={campagne.statut === 'en_cours'} />
 
       <RapportFinal appId={campagne.app.id} onCampagneDemarree={onCampagneDemarree} />
 
