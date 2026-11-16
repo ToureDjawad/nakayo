@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
@@ -119,12 +120,12 @@ class ParcoursConnexionTest {
             compose.attendreTexte("Mon profil")
             compose.onNodeWithText("Mon profil").performClick()
             compose.attendreTexte("Koffi Agbo")
-            compose.onNodeWithText("Anglais").performClick()
+            compose.onNodeWithText("Anglais").performScrollTo().performClick()
             compose.onNodeWithText("Enregistrer mes langues").performClick()
             compose.attendreTexte("Vos langues sont enregistrées.")
             assertTrue("profil:langues=fr,en" in service.appels)
 
-            compose.onNodeWithText("Demander une modification").performClick()
+            compose.onNodeWithText("Demander une modification").performScrollTo().performClick()
             compose.attendreTexte("Changer de numéro Mobile Money")
             compose.onNodeWithText("Moov Money").performClick()
             compose.onNodeWithContentDescription("Nouveau numéro Mobile Money").performTextInput("0195000000")

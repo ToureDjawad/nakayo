@@ -111,7 +111,6 @@ private fun Resume(etat: EtatProfil, actions: ActionsProfil) {
         etat.information?.let { Bandeau(it, TypeBandeau.Succes) }
         etat.erreur?.let { Bandeau(it) }
         profil.niveau?.let { CarteNiveau(it) }
-        etat.parrainage?.let { CarteParrainage(it) }
         Carte(espacement = 0.dp, marge = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
             LigneInfo("Mon téléphone", profil.appareil?.let(::descriptionAppareil) ?: "Non renseigné")
             LigneInfo("Numéro de connexion", afficher(profil.telephone))
@@ -141,6 +140,7 @@ private fun Resume(etat: EtatProfil, actions: ActionsProfil) {
             }
             Note("Elles servent à vous proposer des apps dans les langues que vous comprenez.")
         }
+        etat.parrainage?.let { CarteParrainage(it) }
         Note("Le Gmail et le numéro de connexion ne se modifient pas. Pour toute correction, contactez l'équipe Nakayo.")
     }
 }
