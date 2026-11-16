@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { ErreurApi } from '../../api/client.js'
 import { deciderAlerte, listerAlertes } from '../../api/admin.js'
 import { Alerte } from '../../components/Alerte.jsx'
@@ -49,7 +49,10 @@ function CarteAlerte({ alerte, onDecidee }) {
       <ul className="mt-3 space-y-1 text-sm text-texte">
         {alerte.testeurs.map((t) => (
           <li key={t.id}>
-            {t.nom} · {telephone(t.telephone)}
+            <Link to={`/admin/testeurs/${t.id}`} className="font-medium text-accent underline underline-offset-2">
+              {t.nom}
+            </Link>{' '}
+            · {telephone(t.telephone)}
             {t.statut !== 'valide' && <span className="text-discret"> · compte {t.statut.replace('_', ' ')}</span>}
           </li>
         ))}
