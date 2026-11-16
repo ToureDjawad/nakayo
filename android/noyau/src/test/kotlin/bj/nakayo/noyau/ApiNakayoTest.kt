@@ -286,6 +286,18 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `questionnaire terrain en JSON, sans commentaire vide (US-37)`() = runTest {
+        stockage.ecrire("jeton-secret")
+        val terrain = app.replaceFirst("\"champFutur\"", "\"questionnaireTerrain\":{\"envoye\":true,\"ouvert\":false,\"ouvertLe\":7},\"champFutur\"")
+        repondre(201, """{"app":$terrain}""")
+        val r = api.envoyerRetourTerrain("31", RetourTerrain("3g", "lent", "fluide", "fr", 4))
+        assertEquals(QuestionnaireTerrain(envoye = true, ouvert = false), assertIs<Resultat.Succes<AffectationTesteur>>(r).valeur.questionnaireTerrain)
+        val envoi = serveur.takeRequest()
+        assertEquals("/api/testeurs/moi/apps/31/terrain", envoi.path)
+        assertEquals("""{"connexion":"3g","reseau":"lent","telephone":"fluide","langue":"fr","comprehension":4}""", envoi.body.readUtf8())
+    }
+
+    @Test
     fun `rapport de bug, champs et captures en multipart, puis la liste des bugs`() = runTest {
         stockage.ecrire("jeton-secret")
         repondre(201, """{"bug":{"id":"8","titre":"Le panier se vide","gravite":"genante","captures":2,"statut":"nouveau","motifRefus":null,"signaleLe":"2026-11-13T09:00:00.000Z","etapes":"…"}}""")

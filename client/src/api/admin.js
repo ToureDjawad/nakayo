@@ -90,3 +90,16 @@ export function lireTableauDeBord({ signal } = {}) {
 export function relancerVersement(reference) {
   return requete(`/admin/versements/${encodeURIComponent(reference)}/relance`, { methode: 'POST' })
 }
+
+// Devis de l'offre Lancement Afrique (docs/api-offres.md §4.2, US-37).
+export function listerDevis({ statut = 'demande' } = {}, { signal } = {}) {
+  return requete(`/admin/devis?statut=${encodeURIComponent(statut)}`, { signal })
+}
+
+export function proposerDevis(id, { prixCarte, prixMobileMoney, message }) {
+  return requete(`/admin/devis/${encodeURIComponent(id)}/proposition`, { methode: 'POST', corps: { prixCarte, prixMobileMoney, message } })
+}
+
+export function refuserDevis(id, message) {
+  return requete(`/admin/devis/${encodeURIComponent(id)}/refus`, { methode: 'POST', corps: { message } })
+}

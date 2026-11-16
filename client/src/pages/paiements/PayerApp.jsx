@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
-import { lireApp } from '../../api/apps.js'
+import { lireApp, lireDevis } from '../../api/apps.js'
 import { ErreurApi } from '../../api/client.js'
 import { lireOffres, monterEnGamme, payerApp } from '../../api/paiements.js'
 import { Alerte } from '../../components/Alerte.jsx'
@@ -27,6 +27,7 @@ const MESSAGES_ERREUR = {
   paiement_indisponible: 'Le paiement en ligne n’est pas encore ouvert. Votre app est conservée : nous vous prévenons par email dès l’ouverture.',
   compte_non_valide: 'Votre compte doit être validé par l’équipe avant de payer une offre.',
   deja_dans_cette_offre: 'Votre app est déjà en Offre Pro.',
+  devis_requis: 'Le prix de l’Offre Lancement Afrique dépend de votre besoin : demandez d’abord un devis.',
   campagne_terminee: 'La campagne de cette app est terminée : elle ne peut plus changer d’offre.',
   fournisseur_indisponible: 'Le service de paiement ne répond pas pour le moment. Aucun montant n’a été prélevé : réessayez dans quelques minutes.',
 }
@@ -53,7 +54,7 @@ function Formulaire({ app, offres, offreInitiale, montee = false }) {
 
   const choixOffres = offres.map((o) => ({
     valeur: o.code,
-    libelle: `${o.nom} : ${montantLisible(o.prix.mobile_money.montant, o.prix.mobile_money.devise)} ou ${montantLisible(o.prix.carte.montant, o.prix.carte.devise)}`,
+    libelle: `${o.nom}${o.surDevis ? ' (votre devis)' : ''} : ${montantLisible(o.prix.mobile_money.montant, o.prix.mobile_money.devise)} ou ${montantLisible(o.prix.carte.montant, o.prix.carte.devise)}`,
     detail: o.description,
   }))
 
@@ -167,9 +168,42 @@ function useAppEtOffres(id) {
   return useChargement(
     async (signal) => {
       const [{ app }, { offres }] = await Promise.all([lireApp(id, { signal }), lireOffres({ signal })])
-      return { app, offres }
+      // US-37 : le prix de Lancement Afrique vient du devis de l'app.
+      const devis = app.statut === 'brouillon' && offres.some((o) => o.surDevis) ? (await lireDevis(id, { signal })).devis : null
+      return { app, offres, devis }
     },
     id,
+  )
+}
+
+// Offres payables : Lancement Afrique seulement avec un devis proposé, à son prix.
+function offresPayables(offres, devis) {
+  return offres
+    .filter((o) => !o.surDevis || devis?.statut === 'propose')
+    .map((o) =>
+      o.surDevis
+        ? {
+            ...o,
+            prix: { carte: devis.prix.carte, mobile_money: devis.prix.mobile_money },
+            ...(o.debitCarte && { debitCarte: devis.prix.mobile_money }),
+          }
+        : o,
+    )
+}
+
+// Lancement Afrique sans devis proposé : lien vers la demande de devis.
+function NoteDevis({ app, offre, devis }) {
+  if (!offre || devis?.statut === 'propose') return null
+  const lien = `/mon-compte/apps/${app.id}/devis`
+  return (
+    <p className="mt-6 rounded-carte border border-trait bg-white p-4 text-sm text-texte">
+      <span className="font-semibold text-encre">{offre.nom}</span> : sur devis, à partir de{' '}
+      {montantLisible(offre.prix.carte.montant, offre.prix.carte.devise)}.{' '}
+      {devis?.statut === 'demande' ? 'Votre demande est à l’étude. ' : devis?.statut === 'refuse' ? 'Notre équipe a répondu à votre demande. ' : ''}
+      <Link to={lien} className="font-medium text-accent underline underline-offset-2">
+        {devis ? 'Voir votre demande de devis' : 'Demander un devis'}
+      </Link>
+    </p>
   )
 }
 
@@ -216,15 +250,17 @@ function Paiement({ id, utilisateur }) {
       </PagePaiement>
     )
   }
+  const payables = offresPayables(offres, donnees.devis)
   const demandee = parametres.get('offre')
-  const offreInitiale = offres.some((o) => o.code === demandee) ? demandee : (offres.find((o) => o.code === 'standard') ?? offres[0]).code
+  const offreInitiale = payables.some((o) => o.code === demandee) ? demandee : (payables.find((o) => o.code === 'standard') ?? payables[0]).code
   return (
     <PagePaiement
       titre={TITRE}
       utilisateur={utilisateur}
       intro={<p>Une fois l’offre payée, l’app passe en vérification et ne peut plus être modifiée.</p>}
     >
-      <Formulaire app={app} offres={offres} offreInitiale={offreInitiale} />
+      <Formulaire app={app} offres={payables} offreInitiale={offreInitiale} />
+      <NoteDevis app={app} offre={offres.find((o) => o.surDevis)} devis={donnees.devis} />
     </PagePaiement>
   )
 }
@@ -239,6 +275,7 @@ function Montee({ id, utilisateur }) {
   let blocage = null
   if (!pro) blocage = 'L’Offre Pro n’est pas encore ouverte.'
   else if (app.offre === 'pro') blocage = 'Votre app est déjà en Offre Pro.'
+  else if (app.offre === 'afrique') blocage = 'Votre app est en Offre Lancement Afrique : elle a déjà tout ce que l’Offre Pro apporte.'
   else if (app.statut === 'refusee') blocage = 'Cette app a été refusée : elle ne peut pas changer d’offre.'
   else if (app.campagne?.statut === 'terminee') blocage = 'La campagne de cette app est terminée : elle ne peut plus changer d’offre.'
 

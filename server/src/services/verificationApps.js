@@ -1,5 +1,5 @@
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
-import { montantLisible } from '../lib/offres.js'
+import { montantLisible, offre as lireOffre } from '../lib/offres.js'
 import { versAppApi } from './apps.js'
 
 // File de vérification des apps (US-14, docs/api-sprint2.md §5).
@@ -113,7 +113,7 @@ export function messageDecisionApp(ligne, { clientUrl }) {
         'Bonjour,',
         '',
         `Notre équipe a vérifié votre app « ${ligne.nom} » : tout est prêt pour la campagne de test.`,
-        'Terminez la liste de vérification, puis démarrez la campagne : 15 testeurs seront affectés à votre app.',
+        `Terminez la liste de vérification, puis démarrez la campagne : ${lireOffre(ligne.offre).testeurs} testeurs seront affectés à votre app.`,
         '',
         `Suivre votre app : ${lien}`,
         '',

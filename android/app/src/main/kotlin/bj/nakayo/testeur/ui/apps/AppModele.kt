@@ -38,6 +38,8 @@ class AppModele(
     private val surRapport: (AffectationTesteur) -> Unit,
     // US-33 : rapport de bug (offres Pro et Lancement Afrique).
     private val surBug: (AffectationTesteur) -> Unit = {},
+    // US-37 : questionnaire terrain (Lancement Afrique).
+    private val surTerrain: (AffectationTesteur) -> Unit = {},
     private val surQuitter: () -> Unit,
     private val surSessionExpiree: (message: String) -> Unit,
 ) {
@@ -125,6 +127,11 @@ class AppModele(
     fun signalerBug() {
         val a = etatInterne.value.affectation
         if (a.rapportsDeBugs && a.installationConfirmee) surBug(a)
+    }
+
+    fun repondreTerrain() {
+        val a = etatInterne.value.affectation
+        if (a.questionnaireTerrain?.ouvert == true) surTerrain(a)
     }
 
     fun retour() = surQuitter()

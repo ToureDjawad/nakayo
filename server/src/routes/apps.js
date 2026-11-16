@@ -15,6 +15,8 @@ import { enregistrerDecision, lireRapportFinal, rapportPdf } from '../services/r
 import { jourBenin } from '../lib/temps.js'
 import { bugsEnCsv, cheminCapture, deciderBug, LIBELLES_STATUT_BUG, listerBugsApp, MOTIF_REFUS, resumeBugsApp } from '../services/bugs.js'
 import { cheminAbsolu } from '../services/documents.js'
+import { lireBesoin } from '../lib/devis.js'
+import { enregistrerBesoin, lireDevisApp, prixDevis, versDevisApi } from '../services/devis.js'
 import { transaction } from './auth.js'
 
 const DECISIONS_GOOGLE = ['acceptee', 'refusee']
@@ -83,12 +85,15 @@ export function routesApps(deps) {
     const { moyen, numeroMomo, offre = nature === 'offre' ? 'standard' : 'pro' } = corps(req)
     const numero = moyen === 'mobile_money' ? normaliserWhatsapp(numeroMomo) : null
     exigerChamps({
-      offre: CODES_OFFRES.includes(offre) && (nature === 'offre' || offre !== 'standard') ? null : 'valeur_inconnue',
+      // On ne monte en gamme que vers Pro ; Lancement Afrique se choisit au paiement, sur devis.
+      offre: CODES_OFFRES.includes(offre) && (nature === 'offre' || offre === 'pro') ? null : 'valeur_inconnue',
       moyen: !moyen ? 'requis' : MOYENS_PAIEMENT.includes(moyen) ? null : 'valeur_inconnue',
       numeroMomo: moyen === 'mobile_money' ? validerWhatsapp(numero) : null,
     })
     const app = await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
     verifier?.(app, offre)
+    // docs/api-offres.md §4 : le prix de Lancement Afrique est celui du devis proposé par l'équipe.
+    const prix = lireOffre(offre).surDevis && nature === 'offre' && app.statut === 'brouillon' ? await prixDevis(pool, app.id) : null
     limites.paiements.consommer(String(developpeurId(req)))
     const paiement = await creerPaiement(pool, {
       app,
@@ -97,6 +102,7 @@ export function routesApps(deps) {
       nature,
       moyen,
       numeroMomo: numero,
+      prix,
       fournisseur: config.paiementMode,
       // FedaPay encaisse en FCFA : la carte est facturée au prix Mobile Money (même valeur, 1 $ = 600 FCFA).
       fcfa: Boolean(fedapay),
@@ -125,7 +131,22 @@ export function routesApps(deps) {
     res.status(201).json({ paiement: versPaiementApi(paiement), redirection: lien.url })
   }
 
-  // §2.2 Paiement de l'offre (Standard ou Pro) pour une app en brouillon.
+  // docs/api-offres.md §4 : devis de l'offre Lancement Afrique (US-37).
+  routeur.get('/:id/devis', async (req, res) => {
+    const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const devis = await lireDevisApp(pool, app.id)
+    res.json({ devis: devis ? versDevisApi(devis) : null })
+  })
+
+  routeur.put('/:id/devis', exigerCompteValide, async (req, res) => {
+    const app = await lireAppDeveloppeur(pool, { id: idApp(req), developpeurId: developpeurId(req) })
+    const { valeurs, erreurs } = lireBesoin(corps(req))
+    exigerChamps(erreurs)
+    const devis = await enregistrerBesoin(pool, { app, developpeurId: developpeurId(req), valeurs, maintenant: maintenant() })
+    res.json({ devis: versDevisApi(devis) })
+  })
+
+  // §2.2 Paiement de l'offre (Standard, Pro, ou Lancement Afrique au prix du devis) pour une app en brouillon.
   routeur.post('/:id/paiements', exigerCompteValide, (req, res) => lancerPaiement(req, res, { nature: 'offre' }))
 
   // docs/api-offres.md §2 : passage de Standard à Pro d'une app déjà payée, même pendant la
@@ -133,11 +154,12 @@ export function routesApps(deps) {
   routeur.post('/:id/montee-en-gamme', exigerCompteValide, (req, res) =>
     lancerPaiement(req, res, {
       nature: 'montee_en_gamme',
-      verifier(app, offre) {
+      verifier(app) {
         if (app.statut === 'brouillon' || app.statut === 'refusee') {
           throw new ErreurHttp(409, 'statut_incompatible', { message: 'Choisissez l’offre au moment du paiement.', statut: app.statut })
         }
-        if (app.offre === offre) throw new ErreurHttp(409, 'deja_dans_cette_offre', { message: 'Cette app est déjà dans cette offre.' })
+        // Une app en Lancement Afrique a déjà tout ce que Pro apporte.
+        if (app.offre !== 'standard') throw new ErreurHttp(409, 'deja_dans_cette_offre', { message: 'Cette app est déjà dans cette offre.' })
         if (app.campagne_statut && app.campagne_statut !== 'en_cours') {
           throw new ErreurHttp(409, 'campagne_terminee', { message: 'La campagne de test est terminée.' })
         }

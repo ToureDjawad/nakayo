@@ -19,7 +19,7 @@ describe('Accueil (maquette D01)', () => {
     expect(screen.getByText(/ne vous demande jamais l’accès à votre Play Console/)).toBeInTheDocument()
   })
 
-  it('les offres Standard et Pro sont ouvertes, Lancement Afrique arrive bientôt', () => {
+  it('les trois offres sont ouvertes : Standard, Pro et Lancement Afrique sur devis', () => {
     simulerFetch()
     rendreA('/')
     const section = screen.getByRole('region', { name: 'Un prix par app, payé une fois' })
@@ -30,8 +30,8 @@ describe('Accueil (maquette D01)', () => {
     expect(within(offres[1]).getByText(/35\s400 FCFA/)).toBeInTheDocument()
     expect(within(offres[1]).getByRole('link', { name: 'Choisir Pro' })).toHaveAttribute('href', '/inscription')
     expect(within(offres[1]).queryByText('Bientôt disponible')).not.toBeInTheDocument()
-    expect(within(offres[2]).getByText('Bientôt disponible')).toBeInTheDocument()
-    expect(within(offres[2]).queryByRole('link')).not.toBeInTheDocument()
+    expect(within(offres[2]).getByRole('link', { name: 'Demander un devis' })).toHaveAttribute('href', '/inscription')
+    expect(screen.queryByText('Bientôt disponible')).not.toBeInTheDocument()
   })
 
   it('la navigation mène aux sections et le pied de page aux textes légaux', () => {

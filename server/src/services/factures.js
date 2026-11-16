@@ -1,5 +1,5 @@
 import { introuvable } from '../lib/erreurs.js'
-import { montantLisible } from '../lib/offres.js'
+import { montantLisible, offre as lireOffre } from '../lib/offres.js'
 import { creerPage, documentPdf } from '../lib/pdf.js'
 
 const PAYS = new Intl.DisplayNames(['fr'], { type: 'region' })
@@ -13,7 +13,7 @@ const dateFr = (date) =>
 // Facture du développeur (ou de n'importe quel développeur pour un admin).
 export async function lireFacture(db, { numero, developpeurId = null }) {
   const { rows } = await db.query(
-    `SELECT f.*, p.reference, p.moyen, p.confirme_le, p.statut AS statut_paiement, p.rembourse_le
+    `SELECT f.*, p.reference, p.moyen, p.confirme_le, p.statut AS statut_paiement, p.rembourse_le, p.offre
        FROM factures f JOIN paiements p ON p.id = f.paiement_id
       WHERE f.numero = $1 AND ($2::bigint IS NULL OR f.developpeur_id = $2)`,
     [numero, developpeurId],
@@ -49,7 +49,7 @@ export function facturePdf(f) {
   page.texteADroite(droite, 596, 'MONTANT', { taille: 8, gras: true, gris: true })
   page.trait(gauche, 588, droite)
   page.texte(gauche, 568, f.libelle.length > 70 ? `${f.libelle.slice(0, 69)}…` : f.libelle, { taille: 10 })
-  page.texte(gauche, 554, '15 testeurs vérifiés pendant 14 jours, rapports quotidiens', { taille: 9, gris: true })
+  page.texte(gauche, 554, `${lireOffre(f.offre).testeurs} testeurs vérifiés pendant 14 jours, rapports quotidiens`, { taille: 9, gris: true })
   page.texteADroite(droite, 568, montantLisible(f.montant, f.devise), { taille: 10 })
   page.trait(gauche, 538, droite)
   page.texte(330, 516, 'Total payé', { taille: 11, gras: true })

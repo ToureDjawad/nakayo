@@ -207,6 +207,67 @@ function DecisionGoogle({ appId, decisionInitiale }) {
 }
 
 // US-36 : rapport de fin PDF et brouillon des réponses au formulaire Google, au 14e jour du test.
+const CONNEXIONS = { wifi: 'Wi-Fi', '4g': '4G', '3g': '3G', '2g': '2G' }
+const LANGUES = { fr: 'français', en: 'anglais' }
+const tenue = (t) => `${t.fluide} fluide, ${t.lent} lent, ${t.inutilisable} inutilisable`
+const note = (n) => (n === null ? '-' : `${String(n).replace('.', ',')} sur 5`)
+
+function LigneTerrain({ terme, children }) {
+  return (
+    <div className="py-2 sm:grid sm:grid-cols-[220px_minmax(0,1fr)] sm:gap-4">
+      <dt className="text-sm text-discret">{terme}</dt>
+      <dd className="mt-0.5 text-sm text-encre sm:mt-0">{children}</dd>
+    </div>
+  )
+}
+
+// US-37 : questionnaire terrain de l'offre Lancement Afrique (réseau, petits téléphones, langue).
+function TestTerrain({ terrain: t }) {
+  return (
+    <section aria-labelledby="test-terrain" className="mt-6 rounded-carte border border-trait bg-white p-4 sm:p-5">
+      <h3 id="test-terrain" className="font-semibold text-encre">
+        Test terrain
+      </h3>
+      {!t.reponses ? (
+        <p className="mt-2 text-sm text-texte">Aucun testeur n’a encore répondu au questionnaire terrain.</p>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-texte">
+            {t.reponses} testeur{t.reponses > 1 ? 's ont' : ' a'} répondu au questionnaire terrain, à partir du 7e jour.
+          </p>
+          <dl className="mt-3 divide-y divide-trait">
+            <LigneTerrain terme="Tenue sur le réseau">{tenue(t.reseau)}</LigneTerrain>
+            {t.parConnexion.map((c) => (
+              <LigneTerrain key={c.connexion} terme={`En ${CONNEXIONS[c.connexion]} (${c.reponses})`}>
+                {tenue(c)}
+              </LigneTerrain>
+            ))}
+            <LigneTerrain terme="Tenue sur le téléphone">{tenue(t.telephone)}</LigneTerrain>
+            <LigneTerrain terme={`Petits téléphones (${t.petitsTelephones.reponses})`}>
+              {t.petitsTelephones.reponses ? tenue(t.petitsTelephones) : '-'}
+            </LigneTerrain>
+            <LigneTerrain terme="Compréhension de l’app">{note(t.comprehensionMoyenne)}</LigneTerrain>
+            {t.langues.map((l) => (
+              <LigneTerrain key={l.langue} terme={`En ${LANGUES[l.langue]} (${l.reponses})`}>
+                {note(l.comprehensionMoyenne)}
+              </LigneTerrain>
+            ))}
+          </dl>
+          {t.commentaires.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {t.commentaires.map((c, i) => (
+                <li key={i} className="rounded-champ bg-fond-doux px-3 py-2 text-sm [overflow-wrap:anywhere] text-texte">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
 export function RapportFinal({ appId }) {
   const [essai, setEssai] = useState(0)
   const [etat, setEtat] = useState({ rapport: null, erreur: null })
@@ -257,6 +318,7 @@ export function RapportFinal({ appId }) {
         <div className="mt-4">
           <BoutonRapport appId={appId} />
         </div>
+        {rapport.bilan?.terrain && <TestTerrain terrain={rapport.bilan.terrain} />}
         <Brouillon appId={appId} brouillon={rapport.brouillon} />
         <DecisionGoogle appId={appId} decisionInitiale={rapport.decisionGoogle} />
       </>

@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router'
 import AppsAVerifier from './pages/admin/AppsAVerifier.jsx'
 import Campagnes from './pages/admin/Campagnes.jsx'
+import DevisAfrique from './pages/admin/DevisAfrique.jsx'
 import TableauDeBord from './pages/admin/TableauDeBord.jsx'
 import ComptesEnAttente from './pages/admin/ComptesEnAttente.jsx'
 import ContactSupport from './pages/admin/ContactSupport.jsx'
@@ -10,6 +11,7 @@ import FormulaireApp from './pages/apps/FormulaireApp.jsx'
 import PreparationLancement from './pages/apps/PreparationLancement.jsx'
 import SuiviCampagne from './pages/apps/SuiviCampagne.jsx'
 import BugsSignales from './pages/apps/BugsSignales.jsx'
+import DemandeDevis from './pages/apps/DemandeDevis.jsx'
 import MesPaiements from './pages/paiements/MesPaiements.jsx'
 import PayerApp, { MonteeEnGamme } from './pages/paiements/PayerApp.jsx'
 import RetourPaiement from './pages/paiements/RetourPaiement.jsx'
@@ -38,6 +40,7 @@ export const routes = [
   { path: '/mon-compte/apps/:id/preparation', element: <PreparationLancement /> },
   { path: '/mon-compte/apps/:id/campagne', element: <SuiviCampagne /> },
   { path: '/mon-compte/apps/:id/bugs', element: <BugsSignales /> },
+  { path: '/mon-compte/apps/:id/devis', element: <DemandeDevis /> },
   { path: '/mon-compte/apps/:id/paiement', element: <PayerApp /> },
   { path: '/mon-compte/apps/:id/montee-en-gamme', element: <MonteeEnGamme /> },
   { path: '/mon-compte/paiements', element: <MesPaiements /> },
@@ -51,6 +54,7 @@ export const routes = [
   { path: '/admin/comptes', element: <ComptesEnAttente /> },
   { path: '/admin/apps', element: <AppsAVerifier /> },
   { path: '/admin/campagnes', element: <Campagnes /> },
+  { path: '/admin/devis', element: <DevisAfrique /> },
   { path: '/admin/messages', element: <MessagesSupport /> },
   { path: '/admin/support', element: <ContactSupport /> },
   { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },

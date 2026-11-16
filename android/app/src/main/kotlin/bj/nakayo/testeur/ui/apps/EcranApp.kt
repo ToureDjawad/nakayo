@@ -69,9 +69,11 @@ class ActionsApp(
     val confirmerInstallation: () -> Unit,
     val ecrireRapport: () -> Unit,
     val signalerBug: () -> Unit = {},
+    val repondreTerrain: () -> Unit = {},
 )
 
-fun AppModele.actions() = ActionsApp(::retour, ::captureChoisie, ::afficherErreur, ::confirmerInstallation, ::ecrireRapport, ::signalerBug)
+fun AppModele.actions() =
+    ActionsApp(::retour, ::captureChoisie, ::afficherErreur, ::confirmerInstallation, ::ecrireRapport, ::signalerBug, ::repondreTerrain)
 
 // Une app à tester (T08) : inscription au test, installation depuis le Play Store, test du jour.
 @Composable
@@ -119,7 +121,7 @@ fun EcranApp(etat: EtatApp, actions: ActionsApp, mesureAutorisee: Boolean = true
         }
         if (a.inscriptionConfirmee) EtapeInstallation(a, etat.verificationInstallation, { ouvrir(a.lienPlayStore) }, actions.confirmerInstallation)
         if (a.installationConfirmee) {
-            TestDuJour(a, actions.ecrireRapport, actions.signalerBug) {
+            TestDuJour(a, actions.ecrireRapport, actions.signalerBug, actions.repondreTerrain) {
                 val lancement = contexte.packageManager.getLaunchIntentForPackage(a.app.paquet)
                 if (lancement == null) {
                     actions.afficherErreur("${a.app.nom} n'est plus installée sur ce téléphone. Réinstallez-la depuis le Play Store.")
@@ -198,7 +200,7 @@ private fun EtapeInstallation(a: AffectationTesteur, enCours: Boolean, surPlaySt
 }
 
 @Composable
-private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surBug: () -> Unit, surOuvrir: () -> Unit) {
+private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surBug: () -> Unit, surTerrain: () -> Unit, surOuvrir: () -> Unit) {
     Carte {
         Surtitre("Test du jour")
         a.app.instructions?.takeIf { it.isNotBlank() }?.let { Paragraphe(it) }
@@ -230,6 +232,14 @@ private fun TestDuJour(a: AffectationTesteur, surRapport: () -> Unit, surBug: ()
         if (a.rapportsDeBugs) {
             Bouton("Signaler un bug", surBug, StyleBouton.Secondaire, icone = R.drawable.ic_alerte)
             Note("Chaque bug accepté par le développeur vous rapporte 200 FCFA de plus.")
+        }
+        // US-37 : questionnaire terrain, une fois, à partir du 7e jour.
+        a.questionnaireTerrain?.let { q ->
+            when {
+                q.envoye -> LigneIcone(R.drawable.ic_coche, "Questionnaire terrain envoyé", Couleurs.vert)
+                q.ouvert -> Bouton("Répondre au questionnaire terrain", surTerrain, StyleBouton.Secondaire, icone = R.drawable.ic_message)
+                else -> Note("Un questionnaire sur le réseau, le téléphone et la langue s'ouvrira au jour ${q.ouvertLe}.")
+            }
         }
     }
 }
