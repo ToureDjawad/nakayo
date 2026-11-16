@@ -1,4 +1,5 @@
 import cors from 'cors'
+import { creerGroupesDepuisConfig, creerSynchroGroupes } from './services/googleGroupes.js'
 import express from 'express'
 import { lireConfig } from './config.js'
 import { pool as poolParDefaut } from './db/pool.js'
@@ -43,6 +44,9 @@ export function creerApp(dependances = {}) {
   // Fournisseur des versements aux testeurs (US-22) ; null tant qu'aucun n'est branché.
   deps.momo = dependances.momo !== undefined ? dependances.momo : creerMomo(config, { fedapay: deps.fedapay })
   deps.limites = dependances.limites ?? creerLimitesApi(deps.maintenant)
+  // US-43 : Groupes Google des campagnes ; null tant que Google Workspace n'est pas branché.
+  deps.groupes = dependances.groupes !== undefined ? dependances.groupes : creerGroupesDepuisConfig(config)
+  deps.synchroGroupes = creerSynchroGroupes(deps)
   deps.controles = creerLanceurControles({ ...deps, fetch: dependances.fetch })
   deps.apresInscription = (utilisateurId) => deps.controles.lancer(utilisateurId)
 

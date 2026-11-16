@@ -3,6 +3,7 @@ import { lireConfig } from './config.js'
 import { demarrerVerificationNocturne } from './services/verificationQuotidienne.js'
 import { demarrerVersements } from './services/versements.js'
 import { demarrerRappelsSms } from './services/rappelsSoir.js'
+import { demarrerSynchroGroupes } from './services/googleGroupes.js'
 
 const { port } = lireConfig()
 
@@ -14,5 +15,7 @@ app.listen(port, () => {
 demarrerVerificationNocturne(app.locals.deps)
 // US-22 : versements MoMo aux testeurs, toutes les 15 minutes.
 demarrerVersements(app.locals.deps)
+// US-43 : Groupes Google des campagnes, repris toutes les 15 minutes (si Google Workspace est branché).
+demarrerSynchroGroupes(app.locals.deps)
 // US-25 : SMS de secours à 22 h quand un rapport du jour manque.
 if (app.locals.deps.config.rappelsSms) demarrerRappelsSms(app.locals.deps)

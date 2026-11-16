@@ -94,7 +94,7 @@ Le remplacement automatique arrivera avec US-27.
 
 ### 1.6 Groupe Google
 
-Pour l'instant, un seul groupe pour tous les testeurs (`GROUPE_GOOGLE_TESTEURS`). L'équipe y ajoute à la main le Gmail de chaque testeur validé. L'inscription réelle de chaque testeur à chaque app reste suivie par la confirmation avec capture (§2).
+Sans Google Workspace, un seul groupe pour tous les testeurs (`GROUPE_GOOGLE_TESTEURS`), rempli à la main par l'équipe. Avec Google Workspace, un groupe par app, créé et rempli automatiquement : voir `docs/groupes-google.md` (US-43). L'inscription réelle de chaque testeur à chaque app reste suivie par la confirmation avec capture (§2).
 
 Les groupes par campagne, créés et remplis par l'API Admin SDK de Google Workspace, demandent un compte Workspace : ils viendront avec un adaptateur, comme les fournisseurs de paiement.
 

@@ -35,6 +35,13 @@ export function lireConfig(env = process.env) {
     // Groupe Google des testeurs Nakayo (US-13), que le développeur ajoute à son test fermé.
     // Vide tant que le groupe n'est pas créé : l'équipe donne alors l'adresse par email.
     groupeTesteurs: env.GROUPE_GOOGLE_TESTEURS || null,
+    // US-43 : un groupe par app, créé et rempli par l'API Admin SDK (docs/groupes-google.md).
+    // Fichier JSON du compte de service, administrateur du domaine délégué et domaine des groupes.
+    googleWorkspace: {
+      fichierCompteService: env.GOOGLE_COMPTE_SERVICE_FICHIER || null,
+      administrateur: env.GOOGLE_ADMIN_DELEGUE || null,
+      domaine: env.GOOGLE_GROUPES_DOMAINE || null,
+    },
     dossierDocuments: env.DOSSIER_DOCUMENTS ?? fileURLToPath(new URL('../stockage/documents/', import.meta.url)),
   }
 }
