@@ -33,6 +33,12 @@ object MessagesChamps {
         else -> "Cette ville n'est pas valide."
     }
 
+    // US-39 : code de parrainage saisi à l'inscription.
+    fun codeParrainage(code: String): String = when (code) {
+        "inconnu" -> "Ce code ne correspond à aucun testeur. Vérifiez-le auprès de la personne qui vous a invité, ou laissez le champ vide."
+        else -> "Un code de parrainage a 6 caractères, lettres et chiffres, par exemple K7Q2MP."
+    }
+
     fun gmail(code: String): String = when (code) {
         "requis" -> "Saisissez l'adresse Gmail ouverte dans le Play Store de ce téléphone."
         "non_gmail" -> "Utilisez une adresse qui se termine par @gmail.com, celle du Play Store de ce téléphone."

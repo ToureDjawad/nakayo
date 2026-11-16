@@ -61,6 +61,8 @@ data class ProfilTesteur(
     val demandeChangementMomo: DemandeChangementMomo? = null,
     val motifRefus: String? = null,
     val creeLe: String,
+    // US-39 : code à donner aux personnes qu'on parraine.
+    val codeParrainage: String? = null,
     // US-38 : niveau Bronze, Argent ou Or (docs/api-niveaux.md).
     val niveau: NiveauTesteur? = null,
 )
@@ -93,6 +95,8 @@ data class FormulaireInscription(
     val appareil: Appareil,
     val consentementSuivi: Boolean,
     val accepteConditions: Boolean,
+    // US-39 : code du parrain, facultatif.
+    val codeParrainage: String? = null,
 )
 
 // Photo prête à l'envoi (JPEG ou PNG, 5 Mo au plus côté serveur).
@@ -321,6 +325,26 @@ data class Portefeuille(
 
 @Serializable
 internal data class ReponsePortefeuille(val portefeuille: Portefeuille)
+
+// Parrainage (US-39, docs/api-parrainage.md §2).
+@Serializable
+data class Parrainage(
+    val code: String? = null,
+    val prime: Montant,
+    val totalVerse: Int = 0,
+    val totalVerseLisible: String = "",
+    val filleuls: List<Filleul> = emptyList(),
+)
+
+@Serializable
+data class Montant(val montant: Int, val devise: String, val montantLisible: String)
+
+// etat : compte_en_validation, en_attente_de_campagne, prime_en_paiement, prime_versee ou inactif.
+@Serializable
+data class Filleul(val nom: String, val inscritLe: String, val etat: String)
+
+@Serializable
+internal data class ReponseParrainage(val parrainage: Parrainage)
 
 @Serializable
 internal data class ReponseApps(val apps: List<AffectationTesteur>)

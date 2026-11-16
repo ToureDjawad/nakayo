@@ -221,6 +221,24 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `le code de parrainage part avec l'inscription, et le parrainage se lit (US-39)`() = runTest {
+        repondre(201, """{"jeton":"jeton-session","utilisateur":$profil}""")
+        val photo = Photo(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 1))
+        api.inscrire("jeton-inscription", formulaire.copy(codeParrainage = "K7Q2MP"), photo, photo)
+        val corps = serveur.takeRequest().body.readUtf8()
+        assertTrue(corps.contains("name=\"codeParrainage\"\r\nContent-Length: 6\r\n\r\nK7Q2MP"))
+
+        repondre(
+            200,
+            """{"parrainage":{"code":"K7Q2MP","prime":{"montant":500,"devise":"XOF","montantLisible":"500 FCFA"},"totalVerse":500,
+            |"totalVerseLisible":"500 FCFA","filleuls":[{"nom":"Afi D.","inscritLe":"2026-11-12T09:00:00.000Z","etat":"prime_versee"}],"champFutur":1}}""".trimMargin(),
+        )
+        val parrainage = (api.parrainage() as Resultat.Succes).valeur
+        assertEquals(listOf(Filleul("Afi D.", "2026-11-12T09:00:00.000Z", "prime_versee")), parrainage.filleuls)
+        assertEquals("/api/testeurs/moi/parrainage", serveur.takeRequest().path)
+    }
+
+    @Test
     fun `inscription refusée, jeton d'inscription expiré, rien n'est gardé`() = runTest {
         repondre(401, """{"erreur":{"code":"non_authentifie","message":"Session expirée."}}""")
         val photo = Photo(byteArrayOf(1, 2, 3))

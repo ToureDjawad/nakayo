@@ -111,6 +111,7 @@ private fun Resume(etat: EtatProfil, actions: ActionsProfil) {
         etat.information?.let { Bandeau(it, TypeBandeau.Succes) }
         etat.erreur?.let { Bandeau(it) }
         profil.niveau?.let { CarteNiveau(it) }
+        etat.parrainage?.let { CarteParrainage(it) }
         Carte(espacement = 0.dp, marge = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
             LigneInfo("Mon téléphone", profil.appareil?.let(::descriptionAppareil) ?: "Non renseigné")
             LigneInfo("Numéro de connexion", afficher(profil.telephone))

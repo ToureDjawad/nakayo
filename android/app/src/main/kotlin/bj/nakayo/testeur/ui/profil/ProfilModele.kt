@@ -1,6 +1,7 @@
 package bj.nakayo.testeur.ui.profil
 
 import bj.nakayo.noyau.ErreurApi
+import bj.nakayo.noyau.Parrainage
 import bj.nakayo.noyau.ProfilTesteur
 import bj.nakayo.noyau.Resultat
 import bj.nakayo.noyau.ServiceTesteur
@@ -32,6 +33,8 @@ data class EtatProfil(
     val erreurs: Map<String, String> = emptyMap(),
     val messageDemande: String? = null,
     val envoiDemande: Boolean = false,
+    // US-39 : code, prime et filleuls ; null tant qu'ils ne sont pas chargés (ou si le chargement échoue).
+    val parrainage: Parrainage? = null,
 ) {
     val languesModifiees: Boolean get() = langues != profil.langues.toSet()
 }
@@ -48,6 +51,16 @@ class ProfilModele(
 ) {
     private val etatInterne = MutableStateFlow(EtatProfil(profil))
     val etat: StateFlow<EtatProfil> = etatInterne.asStateFlow()
+
+    init {
+        // Le parrainage n'est pas indispensable au profil : en cas d'échec, sa carte reste cachée.
+        portee.launch {
+            when (val r = service.parrainage()) {
+                is Resultat.Succes -> etatInterne.update { it.copy(parrainage = r.valeur) }
+                is Resultat.Echec -> expiree(r.erreur)
+            }
+        }
+    }
 
     fun basculerLangue(code: String) = etatInterne.update {
         it.copy(langues = if (code in it.langues) it.langues - code else it.langues + code, information = null, erreur = null)

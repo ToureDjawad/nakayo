@@ -86,6 +86,7 @@ class ApiNakayo(
             .addFormDataPart("consentementSuivi", formulaire.consentementSuivi.toString())
             .addFormDataPart("accepteConditions", formulaire.accepteConditions.toString())
             .addFormDataPart("appareil", JSON.encodeToString(Appareil.serializer(), formulaire.appareil))
+            .apply { formulaire.codeParrainage?.takeIf { it.isNotBlank() }?.let { addFormDataPart("codeParrainage", it) } }
             .addFormDataPart("pieceIdentite", nomFichier("piece-identite", pieceIdentite), photo(pieceIdentite))
             .addFormDataPart("selfie", nomFichier("selfie", selfie), photo(selfie))
             .build()
@@ -131,6 +132,9 @@ class ApiNakayo(
         appeler(requete("api/testeurs/moi/apps").get(), ReponseApps.serializer()).map { it.apps }
 
     // Sprint 4 §3 : portefeuille du testeur.
+    override suspend fun parrainage(): Resultat<Parrainage> =
+        appeler(requete("api/testeurs/moi/parrainage").get(), ReponseParrainage.serializer()).map { it.parrainage }
+
     override suspend fun portefeuille(): Resultat<Portefeuille> =
         appeler(requete("api/testeurs/moi/portefeuille").get(), ReponsePortefeuille.serializer()).map { it.portefeuille }
 

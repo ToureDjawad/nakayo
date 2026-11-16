@@ -16,8 +16,10 @@ import {
   validerMotifMomo,
   validerVille,
 } from '../lib/testeurs.js'
+import { lireCodeParrainage } from '../lib/parrainage.js'
 import { corps, exigerChamps, texte, validerNom } from '../lib/validation.js'
 import { ecrireDocument, supprimerDocuments } from '../services/documents.js'
+import { lireParrainage, trouverParrain } from '../services/parrainage.js'
 import { ouvrirSession } from '../services/sessions.js'
 import { enregistrerAppareil, lireProfilTesteur, versDemandeApi } from '../services/testeurs.js'
 import { transaction } from './auth.js'
@@ -97,6 +99,9 @@ export function routesTesteurs(deps) {
     const numeroMomo = normaliserTelephone(champs.numeroMomo)
     const operateurMomo = texte(champs.operateurMomo).toLowerCase()
     const { appareil, erreur: erreurAppareil } = lireAppareil(champs.appareil ?? jetons[0].appareil)
+    // US-39 : code de parrainage facultatif.
+    const parrainage = lireCodeParrainage(champs.codeParrainage)
+    const parrainId = parrainage.code ? await trouverParrain(pool, parrainage.code) : null
 
     const photos = {}
     const erreursPhotos = {}
@@ -120,6 +125,7 @@ export function routesTesteurs(deps) {
       consentementSuivi: champs.consentementSuivi === 'true' ? null : 'doit_etre_accepte',
       accepteConditions: champs.accepteConditions === 'true' ? null : 'doit_etre_accepte',
       appareil: erreurAppareil,
+      codeParrainage: parrainage.erreur ?? (parrainage.code && !parrainId ? 'inconnu' : null),
       ...erreursPhotos,
     })
 
@@ -153,9 +159,9 @@ export function routesTesteurs(deps) {
         const utilisateurId = rows[0].id
         await client.query(
           `INSERT INTO profils_testeurs (utilisateur_id, ville, gmail, gmail_normalise, numero_momo, operateur_momo,
-                                         consentement_suivi_le, conditions_acceptees_le)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`,
-          [utilisateurId, ville, gmail, gmailNormalise, numeroMomo, operateurMomo, instant],
+                                         consentement_suivi_le, conditions_acceptees_le, parrain_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8)`,
+          [utilisateurId, ville, gmail, gmailNormalise, numeroMomo, operateurMomo, instant, parrainId],
         )
         await enregistrerAppareil(client, { utilisateurId, appareil, maintenant: instant })
 
@@ -196,6 +202,11 @@ export function routesTesteurs(deps) {
   // §4.4 Profil du testeur connecté.
   routeur.get('/moi', testeur, async (req, res) => {
     res.json({ utilisateur: await lireProfilTesteur(pool, req.session.utilisateur.id) })
+  })
+
+  // US-39 : code de parrainage, prime et filleuls (docs/api-parrainage.md §2).
+  routeur.get('/moi/parrainage', testeur, async (req, res) => {
+    res.json({ parrainage: await lireParrainage(pool, req.session.utilisateur.id) })
   })
 
   // §4.4 Langues et appareil. Le numéro MoMo, le Gmail et le téléphone ne changent pas ici.

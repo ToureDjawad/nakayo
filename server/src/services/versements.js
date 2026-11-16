@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
 import { BONUS_BUG, montantLisible, remuneration } from '../lib/offres.js'
 import { transaction } from '../routes/auth.js'
+import { creerPrimesParrainage } from './parrainage.js'
 
 // Versements Mobile Money aux testeurs (US-22, docs/api-sprint4.md §2). À la clôture d'une
 // campagne (J16), chaque testeur qui a ses 14 jours validés et qui est resté inscrit au test
@@ -56,19 +57,28 @@ export async function creerVersementsCampagnes(client, { campagneIds, maintenant
     )
     crees += rowCount
   }
+  // US-39 : la première campagne menée au bout d'un filleul rapporte une prime à son parrain.
+  await creerPrimesParrainage(client, {
+    filleulIds: rows.map((l) => l.testeur_id),
+    campagneParFilleul: new Map(rows.map((l) => [String(l.testeur_id), l.campagne_id])),
+    maintenant,
+  })
   return crees
 }
 
-const SELECT_VERSEMENT = `SELECT v.*, ap.nom AS app_nom, u.nom AS testeur_nom, u.telephone
+// Une prime de parrainage (US-39) n'a pas d'app : elle s'affiche « Prime de parrainage ».
+export const LIBELLE_PARRAINAGE = 'Prime de parrainage'
+const SELECT_VERSEMENT = `SELECT v.*, COALESCE(ap.nom, '${LIBELLE_PARRAINAGE}') AS app_nom, u.nom AS testeur_nom, u.telephone
   FROM versements v
-  JOIN affectations a ON a.id = v.affectation_id
-  JOIN apps ap ON ap.id = a.app_id
+  LEFT JOIN affectations a ON a.id = v.affectation_id
+  LEFT JOIN apps ap ON ap.id = a.app_id
   JOIN utilisateurs u ON u.id = v.testeur_id`
 
 // Objet `versement` du contrat (§2.1).
 export function versVersementApi(l) {
   return {
     reference: l.reference,
+    nature: l.nature,
     campagneId: String(l.campagne_id),
     appNom: l.app_nom,
     montant: l.montant,
@@ -101,6 +111,12 @@ export function masquerNumero(numero) {
 }
 
 export function messageVersement(v) {
+  if (v.nature === 'parrainage') {
+    return (
+      `Nakayo : ${montantLisible(v.montant, v.devise)} vous ont été versés sur votre compte ${OPERATEURS_LISIBLES[v.operateur_momo]} ` +
+      `(${masquerNumero(v.numero_momo)}) : votre filleul a mené sa première campagne au bout. Merci de faire connaître Nakayo !`
+    )
+  }
   return (
     `Nakayo : ${montantLisible(v.montant, v.devise)} vous ont été versés sur votre compte ${OPERATEURS_LISIBLES[v.operateur_momo]} ` +
     `(${masquerNumero(v.numero_momo)}) pour votre test de « ${v.app_nom} ». Merci pour vos 14 jours de test !`
@@ -284,6 +300,7 @@ export async function lirePortefeuille(db, { testeurId }) {
       const montant = montantVersement(l.offre, l.bugs_acceptes)
       return {
         affectationId: String(l.id),
+        nature: 'campagne',
         appNom: l.app_nom,
         etat: 'en_test',
         joursValides: Math.min(l.jours_valides, l.jours_exiges),
@@ -297,7 +314,9 @@ export async function lirePortefeuille(db, { testeurId }) {
     ...verses
       .filter((v) => v.statut !== 'verse')
       .map((v) => ({
-        affectationId: String(v.affectation_id),
+        // Une prime de parrainage n'a pas d'affectation : l'identifiant reste unique par ligne.
+        affectationId: v.affectation_id ? String(v.affectation_id) : `parrainage-${v.filleul_id}`,
+        nature: v.nature,
         appNom: v.app_nom,
         // Un versement abandonné reste « en paiement » pour le testeur : l'équipe le reprend.
         etat: 'en_paiement',
@@ -313,6 +332,7 @@ export async function lirePortefeuille(db, { testeurId }) {
     .filter((v) => v.statut === 'verse')
     .map((v) => ({
       reference: v.reference,
+      nature: v.nature,
       referenceTransaction: v.reference_fournisseur,
       appNom: v.app_nom,
       montant: v.montant,
