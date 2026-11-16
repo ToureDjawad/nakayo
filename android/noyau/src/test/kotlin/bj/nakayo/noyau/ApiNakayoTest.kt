@@ -94,6 +94,20 @@ class ApiNakayoTest {
     }
 
     @Test
+    fun `le profil porte le niveau du testeur (US-38)`() = runTest {
+        stockage.ecrire("jeton-secret")
+        val avecNiveau = profil.replace(
+            "\"champFutur\"",
+            "\"niveau\":{\"code\":\"argent\",\"nom\":\"Argent\",\"campagnesTerminees\":1,\"bugsAcceptes\":0,\"assiduite\":66," +
+                "\"suivant\":{\"code\":\"or\",\"nom\":\"Or\",\"conditions\":[{\"code\":\"campagnes\",\"requis\":3,\"actuel\":1,\"rempli\":false}]}},\"champFutur\"",
+        )
+        repondre(200, """{"utilisateur":$avecNiveau}""")
+        val niveau = (api.moi() as Resultat.Succes).valeur.niveau!!
+        assertEquals("Argent", niveau.nom)
+        assertEquals(ConditionNiveau("campagnes", 3, 1, false), niveau.suivant!!.conditions.single())
+    }
+
+    @Test
     fun `une session expirée efface le jeton gardé`() = runTest {
         stockage.ecrire("jeton-perime")
         repondre(401, """{"erreur":{"code":"non_authentifie","message":"Session absente ou expirée."}}""")
