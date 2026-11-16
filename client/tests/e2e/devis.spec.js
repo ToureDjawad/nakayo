@@ -6,7 +6,7 @@ async function deconnecter(page) {
   await page.waitForURL(/\/connexion|\/$/)
 }
 
-test.describe('Lancement Afrique sur devis (US-37)', () => {
+test.describe('Offre Plus sur devis (US-37)', () => {
   test('le développeur demande un devis, l’équipe propose un prix, le développeur le paie', async ({ page }) => {
     test.setTimeout(120_000)
     await seConnecter(page, 'valide@exemple.com')
@@ -25,8 +25,8 @@ test.describe('Lancement Afrique sur devis (US-37)', () => {
     await page.getByRole('button', { name: 'Enregistrer le brouillon' }).click()
     await page.waitForURL('/mon-compte')
 
-    await page.getByRole('link', { name: 'Devis Lancement Afrique : Marché Afrique' }).click()
-    await expect(page.getByRole('heading', { name: 'Devis Lancement Afrique' })).toBeVisible()
+    await page.getByRole('link', { name: 'Devis Offre Plus : Marché Afrique' }).click()
+    await expect(page.getByRole('heading', { name: 'Devis Offre Plus' })).toBeVisible()
     await page.getByRole('checkbox', { name: 'Bénin' }).check()
     await page.getByRole('checkbox', { name: 'Fon' }).check()
     await page.getByLabel('Profils de testeurs').fill('Commerçantes de marché, peu habituées aux applications.')
@@ -40,7 +40,7 @@ test.describe('Lancement Afrique sur devis (US-37)', () => {
 
     await seConnecter(page, 'admin@nakayo.test')
     await page.waitForURL('/admin/tableau-de-bord')
-    await page.getByRole('link', { name: 'Devis Afrique' }).click()
+    await page.getByRole('link', { name: 'Devis Offre Plus' }).click()
     const carte = page.getByRole('article', { name: 'Marché Afrique' })
     await expect(carte.getByText('Bénin', { exact: true })).toBeVisible()
     await verifierAccessibilite(page)
@@ -53,16 +53,16 @@ test.describe('Lancement Afrique sur devis (US-37)', () => {
 
     await seConnecter(page, 'valide@exemple.com')
     await page.waitForURL('/mon-compte')
-    await page.getByRole('link', { name: 'Devis Lancement Afrique reçu : Marché Afrique' }).click()
+    await page.getByRole('link', { name: 'Devis Offre Plus reçu : Marché Afrique' }).click()
     await expect(page.getByRole('region', { name: 'Notre proposition' })).toContainText('149,00 $ US')
     await page.getByRole('link', { name: 'Payer ce devis' }).click()
-    await expect(page.getByRole('radio', { name: /Lancement Afrique \(votre devis\)/ })).toBeChecked()
+    await expect(page.getByRole('radio', { name: /Offre Plus \(votre devis\)/ })).toBeChecked()
     await page.getByRole('radio', { name: /Mobile Money/ }).check()
     await page.getByLabel('Numéro Mobile Money').fill('+229 01 97 00 00 01')
     await verifierAccessibilite(page)
     await page.getByRole('button', { name: /^Payer 89\s400 FCFA/ }).click()
     await page.getByRole('button', { name: 'Confirmer le paiement' }).click()
     await page.getByRole('link', { name: 'Retour à mon compte' }).click()
-    await expect(page.getByText('Offre Lancement Afrique')).toBeVisible()
+    await expect(page.getByText('Offre Plus')).toBeVisible()
   })
 })

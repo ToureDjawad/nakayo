@@ -102,7 +102,7 @@ export function routesOffres({ config }) {
     // docs/api-offres.md §1 : les offres ouvertes, sans les règles internes (paie des testeurs).
     // docs/fedapay.md §1 FedaPay encaisse en FCFA : la carte est alors débitée du prix Mobile Money.
     // Pro porte aussi le prix de la montée en gamme depuis Standard (§2), la différence de prix.
-    // Lancement Afrique est sur devis (§4) : son prix est un prix de départ.
+    // L’Offre Plus est sur devis (§4) : son prix est un prix de départ.
     const fedapay = config.paiementMode === 'fedapay'
     const offres = Object.values(OFFRES).map((complete) => {
       const o = offrePublique(complete)

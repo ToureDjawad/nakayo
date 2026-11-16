@@ -241,7 +241,7 @@ export function routesAdmin(deps) {
     await deciderSurApp(req, res, 'refusee', motif)
   })
 
-  // docs/api-offres.md §4.2 : devis de l'offre Lancement Afrique (US-37).
+  // docs/api-offres.md §4.2 : devis de l'Offre Plus (US-37).
   const idDevis = (req) => {
     if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Devis introuvable.')
     return req.params.id

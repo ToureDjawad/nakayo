@@ -1,6 +1,6 @@
 import { texte } from './validation.js'
 
-// Questionnaire terrain de l'offre Lancement Afrique (US-37, docs/api-offres.md §4.5).
+// Questionnaire terrain de l'Offre Plus (US-37, docs/api-offres.md §4.5).
 export const JOUR_TERRAIN = 7
 export const CONNEXIONS = ['wifi', '4g', '3g', '2g']
 export const TENUES = ['fluide', 'lent', 'inutilisable']

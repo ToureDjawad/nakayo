@@ -226,7 +226,7 @@ export async function lireRapportFinal(db, { appId, developpeurId, maintenant })
   }
   const avancement = await lireAvancement(db, { appId, developpeurId, maintenant })
   const bilan = construireBilan(c, avancement)
-  // US-37 : test terrain de l'offre Lancement Afrique (réseau, petits téléphones, langue).
+  // US-37 : test terrain de l'Offre Plus (réseau, petits téléphones, langue).
   bilan.terrain = offre(c.offre).questionnaireTerrain ? await lireTerrain(db, c.id) : null
   return { pret: true, disponibleLe: disponibleLe(c), bilan, brouillon: construireBrouillon(bilan), decisionGoogle: versDecision(c) }
 }
@@ -300,7 +300,7 @@ const CONNEXIONS_LISIBLES = { wifi: 'Wi-Fi', '4g': '4G', '3g': '3G', '2g': '2G' 
 const LANGUES_LISIBLES = { fr: 'français', en: 'anglais' }
 const tenue = (t) => `${t.fluide} fluide, ${t.lent} lent, ${t.inutilisable} inutilisable`
 
-// US-37 : section « Test terrain » de l'offre Lancement Afrique.
+// US-37 : section « Test terrain » de l'Offre Plus.
 function pdfTerrain(r, t) {
   r.titre('Test terrain')
   if (!t.reponses) {

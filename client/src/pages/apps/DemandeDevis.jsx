@@ -13,7 +13,7 @@ import { useChargement } from "../../lib/useChargement.js";
 import { useFormulaire } from "../../lib/useFormulaire.js";
 import { EspaceDeveloppeur, RetourCompte } from "../paiements/commun.jsx";
 
-const TITRE = "Devis Lancement Afrique";
+const TITRE = "Devis Offre Plus";
 
 const PAYS_MAX = 6;
 const LIMITES = { profils: [10, 1000], scenarios: [10, 2000] };
@@ -424,7 +424,7 @@ export default function DemandeDevis() {
     <EspaceDeveloppeur
       titre={TITRE}
       suite={`/mon-compte/apps/${id}/devis`}
-      raison="pour demander un devis Lancement Afrique."
+      raison="pour demander un devis Offre Plus."
       contenu={(utilisateur) =>
         utilisateur.statut === "valide" ? (
           <Contenu id={id} utilisateur={utilisateur} />

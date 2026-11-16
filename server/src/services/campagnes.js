@@ -137,7 +137,7 @@ async function insererAffectations(client, { campagneId, appId, testeurs, mainte
 }
 
 // US-13 et US-16 : le développeur confirme que les testeurs sont ajoutés à son test fermé, ce qui
-// démarre la campagne et affecte les testeurs de l'offre (15, ou 20 en Lancement Afrique). À appeler
+// démarre la campagne et affecte les testeurs de l'offre (15, ou 20 en Offre Plus). À appeler
 // dans une transaction.
 export async function demarrerCampagne(client, { appId, developpeurId, groupeGoogle, maintenant }) {
   const { rows: apps } = await client.query('SELECT * FROM apps WHERE id = $1 AND developpeur_id = $2 FOR UPDATE', [appId, developpeurId])

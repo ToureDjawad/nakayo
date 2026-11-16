@@ -1,4 +1,4 @@
-// Devis de l'offre Lancement Afrique (US-37).
+// Devis de l'Offre Plus (US-37).
 // Mêmes listes que le serveur (docs/api-offres.md §4.1).
 export const PAYS_DEVIS = [
   ["BJ", "Bénin"],
