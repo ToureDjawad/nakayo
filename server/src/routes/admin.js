@@ -20,6 +20,7 @@ import { listerVersementsAdmin, relancerVersement, traiterVersements } from '../
 import { lireTableauDeBord } from '../services/tableauDeBord.js'
 import { transaction } from './auth.js'
 import { journaliser, lireJournal, messageSanction, sanctionner, SANCTIONS } from '../services/sanctions.js'
+import { lireHistoriqueTesteur } from '../services/historiqueTesteur.js'
 import { deciderGarantie, listerGaranties, messageDecisionGarantie, STATUTS_GARANTIE } from '../services/garanties.js'
 import { validerMessage, validerPrix } from '../lib/devis.js'
 import { OFFRE_AFRIQUE } from '../lib/offres.js'
@@ -466,6 +467,14 @@ export function routesAdmin(deps) {
       journal.error(erreur)
     }
     res.json({ garantie })
+  })
+
+  // US-31 (docs/fiche-testeur.md) : historique d'un testeur, campagne par campagne.
+  routeur.get('/testeurs/:id/historique', async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) throw introuvable('Testeur introuvable.')
+    const affectation = texte(req.query.affectation) || null
+    if (affectation && !/^\d{1,18}$/.test(affectation)) throw introuvable('Campagne introuvable pour ce testeur.')
+    res.json(await lireHistoriqueTesteur(pool, { testeurId: req.params.id, affectationId: affectation, maintenant: maintenant() }))
   })
 
   routeur.get('/journal', async (req, res) => {

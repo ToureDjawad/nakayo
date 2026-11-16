@@ -134,3 +134,9 @@ export function listerGaranties({ statut = 'en_attente', page = 1 } = {}, { sign
 export function deciderGarantie(id, { decision, motif }) {
   return requete(`/admin/garanties/${encodeURIComponent(id)}/decision`, { methode: 'POST', corps: { decision, motif: motif || undefined } })
 }
+
+// Fiche d'un testeur (docs/fiche-testeur.md, US-31).
+export function lireHistoriqueTesteur(id, { affectation } = {}, { signal } = {}) {
+  const suite = affectation ? `?affectation=${encodeURIComponent(affectation)}` : ''
+  return requete(`/admin/testeurs/${encodeURIComponent(id)}/historique${suite}`, { signal })
+}

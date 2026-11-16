@@ -36,7 +36,7 @@ describe('Back-office : alertes de fraude (US-28)', () => {
     const carte = (await screen.findByRole('heading', { name: 'Même Wi-Fi dans une campagne' })).closest('article')
     expect(screen.getByRole('heading', { name: '1 alerte à examiner' })).toBeInTheDocument()
     expect(within(carte).getByText('Campagne : Marché Facile')).toBeInTheDocument()
-    expect(within(carte).getByText(/Koffi Agbo/)).toHaveTextContent('compte suspendu')
+    expect(within(carte).getByText(/Koffi Agbo/).closest('li')).toHaveTextContent('compte suspendu')
     await user.type(within(carte).getByLabelText('Note (facultative)'), 'Colocataires.')
     await user.click(within(carte).getByRole('button', { name: 'Écarter' }))
 

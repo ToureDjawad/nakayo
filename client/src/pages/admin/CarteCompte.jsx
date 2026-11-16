@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { validerCompte } from '../../api/admin.js'
 import { ErreurApi } from '../../api/client.js'
 import { Alerte } from '../../components/Alerte.jsx'
@@ -133,6 +134,11 @@ export function CarteCompte({ compte, onTraite }) {
               <span className="font-semibold text-encre">Motif de la sanction : </span>
               {compte.motifSanction}
             </p>
+          )}
+          {compte.role === 'testeur' && (
+            <Link to={`/admin/testeurs/${compte.id}`} className="mb-4 inline-block text-sm font-medium text-accent underline underline-offset-2">
+              Voir la fiche du testeur
+            </Link>
           )}
           <ActionsSanction compte={compte} onTraite={onTraite} />
         </div>
