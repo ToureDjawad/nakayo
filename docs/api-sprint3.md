@@ -79,7 +79,7 @@ Pas encore appliqué : l'exclusion de deux testeurs qui partagent un réseau (US
   - Le testeur remplacé passe en `remplacee`, le remplaçant reçoit un SMS.
   - Erreurs : `409 statut_incompatible` (déjà remplacé, campagne finie), `409 testeurs_insuffisants`.
 
-Le remplacement automatique arrivera avec US-27.
+Après le jour 2, le remplacement est automatique : voir `docs/remplacement-automatique.md` (US-27).
 
 ### 1.5 Migration `012_campagnes.sql`
 
@@ -203,7 +203,7 @@ Ce qui en découle :
 | Compteur ayant atteint `jours_exiges` (14) | jours acquis : ni nouveau jour, ni remise à zéro |
 | Campagne arrivée à `fin_prevue_le` (16 jours) | la campagne passe en `terminee` avec ses affectations actives |
 
-- **Les deux compteurs ne se confondent pas.** Ce compteur sert au paiement du testeur. Celui de Google ne dépend que de l'inscription continue au test : un testeur remis à zéro garde son affectation, recommence à J1 et ne doit surtout pas se désinscrire. Le remplacement automatique viendra avec US-27.
+- **Les deux compteurs ne se confondent pas.** Ce compteur sert au paiement du testeur. Celui de Google ne dépend que de l'inscription continue au test : un testeur remis à zéro garde son affectation, recommence à J1 et ne doit surtout pas se désinscrire. Un testeur sans journée validée pendant 2 jours est remplacé automatiquement (US-27).
 - **Chaque vérification laisse une trace.** Elle écrit une ligne `journees` par affectation et par jour, avec la clé `(affectation, jour)` : la vérification peut être rejouée sans compter deux fois.
 - **Un jour vérifié ne bouge plus.** Un temps d'utilisation envoyé après coup pour ce jour est ignoré.
 

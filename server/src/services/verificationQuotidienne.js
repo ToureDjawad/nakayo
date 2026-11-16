@@ -1,5 +1,6 @@
 import { transaction } from '../routes/auth.js'
 import { envoyerEmailsCampagnes } from './emailsCampagne.js'
+import { remplacerInactifs } from './remplacementsAuto.js'
 import { USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, debutJourBenin, jourBenin } from '../lib/temps.js'
 import { prevenirRapportsPrets } from './rapportFinal.js'
@@ -132,6 +133,8 @@ export function demarrerVerificationNocturne(deps, { delaiMs = 5 * 60 * 1000 } =
         const bilan = await verifierJour(deps, { jour, maintenant: deps.maintenant() })
         deps.journal.info(`[vérification] ${jour} : ${bilan.affectations} affectations, ${bilan.joursValides} jours validés, ${bilan.remises} remises à zéro`)
       }
+      // US-27 : remplacement des testeurs inactifs depuis 2 jours (campagne prolongée si besoin).
+      await remplacerInactifs(deps, { maintenant: deps.maintenant() })
       // US-36 : rapports de fin prêts au 14e jour, développeurs prévenus par email.
       await prevenirRapportsPrets(deps, { maintenant: deps.maintenant() })
       // US-26 : emails d'étapes au développeur (J5, J7, J10, moins de 13 testeurs actifs).

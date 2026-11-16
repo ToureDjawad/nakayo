@@ -53,7 +53,7 @@ const SELECT_RESEAUX = (colonne) => `ARRAY(
                WHERE r.testeur_id = ${colonne} AND r.dernier_vu_le > now() - interval '${DUREE_RESEAU_JOURS} days'
             ) AS reseaux`
 
-async function lireMembres(db, campagneId) {
+export async function lireMembres(db, campagneId) {
   const { rows } = await db.query(
     `SELECT a.*, u.nom, u.telephone, p.ville, p.gmail, p.operateur_momo AS operateur, ap.modele, ap.ram_mo,
             ${SELECT_RESEAUX('a.testeur_id')}
@@ -229,6 +229,13 @@ export async function remplacerTesteur(client, { campagneId, affectationId, moti
   if (!sortant) throw introuvable('Testeur introuvable dans cette campagne.')
   if (sortant.statut !== 'active') throw statutIncompatible('Ce testeur a déjà été remplacé.', sortant.statut)
 
+  return remplacerAffectation(client, { campagne, membres, sortant, motif, maintenant })
+}
+
+// Remplace `sortant` par un testeur choisi avec les règles d'affectation (US-16). Dans une
+// transaction, la campagne verrouillée. Partagé par le remplacement manuel (US-43) et
+// automatique (US-27). Renvoie le testeur entrant.
+export async function remplacerAffectation(client, { campagne, membres, sortant, motif, maintenant }) {
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
   const restants = membres.filter((m) => m.statut === 'active' && m.id !== sortant.id)
   const [remplacant] = choisirTesteurs(await lireCandidats(client, campagne.app_id), {
@@ -239,12 +246,12 @@ export async function remplacerTesteur(client, { campagneId, affectationId, moti
   if (!remplacant) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', { message: 'Aucun testeur disponible pour ce remplacement.', disponibles: 0 })
   }
-  const [nouvelle] = await insererAffectations(client, { campagneId, appId: campagne.app_id, testeurs: [remplacant], maintenant })
+  const [nouvelle] = await insererAffectations(client, { campagneId: campagne.id, appId: campagne.app_id, testeurs: [remplacant], maintenant })
   await client.query(
     `UPDATE affectations SET statut = 'remplacee', remplacee_le = $2, remplacee_par = $3, motif_remplacement = $4 WHERE id = $1`,
     [sortant.id, maintenant, nouvelle.id, motif],
   )
-  return { testeurId: String(nouvelle.testeur_id) }
+  return { testeurId: String(nouvelle.testeur_id), affectationId: String(nouvelle.id) }
 }
 
 // Téléphones des testeurs actifs d'une campagne, pour les prévenir par SMS.

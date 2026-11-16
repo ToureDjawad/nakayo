@@ -15,7 +15,8 @@ export const ETAPES = [
 
 // Testeurs actifs d'une campagne au soir du jour `jourVerifie` : inscrits au test, et soit leurs
 // jours sont acquis, soit ils ont validé au moins une des deux dernières journées vérifiées.
-// Pendant les 2 premiers jours (inscription, installation), tout testeur inscrit compte.
+// Pendant les 2 premiers jours (inscription, installation), tout testeur inscrit compte ; un
+// remplaçant arrivé depuis moins de 2 jours compte aussi.
 export async function lireActivite(db, { campagneId, jourVerifie, jour }) {
   const { rows } = await db.query(
     `SELECT a.id, a.testeur_id, a.affecte_le, a.inscription_confirmee_le IS NOT NULL AS inscrit,
@@ -27,7 +28,11 @@ export async function lireActivite(db, { campagneId, jourVerifie, jour }) {
     [campagneId, jourVerifie],
   )
   const debut = jour <= JOURS_REMPLACEMENT_MANUEL
-  return rows.map((a) => ({ ...a, actif: a.inscrit && (debut || a.acquis || a.recent) }))
+  return rows.map((a) => {
+    // US-27 : un remplaçant a, comme au démarrage, 2 jours pour s'inscrire et installer l'app.
+    const arrivee = jourBenin(a.affecte_le) >= jourVerifie
+    return { ...a, arrivee, actif: arrivee || (a.inscrit && (debut || a.acquis || a.recent)) }
+  })
 }
 
 export async function envoyerEmailsCampagnes({ pool, emails, config, journal }, { maintenant }) {
