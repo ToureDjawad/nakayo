@@ -140,6 +140,7 @@ private fun Resume(etat: EtatProfil, actions: ActionsProfil) {
             }
             Note("Elles servent à vous proposer des apps dans les langues que vous comprenez.")
         }
+        etat.parrainage?.let { CarteParrainage(it) }
         Note("Le Gmail et le numéro de connexion ne se modifient pas. Pour toute correction, contactez l'équipe Nakayo.")
     }
 }

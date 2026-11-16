@@ -36,7 +36,7 @@ export function versDemandeApi(ligne) {
 export async function lireProfilTesteur(db, utilisateurId) {
   const { rows } = await db.query(
     `SELECT u.id, u.role, u.statut, u.telephone, u.nom, u.motif_refus, u.cree_le,
-            p.ville, p.gmail, p.numero_momo, p.operateur_momo, p.langues,
+            p.ville, p.gmail, p.numero_momo, p.operateur_momo, p.langues, p.code_parrainage,
             a.fabricant, a.modele, a.version_android, a.niveau_api,
             d.id AS demande_id, d.numero_momo AS demande_numero, d.operateur_momo AS demande_operateur,
             d.statut AS demande_statut, d.cree_le AS demande_cree_le,
@@ -84,6 +84,8 @@ export async function lireProfilTesteur(db, utilisateurId) {
       : null,
     motifRefus: l.motif_refus,
     creeLe: new Date(l.cree_le).toISOString(),
+    // US-39 : code à donner aux personnes qu'il parraine.
+    codeParrainage: l.code_parrainage,
     // US-38 : niveau Bronze, Argent ou Or, et ce qu'il manque pour le suivant.
     niveau: niveauTesteur({ terminees: l.terminees, remplacees: l.remplacees, remises: l.remises, bugsAcceptes: l.bugs_acceptes }),
   }

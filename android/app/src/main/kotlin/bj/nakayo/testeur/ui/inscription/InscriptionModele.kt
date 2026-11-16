@@ -28,6 +28,7 @@ interface ActionsInscription {
     fun choisirVille(valeur: String)
     fun saisirVilleLibre(valeur: String)
     fun saisirGmail(valeur: String)
+    fun saisirCodeParrainage(valeur: String)
     fun choisirOperateur(code: String)
     fun basculerLangue(code: String)
     fun continuer()
@@ -62,6 +63,8 @@ data class EtatInscription(
     val ville: String = "",
     val villeLibre: String = "",
     val gmail: String = "",
+    // US-39 : code du parrain, facultatif.
+    val codeParrainage: String = "",
     val langues: Set<String> = setOf("fr"),
     val operateur: String? = null,
     val appareil: Appareil? = null,
@@ -115,6 +118,9 @@ class InscriptionModele(
     override fun choisirVille(valeur: String) = modifier("ville") { it.copy(ville = valeur) }
     override fun saisirVilleLibre(valeur: String) = modifier("ville") { it.copy(villeLibre = valeur.take(60)) }
     override fun saisirGmail(valeur: String) = modifier("gmail") { it.copy(gmail = valeur.trim().lowercase().take(254)) }
+    override fun saisirCodeParrainage(valeur: String) = modifier("codeParrainage") {
+        it.copy(codeParrainage = valeur.uppercase().filter { c -> c.isLetterOrDigit() }.take(6))
+    }
     override fun choisirOperateur(code: String) = modifier("operateurMomo") { it.copy(operateur = code) }
     override fun basculerLangue(code: String) = modifier("langues") {
         it.copy(langues = if (code in it.langues) it.langues - code else it.langues + code)
@@ -140,6 +146,7 @@ class InscriptionModele(
             !e.gmail.endsWith("@gmail.com") -> put("gmail", "non_gmail")
             !Regex("^[a-z0-9.+]+@gmail\\.com$").matches(e.gmail) -> put("gmail", "format_invalide")
         }
+        if (e.codeParrainage.isNotEmpty() && !FORMAT_CODE_PARRAINAGE.matches(e.codeParrainage)) put("codeParrainage", "format_invalide")
         if (e.operateur == null) put("operateurMomo", "requis")
         if (e.langues.isEmpty()) put("langues", "requis")
     }
@@ -207,6 +214,7 @@ class InscriptionModele(
                 appareil = e.appareil ?: appareil(),
                 consentementSuivi = true,
                 accepteConditions = true,
+                codeParrainage = e.codeParrainage.ifEmpty { null },
             )
             when (val r = service.inscrire(jetonInscription, formulaire, e.pieceIdentite!!, e.selfie!!)) {
                 is Resultat.Succes -> {
@@ -230,7 +238,7 @@ class InscriptionModele(
             return
         }
         val champs = http?.champs.orEmpty()
-        val surProfil = champs.keys.any { it in setOf("nom", "ville", "gmail", "operateurMomo") }
+        val surProfil = champs.keys.any { it in setOf("nom", "ville", "gmail", "operateurMomo", "codeParrainage") }
         etatInterne.update {
             it.copy(
                 enCours = false,
@@ -247,6 +255,8 @@ class InscriptionModele(
     }
 
     private companion object {
-        val CHAMPS_AFFICHES = setOf("nom", "ville", "gmail", "operateurMomo", "langues", "pieceIdentite", "selfie", "accepteConditions", "consentementSuivi")
+        // Mêmes caractères que le serveur : sans 0, O, 1, I ni L.
+        val FORMAT_CODE_PARRAINAGE = Regex("^[A-HJKMNP-Z2-9]{6}$")
+        val CHAMPS_AFFICHES = setOf("nom", "ville", "gmail", "operateurMomo", "codeParrainage", "langues", "pieceIdentite", "selfie", "accepteConditions", "consentementSuivi")
     }
 }

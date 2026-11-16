@@ -44,6 +44,14 @@ class ProfilModeleTest {
     }
 
     @Test
+    fun `le parrainage est chargé avec le profil (US-39)`() = runTest {
+        val m = modele()
+        advanceUntilIdle()
+        assertEquals("K7Q2MP", m.etat.value.parrainage?.code)
+        assertTrue("parrainage" in service.appels)
+    }
+
+    @Test
     fun `au moins une langue`() = runTest {
         val m = modele()
         m.basculerLangue("fr")

@@ -143,6 +143,33 @@ class InscriptionModeleTest {
     }
 
     @Test
+    fun `code de parrainage facultatif, nettoyé, vérifié puis envoyé (US-39)`() = runTest {
+        val m = modele()
+        m.profilValide()
+        m.saisirCodeParrainage("k7q-2m")
+        m.continuer()
+        assertEquals("format_invalide", m.etat.value.erreurs["codeParrainage"])
+        m.saisirCodeParrainage("k7q 2mp")
+        assertEquals("K7Q2MP", m.etat.value.codeParrainage)
+        pret(m)
+        m.envoyer()
+        advanceUntilIdle()
+        assertEquals("K7Q2MP", service.dernierFormulaire?.codeParrainage)
+    }
+
+    @Test
+    fun `code de parrainage inconnu du serveur, retour au profil`() = runTest {
+        service.reponseInscription = { Resultat.Echec(ErreurApi.Http(422, "validation", champs = mapOf("codeParrainage" to "inconnu"))) }
+        val m = modele()
+        pret(m)
+        m.saisirCodeParrainage("ZZZZ22")
+        m.envoyer()
+        advanceUntilIdle()
+        assertEquals(EtapeInscription.Profil, m.etat.value.etape)
+        assertEquals("inconnu", m.etat.value.erreurs["codeParrainage"])
+    }
+
+    @Test
     fun `Gmail déjà utilisé, retour au profil avec l'erreur sur le champ`() = runTest {
         service.reponseInscription = { Resultat.Echec(ErreurApi.Http(409, "conflit", champs = mapOf("gmail" to "deja_utilise"))) }
         val m = modele()

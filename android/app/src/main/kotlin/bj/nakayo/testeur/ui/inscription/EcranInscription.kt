@@ -99,6 +99,16 @@ private fun EtapeProfil(etat: EtatInscription, actions: ActionsInscription, oper
             aide = "Celle ouverte dans le Play Store de ce téléphone : c'est avec elle que vous rejoindrez les tests.",
             erreur = etat.erreurs["gmail"]?.let(MessagesChamps::gmail),
             clavier = KeyboardType.Email,
+            actionClavier = ImeAction.Next,
+        )
+        // US-39 : code de la personne qui a invité le testeur.
+        ChampTexte(
+            valeur = etat.codeParrainage,
+            surChangement = actions::saisirCodeParrainage,
+            libelle = "Code de parrainage (si on vous a invité)",
+            exemple = "K7Q2MP",
+            aide = "Le code à 6 caractères du testeur Nakayo qui vous a invité. Vous pouvez laisser ce champ vide.",
+            erreur = etat.erreurs["codeParrainage"]?.let(MessagesChamps::codeParrainage),
             actionClavier = ImeAction.Done,
         )
         // Opérateur demandé ici seulement si le testeur est passé par « J'ai déjà un compte ».
@@ -266,6 +276,7 @@ private object ActionsVides : ActionsInscription {
     override fun choisirVille(valeur: String) = Unit
     override fun saisirVilleLibre(valeur: String) = Unit
     override fun saisirGmail(valeur: String) = Unit
+    override fun saisirCodeParrainage(valeur: String) = Unit
     override fun choisirOperateur(code: String) = Unit
     override fun basculerLangue(code: String) = Unit
     override fun continuer() = Unit

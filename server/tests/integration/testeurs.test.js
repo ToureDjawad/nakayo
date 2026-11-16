@@ -169,6 +169,7 @@ describe('inscription d’un testeur (§4.3)', () => {
       demandeChangementMomo: null,
       motifRefus: null,
       creeLe: expect.any(String),
+      codeParrainage: expect.stringMatching(/^[A-HJKMNP-Z2-9]{6}$/),
       niveau: {
         code: 'bronze',
         nom: 'Bronze',

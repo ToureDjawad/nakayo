@@ -29,6 +29,9 @@ interface ServiceTesteur {
     // US-37 : questionnaire terrain de l'Offre Plus (docs/api-offres.md §4.5).
     suspend fun envoyerRetourTerrain(affectationId: String, retour: RetourTerrain): Resultat<AffectationTesteur>
 
+    // US-39 : code de parrainage, prime et filleuls (docs/api-parrainage.md §2).
+    suspend fun parrainage(): Resultat<Parrainage>
+
     // Sprint 4 : gains en attente et versements reçus (docs/api-sprint4.md §3).
     suspend fun portefeuille(): Resultat<Portefeuille>
 
