@@ -40,6 +40,24 @@ describe('choix des testeurs (US-16)', () => {
     expect(choisirTesteurs(liste, { nombre: 3, confirmes: true }).map((c) => c.id)).toEqual(['3', '2', '1'])
   })
 
+  it('offre Pro (US-35) : réserve d’abord les places des téléphones de 3 Go de RAM ou moins', () => {
+    // Les plus assidus ont de gros téléphones ; les petits passent quand même devant pour 2 places.
+    const liste = [
+      candidat(1, { terminees: 5, ram_mo: 8192 }),
+      candidat(2, { terminees: 5, ram_mo: 6144 }),
+      candidat(3, { ram_mo: 2816 }),
+      candidat(4, { ram_mo: 3072 }),
+      candidat(5, { ram_mo: 1946 }),
+      candidat(6, { ram_mo: null }),
+    ]
+    const ids = (r) => r.map((c) => c.id)
+    expect(ids(choisirTesteurs(liste, { nombre: 3, entreeDeGamme: 2 }))).toEqual(['3', '4', '1'])
+    // Déjà 2 petits téléphones dans la campagne : plus de priorité pour un remplacement.
+    expect(ids(choisirTesteurs(liste, { nombre: 1, entreeDeGamme: 2, deja: [{ ram_mo: 2048 }, { ram_mo: 1024 }] }))).toEqual(['1'])
+    // Pas assez de petits téléphones : la campagne se complète avec les autres.
+    expect(ids(choisirTesteurs(liste, { nombre: 5, entreeDeGamme: 5 })).sort()).toEqual(['1', '2', '3', '4', '5'])
+  })
+
   it('écarte un testeur qui suit déjà 15 apps', () => {
     expect(choisirTesteurs([candidat(1, { actives: 15 }), candidat(2)], { nombre: 2 }).map((c) => c.id)).toEqual(['2'])
   })

@@ -19,7 +19,7 @@ const statutIncompatible = (message, statut) => new ErreurHttp(409, 'statut_inco
 // Testeurs validés qui n'ont jamais été affectés à cette app, avec de quoi les départager.
 async function lireCandidats(db, appId) {
   const { rows } = await db.query(
-    `SELECT u.id, p.ville, p.operateur_momo AS operateur, ap.modele,
+    `SELECT u.id, p.ville, p.operateur_momo AS operateur, ap.modele, ap.ram_mo,
             count(*) FILTER (WHERE a.statut = 'active')::int AS actives,
             count(*) FILTER (WHERE a.statut = 'terminee')::int AS terminees,
             count(*) FILTER (WHERE a.statut = 'remplacee')::int AS remplacees,
@@ -27,31 +27,32 @@ async function lireCandidats(db, appId) {
        FROM utilisateurs u
        JOIN profils_testeurs p ON p.utilisateur_id = u.id
        LEFT JOIN LATERAL (
-         SELECT modele FROM appareils WHERE utilisateur_id = u.id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
+         SELECT modele, ram_mo FROM appareils WHERE utilisateur_id = u.id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
        ) ap ON true
        LEFT JOIN affectations a ON a.testeur_id = u.id
       WHERE u.role = 'testeur' AND u.statut = 'valide'
         AND NOT EXISTS (SELECT 1 FROM affectations d WHERE d.app_id = $1 AND d.testeur_id = u.id)
-      GROUP BY u.id, p.ville, p.operateur_momo, ap.modele`,
+      GROUP BY u.id, p.ville, p.operateur_momo, ap.modele, ap.ram_mo`,
     [appId],
   )
   return rows.map((r) => ({ ...r, id: String(r.id) }))
 }
 
-// Offre Pro (US-32) : les testeurs les mieux notés d'abord.
-async function testeursConfirmesExiges(db, appId) {
+// Offre Pro : les testeurs les mieux notés d'abord (US-32) et des téléphones d'entrée de gamme (US-35).
+async function exigencesOffre(db, appId) {
   const { rows } = await db.query('SELECT offre FROM apps WHERE id = $1', [appId])
-  return offre(rows[0]?.offre).testeursConfirmes
+  const o = offre(rows[0]?.offre)
+  return { confirmes: o.testeursConfirmes, entreeDeGamme: o.telephonesEntreeDeGamme }
 }
 
 async function lireMembres(db, campagneId) {
   const { rows } = await db.query(
-    `SELECT a.*, u.nom, u.telephone, p.ville, p.gmail, p.operateur_momo AS operateur, ap.modele
+    `SELECT a.*, u.nom, u.telephone, p.ville, p.gmail, p.operateur_momo AS operateur, ap.modele, ap.ram_mo
        FROM affectations a
        JOIN utilisateurs u ON u.id = a.testeur_id
        JOIN profils_testeurs p ON p.utilisateur_id = a.testeur_id
        LEFT JOIN LATERAL (
-         SELECT modele FROM appareils WHERE utilisateur_id = a.testeur_id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
+         SELECT modele, ram_mo FROM appareils WHERE utilisateur_id = a.testeur_id ORDER BY derniere_vue_le DESC, id DESC LIMIT 1
        ) ap ON true
       WHERE a.campagne_id = $1
       ORDER BY a.id`,
@@ -151,7 +152,7 @@ export async function demarrerCampagne(client, { appId, developpeurId, groupeGoo
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
   const testeurs = choisirTesteurs(await lireCandidats(client, appId), {
     nombre: TESTEURS_PAR_CAMPAGNE,
-    confirmes: await testeursConfirmesExiges(client, appId),
+    ...(await exigencesOffre(client, appId)),
   })
   if (testeurs.length < TESTEURS_PAR_CAMPAGNE) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', {
@@ -225,7 +226,7 @@ export async function remplacerTesteur(client, { campagneId, affectationId, moti
   const [remplacant] = choisirTesteurs(await lireCandidats(client, campagne.app_id), {
     nombre: 1,
     deja: restants,
-    confirmes: await testeursConfirmesExiges(client, campagne.app_id),
+    ...(await exigencesOffre(client, campagne.app_id)),
   })
   if (!remplacant) {
     throw new ErreurHttp(409, 'testeurs_insuffisants', { message: 'Aucun testeur disponible pour ce remplacement.', disponibles: 0 })

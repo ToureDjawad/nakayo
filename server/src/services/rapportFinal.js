@@ -100,6 +100,8 @@ export function construireBilan(app, a) {
     appareils: {
       modeles: new Set(a.appareils.filter((x) => x.modele).map((x) => x.modele)).size,
       versionsAndroid: versionsTriees(new Set(a.appareils.filter((x) => x.versionAndroid).map((x) => x.versionAndroid))),
+      // US-35 : testeurs sur un téléphone de 3 Go de RAM ou moins.
+      entreeDeGamme: a.resume.appareilsEntreeDeGamme,
       liste: a.appareils,
     },
     versionsApp: [...versions.values()],
@@ -133,7 +135,11 @@ export function construireBrouillon(b) {
     `Sur ${b.campagne.jours} jours de test, les testeurs ont utilisé l'app ${duree(b.usage.tempsTotalSecondes)} au total, soit ${duree(b.usage.moyenneSecondes)} en moyenne par testeur et par jour d'utilisation.`,
     `Ils ont envoyé ${b.rapports.total} rapports quotidiens${b.rapports.noteMoyenne !== null ? ` (note moyenne ${note(b.rapports.noteMoyenne)} sur 5)` : ''}.`,
     plusUtilisees.length ? `Fonctionnalités les plus utilisées : ${liste(plusUtilisees)}.` : null,
-    b.appareils.modeles ? `Appareils : ${b.appareils.modeles} modèles de téléphones, Android ${liste(b.appareils.versionsAndroid)}.` : null,
+    b.appareils.modeles
+      ? `Appareils : ${b.appareils.modeles} modèles de téléphones, Android ${liste(b.appareils.versionsAndroid)}${
+          b.appareils.entreeDeGamme ? `, dont ${b.appareils.entreeDeGamme} téléphones d'entrée de gamme (3 Go de RAM ou moins)` : ''
+        }.`
+      : null,
     versionsApp.length ? `Version${versionsApp.length > 1 ? 's' : ''} de l'app testée${versionsApp.length > 1 ? 's' : ''} : ${liste(versionsApp)}.` : null,
   ]
     .filter(Boolean)
@@ -256,10 +262,14 @@ export function rapportPdf({ bilan: b, brouillon }, { maintenant }) {
   r.ligneInfo('Problèmes signalés', String(b.rapports.problemes))
   r.ligneInfo('Modèles de téléphones', String(b.appareils.modeles))
   r.ligneInfo('Versions d’Android', liste(b.appareils.versionsAndroid) || '-')
+  r.ligneInfo('Téléphones d’entrée de gamme (3 Go de RAM ou moins)', String(b.appareils.entreeDeGamme))
   r.ligneInfo('Versions de l’app testées', liste(b.versionsApp.map((v) => v.version)) || '-')
 
   r.titre('Téléphones des testeurs')
-  for (const x of b.appareils.liste) r.ligneInfo(`${x.modele ?? 'Modèle inconnu'} · Android ${x.versionAndroid ?? '?'}`, `${x.testeurs} testeur${x.testeurs > 1 ? 's' : ''}`)
+  for (const x of b.appareils.liste) {
+    const libelle = `${x.modele ?? 'Modèle inconnu'} · Android ${x.versionAndroid ?? '?'}${x.entreeDeGamme ? ' · entrée de gamme' : ''}`
+    r.ligneInfo(libelle, `${x.testeurs} testeur${x.testeurs > 1 ? 's' : ''}`)
+  }
 
   r.titre('Retours par fonctionnalité')
   for (const t of b.themes) {

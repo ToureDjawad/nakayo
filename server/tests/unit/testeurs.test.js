@@ -56,8 +56,12 @@ describe('autres champs', () => {
   })
 
   it('lit l’appareil en objet ou en JSON', () => {
-    expect(lireAppareil(APPAREIL).appareil).toEqual(APPAREIL)
-    expect(lireAppareil(JSON.stringify(APPAREIL)).appareil).toEqual(APPAREIL)
+    expect(lireAppareil(APPAREIL).appareil).toEqual({ ...APPAREIL, ramMo: null })
+    expect(lireAppareil(JSON.stringify(APPAREIL)).appareil).toEqual({ ...APPAREIL, ramMo: null })
+    // US-35 : mémoire vive facultative, en Mo.
+    expect(lireAppareil({ ...APPAREIL, ramMo: 2816 }).appareil.ramMo).toBe(2816)
+    expect(lireAppareil({ ...APPAREIL, ramMo: '3 Go' }).erreur).toBe('format_invalide')
+    expect(lireAppareil({ ...APPAREIL, ramMo: 12 }).erreur).toBe('format_invalide')
     expect(lireAppareil({ ...APPAREIL, versionAndroid: 14 }).appareil.versionAndroid).toBe('14')
     expect(lireAppareil(undefined).erreur).toBe('requis')
     expect(lireAppareil('{pas du json').erreur).toBe('format_invalide')

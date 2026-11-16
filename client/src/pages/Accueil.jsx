@@ -127,8 +127,8 @@ const VERIFICATIONS = [
   { icone: 'bouclier', titre: 'Installation depuis le Play Store', detail: 'Pas d’APK, pas d’émulateur, pas de téléphone rooté.' },
 ]
 
-// Offres du modèle économique (§3). Seule la Standard est ouverte ; Pro et Lancement Afrique
-// arrivent ensuite (phase 4 du plan de lancement).
+// Offres du modèle économique (§3). Standard et Pro sont ouvertes ; Lancement Afrique arrive
+// avec le devis (US-37).
 const OFFRES = [
   {
     code: 'standard',
@@ -159,6 +159,7 @@ const OFFRES = [
       'Export CSV des bugs',
     ],
     misEnAvant: true,
+    disponible: true,
   },
   {
     code: 'afrique',
@@ -281,7 +282,7 @@ function Offre({ offre }) {
       </ul>
       {offre.disponible ? (
         <Link to="/inscription" className={`mt-6 ${classeBoutonSecondaire}`}>
-          Choisir Standard
+          Choisir {offre.nom}
         </Link>
       ) : (
         <p className={`mt-6 text-center text-sm ${fonce ? 'text-sur-fonce' : 'text-discret'}`}>Ouverture après les premières campagnes Standard.</p>

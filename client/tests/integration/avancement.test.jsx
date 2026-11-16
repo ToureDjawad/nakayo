@@ -49,7 +49,7 @@ const AVANCEMENT = {
   joursExiges: 14,
   finPrevueLe: '2026-11-28T09:00:00.000Z',
   objectif: { atteint: false, testeursAtteints: 0, dateEstimee: '2026-11-25' },
-  resume: { testeursActifs: 12, installes: 13, tempsTotalSecondes: 9120, rapports: 25, noteMoyenne: 4.2, bugs: 1 },
+  resume: { testeursActifs: 12, installes: 13, tempsTotalSecondes: 9120, rapports: 25, noteMoyenne: 4.2, bugs: 1, appareilsEntreeDeGamme: 1 },
   testeurs: [],
   parJour: [
     { jour: '2026-11-12', numero: 1, tempsSecondes: 3600, testeursAvecUsage: 12, rapports: 12, testeursValides: 11 },
@@ -62,7 +62,7 @@ const AVANCEMENT = {
   ],
   appareils: [
     { modele: 'Spark 20', versionAndroid: '14', testeurs: 3 },
-    { modele: 'Redmi 13C', versionAndroid: '13', testeurs: 1 },
+    { modele: 'Redmi 13C', versionAndroid: '13', testeurs: 1, entreeDeGamme: true },
   ],
   rapports: [
     rapport(1, { bug: true, commentaireBug: 'Le panier se vide quand je quitte l’app.' }),
@@ -101,6 +101,9 @@ describe('Avancement de la campagne (US-21)', () => {
     expect(screen.getByText(/77\s%/)).toBeInTheDocument()
     expect(screen.getByText('Spark 20')).toBeInTheDocument()
     expect(screen.getByText('· Android 13')).toBeInTheDocument()
+    // US-35 : téléphones d'entrée de gamme.
+    expect(screen.getByText('1 testeur a un téléphone d’entrée de gamme (3 Go de mémoire vive ou moins).')).toBeInTheDocument()
+    expect(screen.getByText('· entrée de gamme')).toBeInTheDocument()
 
     const liste = () => screen.getByRole('heading', { name: 'Rapports des testeurs' }).parentElement
     expect(within(liste()).getAllByText(/^Note \d sur 5\.$/)).toHaveLength(20)

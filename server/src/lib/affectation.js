@@ -1,3 +1,5 @@
+import { estEntreeDeGamme } from './offres.js'
+
 // Règles d'affectation des testeurs aux campagnes (US-16, docs/api-sprint3.md §1.2).
 export const TESTEURS_PAR_CAMPAGNE = 15
 export const JOURS_EXIGES = 14
@@ -25,7 +27,9 @@ const normaliser = (valeur) => (valeur ?? '').trim().toLowerCase()
 // candidat : { id, ville, operateur, modele, actives, terminees, remplacees, remises }
 // `confirmes` (offre Pro, US-32) : les testeurs qui ont déjà mené une campagne au bout passent
 // avant les nouveaux, quel que soit leur score ; les nouveaux ne complètent que s'il en manque.
-export function choisirTesteurs(candidats, { nombre, deja = [], confirmes = false }) {
+// `entreeDeGamme` (offre Pro, US-35) : nombre de téléphones de 3 Go de RAM ou moins à réunir
+// en priorité (candidat.ram_mo) ; s'il en manque, la campagne part quand même avec ceux qui existent.
+export function choisirTesteurs(candidats, { nombre, deja = [], confirmes = false, entreeDeGamme = 0 }) {
   const confirme = (c) => (confirmes && c.terminees > 0 ? 1 : 0)
   const tries = candidats
     .filter((c) => c.actives < APPS_MAX_PAR_TESTEUR)
@@ -43,11 +47,19 @@ export function choisirTesteurs(candidats, { nombre, deja = [], confirmes = fals
     return combien('ville', c.ville) < plafondVille && combien('operateur', c.operateur) < plafondOperateur
   }
 
-  for (const souple of [true, false]) {
-    for (const candidat of tries) {
-      if (choisis.length === nombre) return choisis
-      if (!choisis.includes(candidat) && accepte(candidat, souple)) choisis.push(candidat)
+  // Ajoute des candidats de `liste` jusqu'à `limite` choisis, règles souples puis strictes.
+  const completer = (liste, limite) => {
+    for (const souple of [true, false]) {
+      for (const candidat of liste) {
+        if (choisis.length >= limite) return
+        if (!choisis.includes(candidat) && accepte(candidat, souple)) choisis.push(candidat)
+      }
     }
   }
+
+  // US-35 : d'abord les téléphones d'entrée de gamme qui manquent à la campagne, puis les autres.
+  const petits = Math.max(0, entreeDeGamme - deja.filter((t) => estEntreeDeGamme(t.ram_mo)).length)
+  if (petits) completer(tries.filter((c) => estEntreeDeGamme(c.ram_mo)), Math.min(nombre, petits))
+  completer(tries, nombre)
   return choisis
 }

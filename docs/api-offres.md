@@ -68,7 +68,13 @@ Erreurs `409` :
 
 - **Testeurs confirmés d'abord.** Au démarrage comme pour un remplacement, les testeurs qui ont déjà mené une campagne au bout passent en tête. C'est l'approximation retenue pour « les mieux notés » tant qu'il n'y a pas de note des testeurs. Le reste du tri ne change pas : assiduité, puis répartition des villes, des opérateurs et des modèles.
 - **Paie.** Chaque testeur qui a ses 14 jours reçoit la paie de l'offre de l'app au moment de la clôture : 800 FCFA en Pro. Le portefeuille et le tableau de bord admin l'estiment de la même façon.
-- Les rapports de bugs avec captures (US-33, US-34) et les téléphones d'entrée de gamme (US-35) complètent l'offre Pro dans les US suivantes.
+- **Rapports de bugs avec captures** (US-33, US-34) : voir `docs/api-bugs.md`.
+- **Téléphones d'entrée de gamme (US-35).**
+  - Une campagne Pro réserve d'abord 5 places aux testeurs dont le téléphone a 3 Go de mémoire vive ou moins (3 072 Mo, la valeur annoncée par Android). C'est vrai au démarrage comme aux remplacements, tant que la campagne en compte moins de 5.
+  - S'il n'y en a pas assez parmi les testeurs disponibles, la campagne démarre quand même avec ceux qui existent.
+  - L'app Android envoie `ramMo` (entier, 256 à 65 536) dans l'objet `appareil` (contrat §4.2). Le champ est facultatif pour les anciennes versions de l'app ; il est gardé dans `appareils.ram_mo` (migration 020).
+  - L'avancement (`docs/api-sprint4.md` §1) donne `resume.appareilsEntreeDeGamme` et `entreeDeGamme` sur chaque ligne de `appareils`.
+  - Le rapport de fin (web, PDF et brouillon du formulaire Google) indique les modèles utilisés et le nombre de téléphones d'entrée de gamme.
 
 ## 4. Web
 

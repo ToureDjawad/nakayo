@@ -131,3 +131,33 @@ describe('campagne Pro (§3)', () => {
     expect(v).toEqual([{ montant: 800 }])
   })
 })
+
+describe('téléphones d’entrée de gamme (US-35)', () => {
+  it('une campagne Pro réunit 5 téléphones de 3 Go de RAM ou moins, signalés dans l’avancement', async () => {
+    const testeurs = await creerTesteursValides(25)
+    // Les 5 derniers inscrits ont de petits téléphones : sans la règle, ils ne seraient pas tous choisis.
+    const petits = testeurs.slice(20).map((t) => t.id)
+    await pool.query('UPDATE appareils SET ram_mo = 8192')
+    await pool.query('UPDATE appareils SET ram_mo = 2816 WHERE utilisateur_id = ANY($1)', [petits])
+
+    await simuler((await payer({ offre: 'pro', moyen: 'carte' })).body.paiement.reference)
+    expect((await lancerCampagne()).status).toBe(201)
+    const { rows } = await pool.query('SELECT testeur_id::text AS id FROM affectations WHERE app_id = $1', [appId])
+    expect(rows.map((r) => r.id)).toEqual(expect.arrayContaining(petits))
+
+    const avancement = (await request(test.app).get(`/api/apps/${appId}/campagne/avancement`).set('Cookie', dev)).body.avancement
+    expect(avancement.resume.appareilsEntreeDeGamme).toBe(5)
+    expect(avancement.appareils.filter((a) => a.entreeDeGamme).reduce((n, a) => n + a.testeurs, 0)).toBe(5)
+  })
+
+  it('l’app Android peut envoyer la mémoire vive avec l’appareil', async () => {
+    const [t] = await creerTesteursValides(1)
+    const r = await request(test.app)
+      .patch('/api/testeurs/moi')
+      .set({ Authorization: `Bearer ${t.jeton}` })
+      .send({ appareil: { fabricant: 'Itel', modele: 'A70', versionAndroid: '13', niveauApi: 33, identifiant: 'app-itel-a70-01', ramMo: 2816 } })
+    expect(r.status).toBe(200)
+    const { rows } = await pool.query('SELECT ram_mo FROM appareils WHERE identifiant = $1', ['app-itel-a70-01'])
+    expect(rows[0].ram_mo).toBe(2816)
+  })
+})

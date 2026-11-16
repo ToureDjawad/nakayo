@@ -71,6 +71,8 @@ export function lireAppareil(valeur) {
     versionAndroid: texte(String(brut.versionAndroid ?? '')),
     niveauApi: brut.niveauApi,
     identifiant: texte(brut.identifiant),
+    // US-35 : mémoire vive totale en Mo, facultative (anciennes versions de l'app).
+    ramMo: brut.ramMo ?? null,
   }
   const valide =
     (appareil.fabricant === null || appareil.fabricant.length <= 60) &&
@@ -82,7 +84,8 @@ export function lireAppareil(valeur) {
     appareil.niveauApi >= 1 &&
     appareil.niveauApi <= 100 &&
     appareil.identifiant.length >= 8 &&
-    appareil.identifiant.length <= 128
+    appareil.identifiant.length <= 128 &&
+    (appareil.ramMo === null || (Number.isInteger(appareil.ramMo) && appareil.ramMo >= 256 && appareil.ramMo <= 65536))
   return valide ? { appareil } : { erreur: 'format_invalide' }
 }
 
