@@ -161,6 +161,7 @@ class ApiReelleTest {
             appareil = appareil,
             consentementSuivi = true,
             accepteConditions = true,
+            ancienneteGmail = "plus_6_mois",
         )
         val profil = (api.inscrire(jetonInscription, formulaire, jpeg, jpeg) as Resultat.Succes).valeur
         assertEquals("en_attente", profil.statut)
