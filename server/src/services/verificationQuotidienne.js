@@ -1,4 +1,5 @@
 import { transaction } from '../routes/auth.js'
+import { envoyerEmailsCampagnes } from './emailsCampagne.js'
 import { USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
 import { ajouterJours, debutJourBenin, jourBenin } from '../lib/temps.js'
 import { prevenirRapportsPrets } from './rapportFinal.js'
@@ -133,6 +134,8 @@ export function demarrerVerificationNocturne(deps, { delaiMs = 5 * 60 * 1000 } =
       }
       // US-36 : rapports de fin prêts au 14e jour, développeurs prévenus par email.
       await prevenirRapportsPrets(deps, { maintenant: deps.maintenant() })
+      // US-26 : emails d'étapes au développeur (J5, J7, J10, moins de 13 testeurs actifs).
+      await envoyerEmailsCampagnes(deps, { maintenant: deps.maintenant() })
     } catch (erreur) {
       deps.journal.error(erreur)
     }
