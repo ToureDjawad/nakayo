@@ -1,4 +1,5 @@
 import { offre } from '../lib/offres.js'
+import { garantieDisponible } from './garanties.js'
 import { DUREE_RESEAU_JOURS } from '../lib/reseaux.js'
 import {
   choisirTesteurs,
@@ -156,8 +157,10 @@ export async function demarrerCampagne(client, { appId, developpeurId, groupeGoo
   if (!app.preparation_complete_le) {
     throw new ErreurHttp(409, 'preparation_incomplete', { message: 'Cochez toute la liste de vérification avant de démarrer.' })
   }
-  const { rows: existantes } = await client.query(`SELECT 1 FROM campagnes WHERE app_id = $1 AND statut <> 'annulee'`, [appId])
-  if (existantes.length) throw new ErreurHttp(409, 'campagne_existante', { message: 'La campagne de cette app a déjà démarré.' })
+  const { rows: existantes } = await client.query(`SELECT statut FROM campagnes WHERE app_id = $1 AND statut <> 'annulee'`, [appId])
+  // US-30 : une garantie acceptée permet une seconde campagne, offerte, une fois la première finie.
+  const garantieId = existantes.length && existantes.every((c) => c.statut === 'terminee') ? await garantieDisponible(client, appId) : null
+  if (existantes.length && !garantieId) throw new ErreurHttp(409, 'campagne_existante', { message: 'La campagne de cette app a déjà démarré.' })
 
   await client.query('SELECT pg_advisory_xact_lock($1)', [VERROU_AFFECTATION])
   const exigences = await exigencesOffre(client, appId)
@@ -170,10 +173,11 @@ export async function demarrerCampagne(client, { appId, developpeurId, groupeGoo
   }
 
   const { rows } = await client.query(
-    `INSERT INTO campagnes (app_id, developpeur_id, testeurs_vises, jours_exiges, groupe_google, demarree_le, fin_prevue_le, cree_le)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $6) RETURNING id`,
-    [appId, developpeurId, exigences.nombre, JOURS_EXIGES, groupeGoogle, maintenant, new Date(maintenant.getTime() + JOURS_CAMPAGNE * JOUR_MS)],
+    `INSERT INTO campagnes (app_id, developpeur_id, testeurs_vises, jours_exiges, groupe_google, demarree_le, fin_prevue_le, cree_le, offerte)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $6, $8) RETURNING id`,
+    [appId, developpeurId, exigences.nombre, JOURS_EXIGES, groupeGoogle, maintenant, new Date(maintenant.getTime() + JOURS_CAMPAGNE * JOUR_MS), Boolean(garantieId)],
   )
+  if (garantieId) await client.query('UPDATE garanties SET campagne_offerte_id = $2 WHERE id = $1', [garantieId, rows[0].id])
   await insererAffectations(client, { campagneId: rows[0].id, appId, testeurs, maintenant })
   return rows[0].id
 }

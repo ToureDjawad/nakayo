@@ -123,3 +123,14 @@ export function sanctionnerCompte(id, { action, motif }) {
 export function lireJournal({ page = 1 } = {}, { signal } = {}) {
   return requete(`/admin/journal${page > 1 ? `?page=${page}` : ''}`, { signal })
 }
+
+// Demandes de garantie (docs/garantie.md, US-30).
+export function listerGaranties({ statut = 'en_attente', page = 1 } = {}, { signal } = {}) {
+  const parametres = new URLSearchParams({ statut })
+  if (page > 1) parametres.set('page', String(page))
+  return requete(`/admin/garanties?${parametres}`, { signal })
+}
+
+export function deciderGarantie(id, { decision, motif }) {
+  return requete(`/admin/garanties/${encodeURIComponent(id)}/decision`, { methode: 'POST', corps: { decision, motif: motif || undefined } })
+}

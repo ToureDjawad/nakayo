@@ -102,3 +102,12 @@ export function lireDevis(id, { signal } = {}) {
 export function demanderDevis(id, { pays, langues, profils, scenarios }) {
   return requete(`/apps/${encodeURIComponent(id)}/devis`, { methode: 'PUT', corps: { pays, langues, profils, scenarios } })
 }
+
+// Garantie après un refus de Google (docs/garantie.md, US-30).
+export function lireGarantie(id, { signal } = {}) {
+  return requete(`/apps/${encodeURIComponent(id)}/garantie`, { signal })
+}
+
+export function demanderGarantie(id, { choix, motifGoogle, emailGoogle, engagement }) {
+  return requete(`/apps/${encodeURIComponent(id)}/garantie`, { methode: 'POST', corps: { choix, motifGoogle, emailGoogle, engagement } })
+}

@@ -47,7 +47,7 @@ function Etat({ ok, oui, non }) {
   return <span className={ok ? 'font-medium text-succes' : 'text-discret'}>{ok ? oui : non}</span>
 }
 
-function Campagne({ campagne, annonce }) {
+function Campagne({ campagne, annonce, onCampagneDemarree }) {
   const { compteurs } = campagne
   const enCours = campagne.statut === 'en_cours'
   const gmails = campagne.testeurs.map((t) => t.gmail).join(', ')
@@ -141,7 +141,7 @@ function Campagne({ campagne, annonce }) {
         </section>
       )}
 
-      <RapportFinal appId={campagne.app.id} />
+      <RapportFinal appId={campagne.app.id} onCampagneDemarree={onCampagneDemarree} />
 
       <AvancementCampagne appId={campagne.app.id} />
 
@@ -236,7 +236,7 @@ function Suivi({ id, utilisateur }) {
     )
   }
   return page(
-    <Campagne campagne={etat.campagne} annonce={state?.demarree} />,
+    <Campagne campagne={etat.campagne} annonce={state?.demarree} onCampagneDemarree={() => setEssai((n) => n + 1)} />,
     <p>
       Pour « <span className="[overflow-wrap:anywhere]">{etat.campagne.app.nom}</span> ».
     </p>,
