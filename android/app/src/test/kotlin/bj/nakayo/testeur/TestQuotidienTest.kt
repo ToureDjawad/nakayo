@@ -37,7 +37,9 @@ class OutilsFactices(
     var installation: InstallationApp? = InstallationApp("com.android.vending", "1.0.3"),
     var position: Position? = Position(6.36536, 2.41833),
     var wifi: Boolean? = true,
+    var integrite: bj.nakayo.noyau.Integrite? = null,
 ) : OutilsApps {
+    override fun integrite() = integrite
     override fun installation(paquet: String) = installation
     override suspend fun position() = position
     override fun surWifi() = wifi
@@ -64,12 +66,21 @@ class TestQuotidienTest {
     private fun Navigation.espace() = assertIs<Ecran.Espace>(ecran.value).modele
 
     @Test
+    fun `le signal transmet un appareil suspect (US-28)`() = runTest {
+        outils.integrite = bj.nakayo.noyau.Integrite(emulateur = true, root = false)
+        navigation()
+        advanceUntilIdle()
+        assertEquals(bj.nakayo.noyau.Integrite(emulateur = true, root = false), service.derniereIntegrite)
+    }
+
+    @Test
     fun `compte validé, les apps sont chargées et chaque ouverture signalée une fois`() = runTest {
         val nav = navigation()
         advanceUntilIdle()
         val etat = assertIs<EtatEspace.Pret>(nav.espace().etat.value)
         assertEquals(listOf("31"), etat.apps?.map { it.id })
         assertEquals(1, service.appels.count { it == "signal" })
+        assertEquals(null, service.derniereIntegrite)
 
         // Plusieurs écrans dans la même ouverture : un seul signal.
         nav.allerApp(affectation(), ServiceTesteurFactice.profil(statut = "valide"))

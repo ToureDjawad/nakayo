@@ -1,5 +1,6 @@
 package bj.nakayo.testeur.campagne
 
+import bj.nakayo.noyau.Integrite
 import bj.nakayo.noyau.Position
 
 // Une app testée telle qu'Android la voit sur ce téléphone.
@@ -19,6 +20,9 @@ interface OutilsApps {
 
     // US-16 : le téléphone est-il connecté en Wi-Fi ? null si Android ne le dit pas.
     fun surWifi(): Boolean? = null
+
+    // US-28 : émulateur ou téléphone rooté (null si inconnu).
+    fun integrite(): Integrite? = null
 
     // US-18 : le testeur a-t-il donné l'accès aux statistiques d'usage ?
     fun mesureAutorisee(): Boolean = true

@@ -217,7 +217,7 @@ class Navigation(
         if (ouvertureSignalee == ouverture) return
         val courante = ouverture
         ouvertureSignalee = courante
-        portee.launch { if (service.signaler() is Resultat.Echec && ouvertureSignalee == courante) ouvertureSignalee = -1 }
+        portee.launch { if (service.signaler(outils.integrite()) is Resultat.Echec && ouvertureSignalee == courante) ouvertureSignalee = -1 }
     }
 
     fun allerProfil(profil: ProfilTesteur): Unit = changer {

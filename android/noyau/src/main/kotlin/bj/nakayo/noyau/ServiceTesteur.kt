@@ -20,7 +20,8 @@ interface ServiceTesteur {
     suspend fun confirmerInscription(affectationId: String, capture: Photo, gmailPrincipal: Boolean = false): Resultat<AffectationTesteur>
     suspend fun confirmerInstallation(affectationId: String, sourceInstallation: String): Resultat<AffectationTesteur>
     suspend fun envoyerRapport(affectationId: String, rapport: RapportJour): Resultat<AffectationTesteur>
-    suspend fun signaler(): Resultat<Unit>
+    // US-28 : `integrite` n'est envoyée que si l'app tourne sur un appareil suspect.
+    suspend fun signaler(integrite: Integrite? = null): Resultat<Unit>
     suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages>
 
     // US-33 : rapports de bugs avec captures (docs/api-bugs.md §1).

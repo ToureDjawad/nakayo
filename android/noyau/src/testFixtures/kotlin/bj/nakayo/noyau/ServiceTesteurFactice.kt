@@ -143,7 +143,12 @@ class ServiceTesteurFactice(var jeton: String? = null) : ServiceTesteur {
         return reponseRapport(affectationId, rapport)
     }
 
-    override suspend fun signaler() = reponseSignal().also { appels += "signal" }
+    var derniereIntegrite: Integrite? = null
+
+    override suspend fun signaler(integrite: Integrite?) = reponseSignal().also {
+        appels += "signal"
+        derniereIntegrite = integrite
+    }
 
     override suspend fun envoyerUsages(usages: List<UsageJour>): Resultat<BilanUsages> {
         appels += "usages:${usages.size}"
