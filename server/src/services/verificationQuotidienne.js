@@ -1,5 +1,6 @@
 import { transaction } from '../routes/auth.js'
 import { envoyerEmailsCampagnes } from './emailsCampagne.js'
+import { envoyerRappelsAbonnements } from './abonnements.js'
 import { remplacerInactifs } from './remplacementsAuto.js'
 import { detecterFraudes } from './fraude.js'
 import { USAGE_MINIMUM_SECONDES } from '../lib/rapports.js'
@@ -142,6 +143,8 @@ export function demarrerVerificationNocturne(deps, { delaiMs = 5 * 60 * 1000 } =
       await prevenirRapportsPrets(deps, { maintenant: deps.maintenant() })
       // US-26 : emails d'étapes au développeur (J5, J7, J10, moins de 13 testeurs actifs).
       await envoyerEmailsCampagnes(deps, { maintenant: deps.maintenant() })
+      // US-45 : rappels d'échéance de l'abonnement (J-3, jour J, suspension).
+      await envoyerRappelsAbonnements(deps, { maintenant: deps.maintenant() })
     } catch (erreur) {
       deps.journal.error(erreur)
     }

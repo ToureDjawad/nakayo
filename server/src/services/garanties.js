@@ -61,6 +61,12 @@ export async function demanderGarantie(client, { appId, developpeurId, choix, mo
     }
     throw new ErreurHttp(409, etat.raison === 'deja_demandee' ? 'garantie_existante' : 'garantie_impossible', { message: messages[etat.raison], raison: etat.raison })
   }
+  if (choix === 'remboursement') {
+    const { rows: apps } = await client.query('SELECT abonnement_id FROM apps WHERE id = $1', [appId])
+    if (apps[0]?.abonnement_id) {
+      throw new ErreurHttp(409, 'remboursement_impossible', { message: 'Cette campagne fait partie de votre abonnement : choisissez une nouvelle campagne offerte.' })
+    }
+  }
   const c = await derniereCampagne(client, { appId, developpeurId })
   const { rows } = await client.query(
     `INSERT INTO garanties (app_id, campagne_id, developpeur_id, choix, motif_google, email_google, cree_le)

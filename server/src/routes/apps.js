@@ -9,7 +9,7 @@ import { creerApp, enregistrerPreparation, lireAppDeveloppeur, listerAppsDevelop
 import { normaliserWhatsapp, validerWhatsapp } from '../services/support.js'
 import { CODES_OFFRES, MOYENS_PAIEMENT, offre as lireOffre } from '../lib/offres.js'
 import { ELEMENTS_PREPARATION, lirePreparation } from '../lib/preparation.js'
-import { creerPaiement, enregistrerReferenceFournisseur, marquerPaiementEchoue, versPaiementApi } from '../services/paiements.js'
+import { creerPaiement } from '../services/paiements.js'
 import { demarrerCampagne, lireCampagne, lireCampagneApp, messageNouvelleApp, telephonesTesteurs } from '../services/campagnes.js'
 import { lireAvancement } from '../services/avancement.js'
 import { enregistrerDecision, lireRapportFinal, rapportPdf } from '../services/rapportFinal.js'
@@ -19,6 +19,8 @@ import { cheminAbsolu } from '../services/documents.js'
 import { lireBesoin } from '../lib/devis.js'
 import { enregistrerBesoin, lireDevisApp, prixDevis, versDevisApi } from '../services/devis.js'
 import { transaction } from './auth.js'
+import { fournisseurPaiement, redirectionPaiement } from './paiements.js'
+import { utiliserAbonnement } from '../services/abonnements.js'
 import { annoncerVersion, campagneDeLApp, lireVersions, messageNouvelleVersion, telephonesInscrits, validerVersion } from '../services/versionsCampagne.js'
 import { CHOIX, demanderGarantie, lireGarantie, messageNouvelleGarantie, MOTIFS_GOOGLE, versGarantie } from '../services/garanties.js'
 
@@ -81,10 +83,7 @@ export function routesApps(deps) {
   // Le développeur est ensuite envoyé chez le fournisseur (ou sur la page de simulation).
   async function lancerPaiement(req, res, { nature, verifier }) {
     const id = idApp(req)
-    const fedapay = config.paiementMode === 'fedapay' ? deps.fedapay : null
-    if (config.paiementMode !== 'simulation' && !fedapay) {
-      throw new ErreurHttp(503, 'paiement_indisponible', { message: 'Le paiement en ligne n’est pas encore ouvert.' })
-    }
+    const { fedapay } = fournisseurPaiement({ config, fedapay: deps.fedapay })
     const { moyen, numeroMomo, offre = nature === 'offre' ? 'standard' : 'pro' } = corps(req)
     const numero = moyen === 'mobile_money' ? normaliserWhatsapp(numeroMomo) : null
     exigerChamps({
@@ -111,28 +110,23 @@ export function routesApps(deps) {
       fcfa: Boolean(fedapay),
       maintenant: maintenant(),
     })
-    if (!fedapay) {
-      return res.status(201).json({ paiement: versPaiementApi(paiement), redirection: `/paiement/simulation/${paiement.reference}` })
-    }
-    // docs/fedapay.md §1 Page de paiement FedaPay ; le développeur revient ensuite sur « Mes paiements ».
-    let lien
-    try {
-      lien = await fedapay.creerTransaction({
-        reference: paiement.reference,
-        montant: paiement.montant,
-        devise: paiement.devise,
+    res.status(201).json(
+      await redirectionPaiement(deps, {
+        fedapay,
+        paiement,
         description: nature === 'montee_en_gamme' ? `Nakayo · Passage à l’${lireOffre(offre).nom} · ${app.nom}` : `Nakayo · ${lireOffre(offre).nom} · ${app.nom}`,
-        urlRetour: `${config.clientUrl}/mon-compte/paiements/${paiement.reference}`,
         client: { nom: req.session.utilisateur.nom, email: req.session.utilisateur.email, numero },
-      })
-    } catch (erreur) {
-      deps.journal.error(erreur)
-      await marquerPaiementEchoue(pool, { reference: paiement.reference, maintenant: maintenant() })
-      throw new ErreurHttp(502, 'fournisseur_indisponible', { message: 'Le service de paiement ne répond pas. Réessayez dans quelques minutes.' })
-    }
-    await enregistrerReferenceFournisseur(pool, { reference: paiement.reference, referenceFournisseur: lien.id })
-    res.status(201).json({ paiement: versPaiementApi(paiement), redirection: lien.url })
+      }),
+    )
   }
+
+  // US-45 (docs/abonnement.md) : campagne Standard prise sur l'abonnement, sans paiement.
+  routeur.post('/:id/abonnement', exigerCompteValide, async (req, res) => {
+    const id = idApp(req)
+    const app = await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) })
+    await transaction(pool, (client) => utiliserAbonnement(client, { app, developpeurId: developpeurId(req), maintenant: maintenant() }))
+    res.json({ app: await lireAppDeveloppeur(pool, { id, developpeurId: developpeurId(req) }).then(versAppApi) })
+  })
 
   // docs/api-offres.md §4 : devis de l'Offre Plus (US-37).
   routeur.get('/:id/devis', async (req, res) => {

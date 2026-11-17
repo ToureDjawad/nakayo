@@ -183,13 +183,16 @@ export function MesApps() {
           <Link to="/mon-compte/apps/nouvelle" className={`mt-4 w-full sm:w-auto ${lienBouton}`}>
             Soumettre une app
           </Link>
-          {etat.apps.some((app) => app.statut !== 'brouillon') && (
-            <p className="mt-3 text-sm">
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {etat.apps.some((app) => app.statut !== 'brouillon') && (
               <Link to="/mon-compte/paiements" className="font-semibold text-accent underline underline-offset-2">
                 Vos paiements et factures
               </Link>
-            </p>
-          )}
+            )}
+            <Link to="/mon-compte/abonnement" className="font-semibold text-accent underline underline-offset-2">
+              Abonnement Agence
+            </Link>
+          </p>
         </>
       )}
     </section>

@@ -100,3 +100,18 @@ export const remuneration = (codeOffre) => offre(codeOffre).remuneration
 
 // Taux du modèle économique pour ramener les paiements par carte en FCFA (1 $ = 600 FCFA).
 export const TAUX_USD_FCFA = 600
+
+// US-45 (docs/abonnement.md) : abonnement mensuel des agences et studios. 3 campagnes Standard
+// par mois, non reportables. Renouvelé à la main chaque mois ; 3 jours de grâce après l'échéance.
+export const ABONNEMENT = {
+  code: 'agence',
+  nom: 'Abonnement Agence',
+  description: '3 campagnes Standard par mois, sans repayer à chaque app.',
+  campagnes: 3,
+  prix: {
+    carte: { montant: 6900, devise: 'USD' },
+    mobile_money: { montant: 41400, devise: 'XOF' },
+  },
+  graceJours: 3,
+  renouvelableJours: 7,
+}

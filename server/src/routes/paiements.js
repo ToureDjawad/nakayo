@@ -6,7 +6,9 @@ import { exigerRole } from '../middlewares/authentification.js'
 import { transaction } from './auth.js'
 import {
   confirmerPaiement,
+  enregistrerReferenceFournisseur,
   lirePaiementDeveloppeur,
+  marquerPaiementEchoue,
   listerPaiementsDeveloppeur,
   messageRecu,
   signatureValide,
@@ -16,6 +18,38 @@ import { facturePdf, lireFacture } from '../services/factures.js'
 import { statutPaiement } from '../services/fedapay.js'
 
 const STATUTS_CONFIRMATION = ['reussi', 'echoue']
+
+// Fournisseur actif : FedaPay, la simulation, ou rien (503). `fcfa` : FedaPay n'encaisse qu'en FCFA.
+export function fournisseurPaiement({ config, fedapay }) {
+  const actif = config.paiementMode === 'fedapay' ? fedapay : null
+  if (config.paiementMode !== 'simulation' && !actif) {
+    throw new ErreurHttp(503, 'paiement_indisponible', { message: 'Le paiement en ligne n’est pas encore ouvert.' })
+  }
+  return { fedapay: actif, fcfa: Boolean(actif) }
+}
+
+// Envoie le développeur payer : page FedaPay (docs/fedapay.md §1) ou page de simulation.
+// Le développeur revient ensuite sur « Mes paiements ».
+export async function redirectionPaiement({ pool, config, journal, maintenant }, { fedapay, paiement, description, client }) {
+  if (!fedapay) return { paiement: versPaiementApi(paiement), redirection: `/paiement/simulation/${paiement.reference}` }
+  let lien
+  try {
+    lien = await fedapay.creerTransaction({
+      reference: paiement.reference,
+      montant: paiement.montant,
+      devise: paiement.devise,
+      description,
+      urlRetour: `${config.clientUrl}/mon-compte/paiements/${paiement.reference}`,
+      client,
+    })
+  } catch (erreur) {
+    journal.error(erreur)
+    await marquerPaiementEchoue(pool, { reference: paiement.reference, maintenant: maintenant() })
+    throw new ErreurHttp(502, 'fournisseur_indisponible', { message: 'Le service de paiement ne répond pas. Réessayez dans quelques minutes.' })
+  }
+  await enregistrerReferenceFournisseur(pool, { reference: paiement.reference, referenceFournisseur: lien.id })
+  return { paiement: versPaiementApi(paiement), redirection: lien.url }
+}
 
 // Confirmation commune au webhook et à la simulation ; envoie le reçu après validation.
 export function creerConfirmation({ pool, emails, maintenant, config, journal }) {

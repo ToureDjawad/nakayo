@@ -49,7 +49,7 @@ function Historique({ utilisateur }) {
             {paiements.map((p) => (
               <li key={p.reference} className="rounded-carte border border-trait bg-white p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-semibold [overflow-wrap:anywhere] text-encre">{p.appNom}</p>
+                  <p className="font-semibold [overflow-wrap:anywhere] text-encre">{p.nature === 'abonnement' ? 'Abonnement Agence' : p.appNom}</p>
                   <PastilleStatut statut={p.statut} />
                 </div>
                 <p className="mt-1 text-encre">
@@ -57,7 +57,10 @@ function Historique({ utilisateur }) {
                   <span className="text-texte"> · {MOYENS[p.moyen] ?? p.moyen}</span>
                 </p>
                 <p className="mt-0.5 text-sm text-texte">
-                  {p.nature === 'montee_en_gamme' ? 'Passage à l’Offre Pro (différence de prix)' : p.offre === 'pro' ? 'Offre Pro' : 'Offre Standard'}
+                  {p.nature === 'abonnement'
+                    ? 'Un mois, 3 campagnes Standard'
+                    : p.nature === 'montee_en_gamme'
+                      ? 'Passage à l’Offre Pro (différence de prix)' : p.offre === 'pro' ? 'Offre Pro' : 'Offre Standard'}
                 </p>
                 <p className="mt-0.5 text-sm text-discret">
                   {dateHeure(p.confirmeLe ?? p.creeLe)} · <span className="font-mono [overflow-wrap:anywhere]">{p.reference}</span>
