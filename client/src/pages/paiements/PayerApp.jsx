@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { lireAbonnement, utiliserAbonnement } from '../../api/abonnement.js'
 import { lireApp, lireDevis } from '../../api/apps.js'
 import { ErreurApi } from '../../api/client.js'
 import { lireOffres, monterEnGamme, payerApp } from '../../api/paiements.js'
@@ -164,6 +165,74 @@ function Formulaire({ app, offres, offreInitiale, montee = false }) {
   )
 }
 
+const MESSAGES_ABONNEMENT = {
+  quota_atteint: 'Les campagnes de ce mois sont toutes utilisées.',
+  abonnement_suspendu: 'Votre abonnement est suspendu : renouvelez-le pour continuer.',
+  sans_abonnement: 'Vous n’avez pas d’abonnement.',
+  statut_incompatible: 'Cette app n’est plus en brouillon.',
+}
+
+// US-45 : avec un abonnement, une campagne Standard se lance sans payer l'app.
+function BlocAbonnement({ app }) {
+  const navigate = useNavigate()
+  const [abonnement, setAbonnement] = useState(null)
+  const [envoi, setEnvoi] = useState(false)
+  const [erreur, setErreur] = useState(null)
+
+  useEffect(() => {
+    const controle = new AbortController()
+    lireAbonnement({ signal: controle.signal })
+      .then((r) => setAbonnement(r.abonnement))
+      // Sans état d'abonnement lisible, le paiement à l'app reste possible.
+      .catch(() => {})
+    return () => controle.abort()
+  }, [])
+
+  if (!abonnement) return null
+  if (abonnement.statut === 'suspendu' || !abonnement.campagnesRestantes) {
+    return (
+      <p className="mb-6 rounded-carte border border-trait bg-white p-4 text-sm text-texte">
+        {abonnement.statut === 'suspendu' ? 'Votre abonnement est suspendu.' : 'Les campagnes de votre abonnement sont utilisées ce mois-ci.'}{' '}
+        <Link to="/mon-compte/abonnement" className="font-medium text-accent underline underline-offset-2">
+          Voir mon abonnement
+        </Link>
+      </p>
+    )
+  }
+
+  async function utiliser() {
+    setErreur(null)
+    setEnvoi(true)
+    try {
+      await utiliserAbonnement(app.id)
+      navigate('/mon-compte')
+    } catch (err) {
+      setEnvoi(false)
+      setErreur(err instanceof ErreurApi && MESSAGES_ABONNEMENT[err.code] ? MESSAGES_ABONNEMENT[err.code] : messageErreurGlobale(err))
+    }
+  }
+
+  return (
+    <section aria-labelledby="titre-abonnement" className="mb-6 rounded-carte border border-accent bg-white p-4">
+      <h2 id="titre-abonnement" className="font-semibold text-encre">
+        Utiliser votre abonnement
+      </h2>
+      <p className="mt-1 text-sm text-texte">
+        Il vous reste {abonnement.campagnesRestantes} {abonnement.campagnesRestantes > 1 ? 'campagnes Standard' : 'campagne Standard'} ce
+        mois-ci : lancez celle de « {app.nom} » sans payer.
+      </p>
+      {erreur && (
+        <Alerte ton="erreur" className="mt-3">
+          {erreur}
+        </Alerte>
+      )}
+      <Bouton type="button" className="mt-3 w-full sm:w-auto" chargement={envoi} libelleChargement="Envoi…" onClick={utiliser}>
+        Utiliser mon abonnement
+      </Bouton>
+    </section>
+  )
+}
+
 function useAppEtOffres(id) {
   return useChargement(
     async (signal) => {
@@ -259,6 +328,7 @@ function Paiement({ id, utilisateur }) {
       utilisateur={utilisateur}
       intro={<p>Une fois l’offre payée, l’app passe en vérification et ne peut plus être modifiée.</p>}
     >
+      <BlocAbonnement app={app} />
       <Formulaire app={app} offres={payables} offreInitiale={offreInitiale} />
       <NoteDevis app={app} offre={offres.find((o) => o.surDevis)} devis={donnees.devis} />
     </PagePaiement>

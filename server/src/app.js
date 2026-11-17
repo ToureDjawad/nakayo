@@ -9,6 +9,7 @@ import { chargerSession } from './middlewares/authentification.js'
 import { routesAdmin } from './routes/admin.js'
 import { routesApps } from './routes/apps.js'
 import { routesFactures, routesOffres, routesPaiements } from './routes/paiements.js'
+import { routesAbonnement } from './routes/abonnement.js'
 import { routesAuth } from './routes/auth.js'
 import { routesInscription } from './routes/inscription.js'
 import { routesSms } from './routes/sms.js'
@@ -72,6 +73,7 @@ export function creerApp(dependances = {}) {
   app.use('/api/apps', routesApps(deps))
   app.use('/api/offres', routesOffres(deps))
   app.use('/api/paiements', routesPaiements(deps))
+  app.use('/api/abonnement', routesAbonnement(deps))
   app.use('/api/factures', routesFactures(deps))
   app.use('/api/versements', routesVersements(deps))
   app.use('/api/fedapay', routesFedapay(deps))

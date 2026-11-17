@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { ErreurHttp, introuvable } from '../lib/erreurs.js'
-import { montantLisible, offre as lireOffre, prixMonteeEnGamme } from '../lib/offres.js'
+import { ABONNEMENT, montantLisible, offre as lireOffre, prixMonteeEnGamme } from '../lib/offres.js'
+import { ajouterMois } from './abonnements.js'
 
 // Référence envoyée au fournisseur et lue dans son webhook : PAY-<16 caractères>.
 export const nouvelleReference = () => `PAY-${randomBytes(8).toString('hex').toUpperCase()}`
@@ -22,7 +23,8 @@ export function signatureValide(corpsBrut, entete, secret) {
 export function versPaiementApi(l) {
   return {
     reference: l.reference,
-    appId: String(l.app_id),
+    // null pour un mois d'abonnement (US-45).
+    appId: l.app_id ? String(l.app_id) : null,
     appNom: l.app_nom ?? null,
     offre: l.offre,
     // « offre » : achat de l'offre ; « montee_en_gamme » : passage de Standard à Pro (US-32).
@@ -40,7 +42,7 @@ export function versPaiementApi(l) {
 }
 
 const SELECT_PAIEMENT = `SELECT p.*, a.nom AS app_nom, f.numero AS facture_numero
-  FROM paiements p JOIN apps a ON a.id = p.app_id LEFT JOIN factures f ON f.paiement_id = p.id`
+  FROM paiements p LEFT JOIN apps a ON a.id = p.app_id LEFT JOIN factures f ON f.paiement_id = p.id`
 
 // Prix à payer : l'offre entière pour une app en brouillon, la différence pour une montée en gamme.
 // `fcfa` : le fournisseur n'encaisse qu'en FCFA (FedaPay) ; la carte est alors débitée du prix Mobile Money.
@@ -128,6 +130,35 @@ export async function confirmerPaiement(client, { reference, statut, referenceFo
     return { paiement: await lirePaiementParId(client, paiement.id), nouveau: false }
   }
 
+  // US-45 : un mois d'abonnement de plus, avec sa facture.
+  if (paiement.nature === 'abonnement') {
+    await client.query(`UPDATE paiements SET statut = 'reussi', confirme_le = $2, reference_fournisseur = $3 WHERE id = $1`, [
+      paiement.id,
+      maintenant,
+      referenceFournisseur ?? null,
+    ])
+    const { debut, fin } = await ajouterMois(client, { paiement, maintenant })
+    const { rows: devs } = await client.query('SELECT nom, email, pays FROM utilisateurs WHERE id = $1', [paiement.developpeur_id])
+    const date = (d) => d.toISOString().slice(0, 10).split('-').reverse().join('/')
+    await client.query(
+      `INSERT INTO factures (numero, paiement_id, developpeur_id, client_nom, client_email, client_pays, libelle, montant, devise, emise_le)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        await prochainNumeroFacture(client, maintenant.getUTCFullYear()),
+        paiement.id,
+        paiement.developpeur_id,
+        devs[0].nom,
+        devs[0].email,
+        devs[0].pays,
+        `${ABONNEMENT.nom} : ${ABONNEMENT.campagnes} campagnes Standard, du ${date(debut)} au ${date(fin)}`,
+        paiement.montant,
+        paiement.devise,
+        maintenant,
+      ],
+    )
+    return { paiement: await lirePaiementParId(client, paiement.id), nouveau: true, email: devs[0].email }
+  }
+
   // Achat : l'app passe en vérification avec son offre. Montée en gamme : l'app passe en Pro.
   // Si c'est déjà fait entre-temps, le paiement est un doublon (à rembourser).
   const { rows: apps } = await client.query('SELECT statut, offre FROM apps WHERE id = $1 FOR UPDATE', [paiement.app_id])
@@ -182,13 +213,17 @@ export function messageRecu(paiement, { email, clientUrl }) {
     texte: [
       'Bonjour,',
       '',
-      paiement.nature === 'montee_en_gamme'
+      paiement.nature === 'abonnement'
+        ? `Nous avons bien reçu votre paiement de ${montantLisible(paiement.montant, paiement.devise)} pour un mois d’${ABONNEMENT.nom} (${ABONNEMENT.campagnes} campagnes Standard).`
+        : paiement.nature === 'montee_en_gamme'
         ? `Nous avons bien reçu votre paiement de ${montantLisible(paiement.montant, paiement.devise)} pour passer l’app « ${paiement.app_nom} » à l’${lireOffre(paiement.offre).nom}.`
         : `Nous avons bien reçu votre paiement de ${montantLisible(paiement.montant, paiement.devise)} pour l’${lireOffre(paiement.offre).nom} (app « ${paiement.app_nom} »).`,
       `Facture : ${paiement.facture_numero}`,
       `Référence du paiement : ${paiement.reference}`,
       '',
-      paiement.nature === 'montee_en_gamme'
+      paiement.nature === 'abonnement'
+        ? 'Choisissez « Utiliser mon abonnement » au moment de lancer chaque app.'
+        : paiement.nature === 'montee_en_gamme'
         ? 'Votre app profite dès maintenant de l’offre Pro : rapports de bugs et testeurs les mieux notés pour les prochains remplacements.'
         : 'Notre équipe vérifie maintenant votre app avant de lancer la campagne. Vous recevrez un email dès que c’est fait.',
       '',

@@ -17,6 +17,7 @@ import SuiviCampagne from './pages/apps/SuiviCampagne.jsx'
 import BugsSignales from './pages/apps/BugsSignales.jsx'
 import DemandeDevis from './pages/apps/DemandeDevis.jsx'
 import MesPaiements from './pages/paiements/MesPaiements.jsx'
+import Abonnement from './pages/paiements/Abonnement.jsx'
 import PayerApp, { MonteeEnGamme } from './pages/paiements/PayerApp.jsx'
 import RetourPaiement from './pages/paiements/RetourPaiement.jsx'
 import SimulationPaiement from './pages/paiements/SimulationPaiement.jsx'
@@ -48,6 +49,7 @@ export const routes = [
   { path: '/mon-compte/apps/:id/paiement', element: <PayerApp /> },
   { path: '/mon-compte/apps/:id/montee-en-gamme', element: <MonteeEnGamme /> },
   { path: '/mon-compte/paiements', element: <MesPaiements /> },
+  { path: '/mon-compte/abonnement', element: <Abonnement /> },
   { path: '/mon-compte/paiements/:reference', element: <RetourPaiement /> },
   { path: '/paiement/simulation/:reference', element: <SimulationPaiement /> },
   { path: '/connexion', element: <Connexion /> },
