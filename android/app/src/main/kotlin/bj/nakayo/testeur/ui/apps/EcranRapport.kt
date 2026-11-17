@@ -66,6 +66,11 @@ fun EcranRapport(etat: EtatRapport, affectation: AffectationTesteur, actions: Ac
         Surtitre(affectation.app.nom)
         Titre("Rapport du jour ${affectation.jourCampagne}")
         Paragraphe("Répondez après avoir utilisé l'app aujourd'hui. Vos réponses aident le développeur à corriger son app.")
+        // Avertissement visible avant la demande d'Android (règles Google Play sur la position).
+        Note(
+            "À l'envoi, Nakayo enregistre votre position approximative (à un kilomètre près), seulement à ce moment-là. " +
+                "Elle prouve que le test a lieu sur un vrai téléphone. Rien n'est suivi en arrière-plan.",
+        )
         etat.erreur?.let { Bandeau(it) }
         ChampTexte(
             valeur = etat.actions,

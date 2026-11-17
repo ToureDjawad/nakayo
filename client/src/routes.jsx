@@ -27,6 +27,8 @@ import ReinitialiserMotDePasse from './pages/connexion/ReinitialiserMotDePasse.j
 import Accueil from './pages/Accueil.jsx'
 import PageIntrouvable from './pages/PageIntrouvable.jsx'
 import PageEnPreparation from './pages/PageEnPreparation.jsx'
+import ConditionsUtilisation from './pages/juridique/ConditionsUtilisation.jsx'
+import Confidentialite from './pages/juridique/Confidentialite.jsx'
 import CompteEnAttente from './pages/inscription/CompteEnAttente.jsx'
 import Inscription from './pages/inscription/Inscription.jsx'
 import VerificationEmail from './pages/inscription/VerificationEmail.jsx'
@@ -67,8 +69,8 @@ export const routes = [
   { path: '/admin/devis', element: <DevisAfrique /> },
   { path: '/admin/messages', element: <MessagesSupport /> },
   { path: '/admin/support', element: <ContactSupport /> },
-  { path: '/conditions-utilisation', element: <PageEnPreparation titre="Conditions d’utilisation" /> },
-  { path: '/confidentialite', element: <PageEnPreparation titre="Politique de confidentialité" /> },
+  { path: '/conditions-utilisation', element: <ConditionsUtilisation /> },
+  { path: '/confidentialite', element: <Confidentialite /> },
   { path: '/mentions-legales', element: <PageEnPreparation titre="Mentions légales" /> },
   { path: '*', element: <PageIntrouvable /> },
 ]
