@@ -98,7 +98,7 @@ test.describe('Inscription développeur (US-05)', () => {
       context.waitForEvent('page'),
       page.getByRole('link', { name: /conditions d’utilisation/ }).click(),
     ])
-    await expect(onglet.getByRole('heading', { name: 'Conditions d’utilisation' })).toBeVisible()
+    await expect(onglet.getByRole('heading', { level: 1, name: 'Conditions générales d’utilisation' })).toBeVisible()
     await expect(page.getByLabel('Nom de développeur Google Play')).toHaveValue('Studio Awa')
   })
 })
